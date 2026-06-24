@@ -1,0 +1,8 @@
+{
+  "name": "Going Technologies Global Center",
+  "description": "Going Technologies helps global organizations scale through Insurance Operations, BPO, and Dedicated Support Teams.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
