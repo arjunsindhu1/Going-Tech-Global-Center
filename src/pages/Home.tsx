@@ -21,7 +21,8 @@ import {
   FileCheck,
   ClipboardCheck,
   Quote,
-  Sparkles
+  Sparkles,
+  Star
 } from 'lucide-react';
 import { PageType } from '../types';
 import { SERVICES_DATA, CASE_STUDIES, BLOG_POSTS } from '../data';
@@ -87,6 +88,81 @@ function AnimatedCounter({ value, duration = 1500 }: { value: string; duration?:
   );
 }
 
+const TESTIMONIALS_DATA = [
+  {
+    id: 1,
+    name: 'Michael Anderson',
+    role: 'Operations Director',
+    company: 'Regional Insurance Agency',
+    quote: 'Going Technologies helped us streamline several operational workflows and significantly improved turnaround times across our support processes.',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+    color: 'from-[#2F6DFF]/10 to-[#2F6DFF]/5',
+    borderColor: 'hover:border-[#2F6DFF]/30',
+    tagColor: 'text-[#2F6DFF] bg-[#2F6DFF]/5'
+  },
+  {
+    id: 2,
+    name: 'Jennifer Roberts',
+    role: 'Agency Principal',
+    company: 'Independent Brokerage',
+    quote: 'The team quickly adapted to our requirements and provided dependable operational support that allowed our staff to focus on growth.',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+    color: 'from-[#A93DFF]/10 to-[#A93DFF]/5',
+    borderColor: 'hover:border-[#A93DFF]/30',
+    tagColor: 'text-[#A93DFF] bg-[#A93DFF]/5'
+  },
+  {
+    id: 3,
+    name: 'Daniel Cooper',
+    role: 'Business Operations Manager',
+    company: 'Medicare Services Organization',
+    quote: 'The level of professionalism and consistency delivered by Going Technologies exceeded our expectations.',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+    color: 'from-emerald-500/10 to-emerald-500/5',
+    borderColor: 'hover:border-emerald-500/30',
+    tagColor: 'text-emerald-500 bg-emerald-500/5'
+  },
+  {
+    id: 4,
+    name: 'Sarah Mitchell',
+    role: 'Process Improvement Lead',
+    company: 'Enterprise Services Firm',
+    quote: 'Their structured operational approach helped us eliminate bottlenecks and improve workflow visibility.',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+    color: 'from-amber-500/10 to-amber-500/5',
+    borderColor: 'hover:border-amber-500/30',
+    tagColor: 'text-amber-500 bg-amber-500/5'
+  },
+  {
+    id: 5,
+    name: 'Kevin Turner',
+    role: 'Operations Executive',
+    company: 'Insurance Technology Partner',
+    quote: 'Reliable execution, strong communication, and a focus on operational excellence made Going Technologies a valuable extension of our team.',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+    color: 'from-blue-500/10 to-blue-500/5',
+    borderColor: 'hover:border-blue-500/30',
+    tagColor: 'text-blue-500 bg-blue-500/5'
+  },
+  {
+    id: 6,
+    name: 'Lisa Morgan',
+    role: 'Client Services Manager',
+    company: 'Business Solutions Group',
+    quote: 'Their ability to scale support operations while maintaining quality has been impressive.',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+    color: 'from-pink-500/10 to-pink-500/5',
+    borderColor: 'hover:border-pink-500/30',
+    tagColor: 'text-pink-500 bg-pink-500/5'
+  }
+];
+
 interface HomeProps {
   setCurrentPage: (page: PageType) => void;
   onNavigateToService: (serviceId: string) => void;
@@ -96,6 +172,8 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<number>(0);
   const [employeeScale, setEmployeeScale] = useState<number>(25);
+  const [isHovered1, setIsHovered1] = useState(false);
+  const [isHovered2, setIsHovered2] = useState(false);
 
   // Canvas interactive network particle animation
   useEffect(() => {
@@ -1198,222 +1276,233 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
-      {/* SECTION 9.5: SUCCESS COUNTERS & OPERATIONAL SUCCESS HIGHLIGHTS */}
-      <section className="py-24 bg-gradient-to-b from-[#F8FAFF] via-white to-[#F8FAFF] relative overflow-hidden">
+      {/* SECTION 9.5: SUCCESS COUNTERS & PREMIUM B2B CLIENT TESTIMONIALS */}
+      <section className="py-28 bg-gradient-to-b from-[#F8FAFF] via-white to-[#F8FAFF] relative overflow-hidden">
         {/* Ambient background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#2F6DFF]/5 blur-[140px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#2F6DFF]/5 blur-[160px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          {/* 1. Counter animation above section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-20">
+          {/* 1. Animated statistics row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
             {[
-              { label: 'Organizations Supported', value: '45+', icon: Building, color: 'text-[#2F6DFF]' },
-              { label: 'Projects Delivered', value: '120+', icon: ClipboardCheck, color: 'text-[#A93DFF]' },
-              { label: 'Processes Optimized', value: '350+', icon: TrendingUp, color: 'text-emerald-500' }
+              { label: 'Tasks Processed', value: '5000+', icon: FileCheck, color: 'text-[#2F6DFF]', bg: 'bg-[#2F6DFF]/5' },
+              { label: 'Accuracy Focus', value: '98%', icon: TrendingUp, color: 'text-[#A93DFF]', bg: 'bg-[#A93DFF]/5' },
+              { label: 'Operational Support', value: '24/7', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
+              { label: 'Businesses Supported', value: '100+', icon: Building, color: 'text-amber-500', bg: 'bg-amber-500/5' }
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6, delay: idx * 0.15, ease: 'easeOut' }}
-                className="bg-white/60 backdrop-blur-md border border-[#DCE7FF] rounded-2xl p-6 text-center shadow-xs flex flex-col items-center group hover:border-[#2F6DFF]/40 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: idx * 0.1, ease: 'easeOut' }}
+                className="bg-white/70 backdrop-blur-md border border-[#DCE7FF]/80 rounded-2xl p-6 text-center shadow-xs flex flex-col items-center group hover:border-[#2F6DFF]/30 transition-all duration-300"
               >
-                <div className="p-3 bg-gray-50 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                <div className={`p-3 rounded-xl mb-4 ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
+                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
-                <div className="text-4xl font-extrabold text-[#081B8C] font-mono tracking-tight mb-2">
+                <div className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight mb-1">
                   <AnimatedCounter value={stat.value} />
                 </div>
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{stat.label}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</span>
               </motion.div>
             ))}
           </div>
 
           {/* Title Stack */}
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
             <div className="inline-flex items-center gap-2 bg-[#DCE7FF]/40 border border-[#DCE7FF]/80 px-3.5 py-1 rounded-full">
               <Sparkles className="w-3.5 h-3.5 text-[#2F6DFF] animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#2F6DFF]">OPERATIONAL CREDIBILITY</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#2F6DFF]">TRUSTED EXCELLENCE</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight animate-fade-in">
-              What Clients Value Most
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
+              Trusted By Teams Focused On Operational Excellence
             </h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              We focus on delivering measurable, consistent, and secure support. Here are the core pillars that drive our partnerships and operational success.
+            <p className="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
+              Organizations choose Going Technologies to streamline operations, reduce administrative workload, and improve business efficiency.
             </p>
           </div>
 
-          {/* Cards Area - Slider on Mobile, 3-Column Grid with asymmetrical last card on Desktop */}
-          {/* Mobile Carousel / Slider View */}
+          {/* Testimonial Cards Layout - Slider on mobile, Continuous marquee slider on Desktop */}
+          
+          {/* Mobile Swiper View */}
           <div className="block md:hidden relative">
             <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 scrollbar-none scroll-smooth">
-              {[
-                {
-                  title: 'Reduced Processing Delays',
-                  desc: 'Helped organizations streamline back-office operations and improve turnaround times.',
-                  icon: Clock,
-                  color: 'from-[#2F6DFF]/10 to-[#2F6DFF]/5',
-                  borderColor: 'border-[#2F6DFF]/20',
-                  iconColor: 'text-[#2F6DFF]',
-                },
-                {
-                  title: 'Scalable Operational Support',
-                  desc: 'Flexible delivery models designed to support business growth.',
-                  icon: Layers,
-                  color: 'from-[#A93DFF]/10 to-[#A93DFF]/5',
-                  borderColor: 'border-[#A93DFF]/20',
-                  iconColor: 'text-[#A93DFF]',
-                },
-                {
-                  title: 'Process Efficiency',
-                  desc: 'Operational frameworks focused on consistency, accuracy, and performance.',
-                  icon: CheckCircle2,
-                  color: 'from-emerald-500/10 to-emerald-500/5',
-                  borderColor: 'border-emerald-500/20',
-                  iconColor: 'text-emerald-500',
-                },
-                {
-                  title: 'Industry Expertise',
-                  desc: 'Experience supporting insurance operations and enterprise workflows.',
-                  icon: Briefcase,
-                  color: 'from-amber-500/10 to-amber-500/5',
-                  borderColor: 'border-amber-500/20',
-                  iconColor: 'text-amber-500',
-                }
-              ].map((card, idx) => (
+              {TESTIMONIALS_DATA.map((card, idx) => (
                 <div
                   key={idx}
-                  className="min-w-[85vw] snap-center bg-white/40 backdrop-blur-lg border border-white/60 rounded-3xl p-8 shadow-md flex flex-col justify-between relative overflow-hidden h-[300px]"
+                  className="min-w-[85vw] snap-center bg-white/45 backdrop-blur-lg border border-[#DCE7FF]/60 rounded-3xl p-8 shadow-md flex flex-col justify-between relative overflow-hidden h-[330px]"
                 >
-                  {/* Subtle top decoration */}
-                  <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${card.color} blur-xl rounded-full`} />
+                  {/* Card glow corner effect */}
+                  <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${card.color} blur-xl rounded-full opacity-45`} />
                   
                   <div className="space-y-4 relative z-10">
-                    <div className="flex justify-between items-start">
-                      <div className="p-3 bg-white border border-[#DCE7FF]/50 rounded-2xl shadow-xs">
-                        <card.icon className={`w-6 h-6 ${card.iconColor}`} />
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-0.5">
+                        {[...Array(card.rating)].map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-[#2F6DFF] text-[#2F6DFF]" />
+                        ))}
                       </div>
-                      <Quote className="w-8 h-8 text-gray-200/50" />
+                      <Quote className="w-7 h-7 text-[#2F6DFF]/15 shrink-0" />
                     </div>
-                    <h3 className="text-lg font-bold text-[#081B8C] font-display mt-4">{card.title}</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">{card.desc}</p>
+                    <p className="text-gray-600 text-xs sm:text-sm leading-relaxed italic">
+                      "{card.quote}"
+                    </p>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-100/60 flex items-center justify-between text-[10px] font-mono text-gray-400">
-                    <span>OPERATIONAL METRICS</span>
-                    <span className="font-bold text-[#081B8C]">PILLAR 0{idx + 1}</span>
+                  <div className="pt-4 mt-6 border-t border-gray-100/60 flex items-center gap-4 relative z-10">
+                    <div className="relative shrink-0">
+                      <img
+                        src={card.avatar}
+                        alt={card.name}
+                        referrerPolicy="no-referrer"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs"
+                      />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white ${card.id % 2 === 0 ? 'bg-[#A93DFF]' : 'bg-[#2F6DFF]'}`} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#081B8C] font-display">{card.name}</h4>
+                      <p className="text-[9px] text-gray-400 font-medium leading-none mt-1">
+                        {card.role} <span className="text-[#2F6DFF]/70">•</span> {card.company}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
             
-            {/* Swipe hint */}
-            <div className="text-center text-[10px] text-gray-400 font-medium flex items-center justify-center gap-1">
-              <span>Swipe left or right to explore</span>
+            {/* Swipe indicator */}
+            <div className="text-center text-[10px] text-gray-400 font-semibold flex items-center justify-center gap-1.5">
+              <span>Swipe left or right to read more</span>
               <ArrowRight className="w-3 h-3 animate-bounce" />
             </div>
           </div>
 
-          {/* Desktop Grid Layout (3 Columns with asymmetrical Card 4) */}
-          <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: 'Reduced Processing Delays',
-                desc: 'Helped organizations streamline back-office operations and improve turnaround times.',
-                icon: Clock,
-                color: 'from-[#2F6DFF]/10 to-[#2F6DFF]/5',
-                borderColor: 'border-[#2F6DFF]/20',
-                iconColor: 'text-[#2F6DFF]',
-              },
-              {
-                title: 'Scalable Operational Support',
-                desc: 'Flexible delivery models designed to support business growth.',
-                icon: Layers,
-                color: 'from-[#A93DFF]/10 to-[#A93DFF]/5',
-                borderColor: 'border-[#A93DFF]/20',
-                iconColor: 'text-[#A93DFF]',
-              },
-              {
-                title: 'Process Efficiency',
-                desc: 'Operational frameworks focused on consistency, accuracy, and performance.',
-                icon: CheckCircle2,
-                color: 'from-emerald-500/10 to-emerald-500/5',
-                borderColor: 'border-emerald-500/20',
-                iconColor: 'text-emerald-500',
-              }
-            ].map((card, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.6, delay: idx * 0.15, ease: 'easeOut' }}
-                whileHover={{ y: -8, scale: 1.01 }}
-                className="bg-white/40 backdrop-blur-lg border border-white/60 hover:border-[#2F6DFF]/30 hover:bg-white/80 rounded-3xl p-8 shadow-sm flex flex-col justify-between relative overflow-hidden group transition-all duration-300 h-[320px]"
-              >
-                {/* Subtle light bubble */}
-                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.color} blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
-                
-                <div className="space-y-4 relative z-10">
-                  <div className="flex justify-between items-start">
-                    <div className="p-3 bg-white border border-[#DCE7FF]/50 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
-                      <card.icon className={`w-6 h-6 ${card.iconColor}`} />
-                    </div>
-                    <Quote className="w-8 h-8 text-gray-200/40 group-hover:text-[#2F6DFF]/20 group-hover:rotate-12 transition-all duration-300 animate-pulse" />
-                  </div>
-                  <h3 className="text-xl font-bold text-[#081B8C] font-display mt-4">{card.title}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">{card.desc}</p>
-                </div>
+          {/* Desktop Dual-Track Endless Scrolling Marquee */}
+          <div className="hidden md:flex flex-col gap-8 relative py-4 overflow-hidden">
+            
+            {/* Ambient edge-fades to blend seamlessly */}
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#F8FAFF] via-[#F8FAFF]/50 to-transparent z-20 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#F8FAFF] via-[#F8FAFF]/50 to-transparent z-20 pointer-events-none" />
 
-                <div className="pt-6 border-t border-gray-100/60 flex items-center justify-between text-[10px] font-mono text-gray-400">
-                  <span>OPERATIONAL METRICS</span>
-                  <span className="font-bold text-[#081B8C]">PILLAR 0{idx + 1}</span>
-                </div>
-              </motion.div>
-            ))}
-
-            {/* Card 4 - Spans all 3 columns on lg, 2 columns on md to fit cleanly */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
-              whileHover={{ y: -8, scale: 1.005 }}
-              className="col-span-1 md:col-span-2 lg:col-span-3 bg-white/40 backdrop-blur-lg border border-white/60 hover:border-[#2F6DFF]/30 hover:bg-white/80 rounded-3xl p-8 lg:p-10 shadow-sm relative overflow-hidden group transition-all duration-300"
+            {/* Row 1 Ticker (Left scroll) */}
+            <div 
+              className="flex overflow-hidden w-full select-none"
+              onMouseEnter={() => setIsHovered1(true)}
+              onMouseLeave={() => setIsHovered1(false)}
             >
-              {/* Decorative side blob */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-500/10 to-amber-500/5 blur-3xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-                <div className="space-y-4 max-w-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-white border border-[#DCE7FF]/50 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300 shrink-0">
-                      <Briefcase className="w-6 h-6 text-amber-500" />
+              <motion.div
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{
+                  ease: "linear",
+                  duration: isHovered1 ? 160 : 35,
+                  repeat: Infinity,
+                }}
+                className="flex gap-6 w-max"
+              >
+                {[...TESTIMONIALS_DATA.slice(0, 3), ...TESTIMONIALS_DATA.slice(0, 3)].map((card, idx) => (
+                  <div
+                    key={`track1-${idx}`}
+                    className="w-[380px] shrink-0 bg-white/45 backdrop-blur-md border border-[#DCE7FF]/70 rounded-3xl p-8 shadow-xs hover:shadow-xl hover:border-[#2F6DFF]/30 hover:bg-white/80 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+                  >
+                    {/* Radial background blur glow */}
+                    <div className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-br ${card.color} blur-2xl rounded-full opacity-40 group-hover:opacity-100 transition-opacity duration-500`} />
+
+                    <div className="space-y-4 relative z-10">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(card.rating)].map((_, i) => (
+                            <Star key={i} className="w-3.5 h-3.5 fill-[#2F6DFF] text-[#2F6DFF]" />
+                          ))}
+                        </div>
+                        <Quote className="w-7 h-7 text-[#2F6DFF]/15 group-hover:text-[#2F6DFF]/30 group-hover:rotate-12 transition-all duration-300 shrink-0" />
+                      </div>
+                      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed italic">
+                        "{card.quote}"
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">PREMIUM HIGHLIGHT</span>
-                      <h3 className="text-xl lg:text-2xl font-bold text-[#081B8C] font-display">Industry Expertise</h3>
+
+                    <div className="pt-6 mt-6 border-t border-gray-100/60 flex items-center gap-4 relative z-10">
+                      <div className="relative shrink-0">
+                        <img
+                          src={card.avatar}
+                          alt={card.name}
+                          referrerPolicy="no-referrer"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white ${card.id % 2 === 0 ? 'bg-[#A93DFF]' : 'bg-[#2F6DFF]'}`} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#081B8C] font-display">{card.name}</h4>
+                        <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                          {card.role} <span className="text-[#2F6DFF]/70">•</span> {card.company}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                    Experience supporting insurance operations and enterprise workflows. We work exclusively on your systems under daily US-based and offshore Operations Supervisor oversight to guarantee Six Sigma compliance.
-                  </p>
-                </div>
-                
-                <div className="flex lg:flex-col items-start lg:items-end justify-between lg:justify-center border-t lg:border-t-0 lg:border-l border-gray-100/60 pt-6 lg:pt-0 lg:pl-12 shrink-0 min-w-[180px]">
-                  <div className="text-left lg:text-right">
-                    <span className="text-[9px] text-gray-400 block uppercase font-mono tracking-wider">Quality Controls</span>
-                    <span className="text-lg font-bold text-gray-800 font-sans">Six Sigma Certified</span>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Row 2 Ticker (Right scroll) */}
+            <div 
+              className="flex overflow-hidden w-full select-none"
+              onMouseEnter={() => setIsHovered2(true)}
+              onMouseLeave={() => setIsHovered2(false)}
+            >
+              <motion.div
+                animate={{ x: ["-50%", "0%"] }}
+                transition={{
+                  ease: "linear",
+                  duration: isHovered2 ? 160 : 35,
+                  repeat: Infinity,
+                }}
+                className="flex gap-6 w-max"
+              >
+                {[...TESTIMONIALS_DATA.slice(3, 6), ...TESTIMONIALS_DATA.slice(3, 6)].map((card, idx) => (
+                  <div
+                    key={`track2-${idx}`}
+                    className="w-[380px] shrink-0 bg-white/45 backdrop-blur-md border border-[#DCE7FF]/70 rounded-3xl p-8 shadow-xs hover:shadow-xl hover:border-[#2F6DFF]/30 hover:bg-white/80 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+                  >
+                    {/* Radial background blur glow */}
+                    <div className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-br ${card.color} blur-2xl rounded-full opacity-40 group-hover:opacity-100 transition-opacity duration-500`} />
+
+                    <div className="space-y-4 relative z-10">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(card.rating)].map((_, i) => (
+                            <Star key={i} className="w-3.5 h-3.5 fill-[#2F6DFF] text-[#2F6DFF]" />
+                          ))}
+                        </div>
+                        <Quote className="w-7 h-7 text-[#2F6DFF]/15 group-hover:text-[#2F6DFF]/30 group-hover:rotate-12 transition-all duration-300 shrink-0" />
+                      </div>
+                      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed italic">
+                        "{card.quote}"
+                      </p>
+                    </div>
+
+                    <div className="pt-6 mt-6 border-t border-gray-100/60 flex items-center gap-4 relative z-10">
+                      <div className="relative shrink-0">
+                        <img
+                          src={card.avatar}
+                          alt={card.name}
+                          referrerPolicy="no-referrer"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white ${card.id % 2 === 0 ? 'bg-[#A93DFF]' : 'bg-[#2F6DFF]'}`} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#081B8C] font-display">{card.name}</h4>
+                        <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                          {card.role} <span className="text-[#2F6DFF]/70">•</span> {card.company}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right mt-0 lg:mt-4">
-                    <span className="text-[9px] text-gray-400 block uppercase font-mono tracking-wider">Operational Pillar</span>
-                    <span className="text-sm font-extrabold text-[#081B8C]">PILLAR 04</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+                ))}
+              </motion.div>
+            </div>
 
           </div>
 
