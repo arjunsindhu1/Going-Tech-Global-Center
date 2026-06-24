@@ -97,7 +97,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
         "name": "Going Technologies Global Center",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://goingtechnologies.com/logo.png"
+          "url": "https://goingtechnologies.com/logo-cropped.png"
         }
       }
     }, null, 2);
