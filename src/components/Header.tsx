@@ -70,11 +70,11 @@ export default function Header({ currentPage, setCurrentPage, onNavigateToServic
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-[76px] lg:h-[90px]">
+          <div className="flex items-center justify-between h-[80px] lg:h-[90px]">
             {/* Logo Section */}
-            <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => handleNavClick('home')}>
+            <div className="flex-shrink-0 w-[220px] lg:w-[280px] min-w-[220px] lg:min-w-[280px] h-[80px] lg:h-[90px] flex items-center cursor-pointer" onClick={() => handleNavClick('home')}>
               <img
-                src="/going-tech-logo.png"
+                src="/GTGC Logo.png?v=3"
                 alt="Going Technologies Global Center"
                 className="h-[54px] lg:h-[70px] w-auto max-w-[220px] lg:max-w-[280px] object-contain transition-transform duration-300 hover:scale-[1.02]"
                 referrerPolicy="no-referrer"

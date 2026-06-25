@@ -52,9 +52,9 @@ export default function Footer({ setCurrentPage }: FooterProps) {
           {/* Column 1: Brand Info */}
           <div className="lg:col-span-2 space-y-6">
              <img
-              src="/going-tech-logo.png"
+              src="/GTGC Logo.png?v=3"
               alt="Going Technologies Global Center"
-              className="h-auto max-h-[80px] cursor-pointer transition-opacity duration-300 hover:opacity-90"
+              className="h-[70px] w-auto max-w-[280px] object-contain cursor-pointer transition-opacity duration-300 hover:opacity-90"
               onClick={() => handleLinkClick('home')}
               referrerPolicy="no-referrer"
             />
