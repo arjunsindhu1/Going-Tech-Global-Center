@@ -70,13 +70,13 @@ export default function Header({ currentPage, setCurrentPage, onNavigateToServic
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-[76px] lg:h-[90px]">
             {/* Logo Section */}
             <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => handleNavClick('home')}>
               <img
                 src="/going-tech-logo.png"
                 alt="Going Technologies Global Center"
-                className="h-auto max-h-[45px] sm:max-h-[55px] lg:max-h-[65px] transition-transform duration-300 hover:scale-[1.02]"
+                className="h-[54px] lg:h-[70px] w-auto max-w-[220px] lg:max-w-[280px] object-contain transition-transform duration-300 hover:scale-[1.02]"
                 referrerPolicy="no-referrer"
               />
             </div>

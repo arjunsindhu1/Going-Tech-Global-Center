@@ -246,7 +246,7 @@ export default function App() {
         
         {/* Floating WhatsApp Chat Button */}
         <a
-          href="https://wa.me/917063830888"
+          href="https://wa.me/919618424749?text=Hello%20Going%20Technologies%20Team%2C%0A%0AI%20would%20like%20to%20learn%20more%20about%20your%20operational%20support%20and%20business%20process%20outsourcing%20services.%0A%0APlease%20contact%20me."
           target="_blank"
           rel="noreferrer"
           className="pointer-events-auto cursor-pointer p-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center group relative border border-emerald-400/20 shadow-emerald-500/10"

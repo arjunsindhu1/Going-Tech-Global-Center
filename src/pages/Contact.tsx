@@ -542,7 +542,7 @@ export default function Contact({ setCurrentPage }: ContactProps) {
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-4 h-4 text-emerald-500 shrink-0" />
                 <a
-                  href="https://wa.me/917063830888"
+                  href="https://wa.me/919618424749?text=Hello%20Going%20Technologies%20Team%2C%0A%0AI%20would%20like%20to%20learn%20more%20about%20your%20operational%20support%20and%20business%20process%20outsourcing%20services.%0A%0APlease%20contact%20me."
                   target="_blank"
                   rel="noreferrer"
                   className="text-emerald-600 hover:underline flex items-center gap-1 font-bold"
