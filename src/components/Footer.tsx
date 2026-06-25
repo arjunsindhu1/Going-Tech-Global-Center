@@ -52,7 +52,7 @@ export default function Footer({ setCurrentPage }: FooterProps) {
           {/* Column 1: Brand Info */}
           <div className="lg:col-span-2 space-y-6">
              <img
-              src="/logo-cropped.png"
+              src="/logo.png"
               alt="Going Technologies Global Center"
               className="h-[80px] w-auto object-contain cursor-pointer transition-opacity duration-300 hover:opacity-90 [image-rendering:auto]"
               onClick={() => handleLinkClick('home')}

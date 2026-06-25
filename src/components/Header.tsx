@@ -74,7 +74,7 @@ export default function Header({ currentPage, setCurrentPage, onNavigateToServic
             {/* Logo Section */}
             <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => handleNavClick('home')}>
               <img
-                src="/logo-cropped.png"
+                src="/logo.png"
                 alt="Going Technologies Global Center"
                 className="h-[45px] sm:h-[55px] lg:h-[65px] w-auto max-w-none object-contain transition-transform duration-300 hover:scale-[1.02] [image-rendering:auto]"
                 referrerPolicy="no-referrer"

@@ -46,6 +46,19 @@ on public.contact_leads for select
 to anon, authenticated, public
 using (true);
 
+drop policy if exists "Allow public update on contact_leads" on public.contact_leads;
+create policy "Allow public update on contact_leads"
+on public.contact_leads for update
+to anon, authenticated, public
+using (true)
+with check (true);
+
+drop policy if exists "Allow public delete on contact_leads" on public.contact_leads;
+create policy "Allow public delete on contact_leads"
+on public.contact_leads for delete
+to anon, authenticated, public
+using (true);
+
 create index if not exists idx_contact_leads_email on public.contact_leads(client_email);
 create index if not exists idx_contact_leads_created_at on public.contact_leads(created_at);
 
@@ -78,6 +91,19 @@ with check (true);
 drop policy if exists "Allow public select on consultation_requests" on public.consultation_requests;
 create policy "Allow public select on consultation_requests"
 on public.consultation_requests for select
+to anon, authenticated, public
+using (true);
+
+drop policy if exists "Allow public update on consultation_requests" on public.consultation_requests;
+create policy "Allow public update on consultation_requests"
+on public.consultation_requests for update
+to anon, authenticated, public
+using (true)
+with check (true);
+
+drop policy if exists "Allow public delete on consultation_requests" on public.consultation_requests;
+create policy "Allow public delete on consultation_requests"
+on public.consultation_requests for delete
 to anon, authenticated, public
 using (true);
 
@@ -115,6 +141,19 @@ on public.diagnostic_requests for select
 to anon, authenticated, public
 using (true);
 
+drop policy if exists "Allow public update on diagnostic_requests" on public.diagnostic_requests;
+create policy "Allow public update on diagnostic_requests"
+on public.diagnostic_requests for update
+to anon, authenticated, public
+using (true)
+with check (true);
+
+drop policy if exists "Allow public delete on diagnostic_requests" on public.diagnostic_requests;
+create policy "Allow public delete on diagnostic_requests"
+on public.diagnostic_requests for delete
+to anon, authenticated, public
+using (true);
+
 -- Indexes
 create index if not exists idx_diagnostic_requests_email on public.diagnostic_requests(email);
 create index if not exists idx_diagnostic_created_at on public.diagnostic_requests(created_at);
@@ -142,6 +181,19 @@ with check (true);
 drop policy if exists "Allow public select on newsletter_subscribers" on public.newsletter_subscribers;
 create policy "Allow public select on newsletter_subscribers"
 on public.newsletter_subscribers for select
+to anon, authenticated, public
+using (true);
+
+drop policy if exists "Allow public update on newsletter_subscribers" on public.newsletter_subscribers;
+create policy "Allow public update on newsletter_subscribers"
+on public.newsletter_subscribers for update
+to anon, authenticated, public
+using (true)
+with check (true);
+
+drop policy if exists "Allow public delete on newsletter_subscribers" on public.newsletter_subscribers;
+create policy "Allow public delete on newsletter_subscribers"
+on public.newsletter_subscribers for delete
 to anon, authenticated, public
 using (true);
 
@@ -173,6 +225,19 @@ with check (true);
 drop policy if exists "Allow public select on callback_requests" on public.callback_requests;
 create policy "Allow public select on callback_requests"
 on public.callback_requests for select
+to anon, authenticated, public
+using (true);
+
+drop policy if exists "Allow public update on callback_requests" on public.callback_requests;
+create policy "Allow public update on callback_requests"
+on public.callback_requests for update
+to anon, authenticated, public
+using (true)
+with check (true);
+
+drop policy if exists "Allow public delete on callback_requests" on public.callback_requests;
+create policy "Allow public delete on callback_requests"
+on public.callback_requests for delete
 to anon, authenticated, public
 using (true);
 

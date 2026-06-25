@@ -93,6 +93,15 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   const [viewingApplication, setViewingApplication] = useState<any | null>(null);
   const [positionFilter, setPositionFilter] = useState('All');
 
+  // Custom Delete Confirmation Modal states
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<{ table: string; id: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Dynamic Edit Record Modal states
+  const [editingRecord, setEditingRecord] = useState<{ table: string; data: any } | null>(null);
+  const [isSavingRecord, setIsSavingRecord] = useState(false);
+
   // Fetch all tables from Supabase
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -347,9 +356,17 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     }
   };
 
-  // Delete Record generic action
-  const deleteRecord = async (table: string, id: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this corporate record?')) return;
+  // Trigger delete confirmation modal
+  const triggerDelete = (table: string, id: string) => {
+    setRecordToDelete({ table, id });
+    setDeleteModalOpen(true);
+  };
+
+  // Confirm and execute record deletion
+  const confirmDelete = async () => {
+    if (!recordToDelete) return;
+    const { table, id } = recordToDelete;
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from(table)
@@ -366,8 +383,52 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       if (table === 'newsletter_subscribers') setSubscribers(subscribers.filter(x => x.id !== id));
       if (table === 'jobs') setJobs(jobs.filter(x => x.id !== id));
       if (table === 'job_applications') setApplications(applications.filter(x => x.id !== id));
-    } catch (err) {
+
+      setDeleteModalOpen(false);
+      setRecordToDelete(null);
+    } catch (err: any) {
       console.error('Error deleting record:', err);
+      alert(err.message || 'Failed to delete record. Please verify database write/delete access.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Save changes from dynamic edit modal
+  const handleSaveEditedRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRecord) return;
+    const { table, data } = editingRecord;
+    setIsSavingRecord(true);
+    try {
+      const { error } = await supabase
+        .from(table)
+        .update(data)
+        .eq('id', data.id);
+
+      if (error) throw error;
+
+      // Update local state
+      if (table === 'contact_leads') {
+        setLeads(leads.map(x => x.id === data.id ? data : x));
+      } else if (table === 'consultation_requests') {
+        setConsultations(consultations.map(x => x.id === data.id ? data : x));
+      } else if (table === 'diagnostic_requests') {
+        setDiagnostics(diagnostics.map(x => x.id === data.id ? data : x));
+      } else if (table === 'callback_requests') {
+        setCallbacks(callbacks.map(x => x.id === data.id ? data : x));
+      } else if (table === 'newsletter_subscribers') {
+        setSubscribers(subscribers.map(x => x.id === data.id ? data : x));
+      } else if (table === 'job_applications') {
+        setApplications(applications.map(x => x.id === data.id ? data : x));
+      }
+
+      setEditingRecord(null);
+    } catch (err: any) {
+      console.error('Error saving edited record:', err);
+      alert(err.message || 'Failed to save record changes. Please check permissions.');
+    } finally {
+      setIsSavingRecord(false);
     }
   };
 
@@ -966,6 +1027,13 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                               <td className="p-4 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
+                                    onClick={() => setEditingRecord({ table: 'contact_leads', data: { ...lead } })}
+                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                                    title="Edit Lead Details"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
                                     onClick={() => updateLeadStatus(lead.id, 'Contacted')}
                                     className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
                                     title="Mark as Contacted"
@@ -973,7 +1041,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                                     <CheckCircle className="w-4 h-4" />
                                   </button>
                                   <button
-                                    onClick={() => deleteRecord('contact_leads', lead.id)}
+                                    onClick={() => triggerDelete('contact_leads', lead.id)}
                                     className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
                                     title="Delete Record"
                                   >
@@ -1060,10 +1128,17 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                                   {item.notes || 'No notes provided'}
                                 </p>
                               </td>
-                              <td className="p-4 text-right">
+                              <td className="p-4 text-right space-x-1.5">
                                 <button
-                                  onClick={() => deleteRecord('consultation_requests', item.id)}
-                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                  onClick={() => setEditingRecord({ table: 'consultation_requests', data: { ...item } })}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                  title="Edit Request"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => triggerDelete('consultation_requests', item.id)}
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
                                   title="Delete Request"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1137,10 +1212,17 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                                   {item.notes || 'No special requirements listed'}
                                 </p>
                               </td>
-                              <td className="p-4 text-right">
+                              <td className="p-4 text-right space-x-1.5">
                                 <button
-                                  onClick={() => deleteRecord('diagnostic_requests', item.id)}
-                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                  onClick={() => setEditingRecord({ table: 'diagnostic_requests', data: { ...item } })}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                  title="Edit Diagnostic"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => triggerDelete('diagnostic_requests', item.id)}
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
                                   title="Delete Record"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1206,10 +1288,17 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                                 </div>
                               </td>
                               <td className="p-4 font-mono text-gray-400">{formatDate(item.created_at)}</td>
-                              <td className="p-4 text-right">
+                              <td className="p-4 text-right space-x-1.5">
                                 <button
-                                  onClick={() => deleteRecord('callback_requests', item.id)}
-                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                  onClick={() => setEditingRecord({ table: 'callback_requests', data: { ...item } })}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                  title="Edit Callback"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => triggerDelete('callback_requests', item.id)}
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
                                   title="Delete Calllog"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1265,10 +1354,17 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                             <tr key={item.id} className="hover:bg-[#FAFBFD]/60 transition-colors">
                               <td className="p-4 font-mono font-bold text-gray-800">{item.email}</td>
                               <td className="p-4 font-mono text-gray-400">{formatDate(item.created_at)}</td>
-                              <td className="p-4 text-right">
+                              <td className="p-4 text-right space-x-1.5">
                                 <button
-                                  onClick={() => deleteRecord('newsletter_subscribers', item.id)}
-                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                  onClick={() => setEditingRecord({ table: 'newsletter_subscribers', data: { ...item } })}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                  title="Edit Subscriber Email"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => triggerDelete('newsletter_subscribers', item.id)}
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
                                   title="Unsubscribe Subscriber"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1427,7 +1523,7 @@ alter publication supabase_realtime add table public.jobs;`}
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => deleteRecord('jobs', job.id)}
+                                  onClick={() => triggerDelete('jobs', job.id)}
                                   className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
                                   title="Delete Post"
                                 >
@@ -1570,7 +1666,14 @@ alter publication supabase_realtime add table public.jobs;`}
                                     <Eye className="w-3.5 h-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => deleteRecord('job_applications', app.id)}
+                                    onClick={() => setEditingRecord({ table: 'job_applications', data: { ...app } })}
+                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                    title="Edit Candidate Details"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => triggerDelete('job_applications', app.id)}
                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
                                     title="Delete Candidate"
                                   >
@@ -1864,6 +1967,525 @@ alter publication supabase_realtime add table public.jobs;`}
                         Close View
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CUSTOM DELETE CONFIRMATION MODAL */}
+              {deleteModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-sm w-full p-6 relative space-y-6 border border-gray-100 shadow-2xl text-left">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600 border border-red-100">
+                        <AlertTriangle className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <h3 className="text-lg font-bold text-gray-900">Are you sure you want to delete this record?</h3>
+                        <p className="text-gray-500 text-xs leading-relaxed">
+                          This operation will permanently delete the selected record from the Database. This action is irreversible.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setDeleteModalOpen(false);
+                          setRecordToDelete(null);
+                        }}
+                        disabled={isDeleting}
+                        className="cursor-pointer flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={confirmDelete}
+                        disabled={isDeleting}
+                        className="cursor-pointer flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-red-500/10 disabled:opacity-50"
+                      >
+                        {isDeleting ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Deleting...</span>
+                          </>
+                        ) : (
+                          <span>Delete</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* DYNAMIC EDIT RECORD MODAL */}
+              {editingRecord && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-lg w-full p-8 relative space-y-6 border border-gray-100 shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <button
+                      onClick={() => setEditingRecord(null)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-black cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    <div className="space-y-1 text-left">
+                      <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wide">
+                        Modify Database Record
+                      </span>
+                      <h3 className="text-xl font-bold text-[#081B8C] font-display">
+                        Edit {editingRecord.table.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                      </h3>
+                      <p className="text-gray-400 text-[10px] font-mono select-all">ID: {editingRecord.data.id}</p>
+                    </div>
+
+                    <form onSubmit={handleSaveEditedRecord} className="space-y-4 text-left">
+                      {/* Form Fields depend on the table */}
+                      {editingRecord.table === 'newsletter_subscribers' && (
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-700 uppercase">Subscriber Email</label>
+                          <input
+                            type="email"
+                            required
+                            value={editingRecord.data.email || ''}
+                            onChange={(e) => setEditingRecord({
+                              ...editingRecord,
+                              data: { ...editingRecord.data, email: e.target.value }
+                            })}
+                            className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                          />
+                        </div>
+                      )}
+
+                      {editingRecord.table === 'callback_requests' && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Name</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingRecord.data.name || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, name: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Callback Phone</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingRecord.data.phone || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, phone: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-mono font-bold"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Preferred Time Slot</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingRecord.data.preferred_time || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, preferred_time: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {editingRecord.table === 'diagnostic_requests' && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Company Name</label>
+                            <input
+                              type="text"
+                              value={editingRecord.data.company || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, company: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Person Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.name || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, name: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Phone</label>
+                              <input
+                                type="text"
+                                value={editingRecord.data.phone || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, phone: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Email</label>
+                            <input
+                              type="email"
+                              required
+                              value={editingRecord.data.email || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, email: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-mono"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Special Requirements / Notes</label>
+                            <textarea
+                              rows={3}
+                              value={editingRecord.data.notes || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, notes: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {editingRecord.table === 'consultation_requests' && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Company Name</label>
+                            <input
+                              type="text"
+                              value={editingRecord.data.company || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, company: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.name || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, name: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Phone</label>
+                              <input
+                                type="text"
+                                value={editingRecord.data.phone || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, phone: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Contact Email</label>
+                            <input
+                              type="email"
+                              required
+                              value={editingRecord.data.email || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, email: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-mono"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Target Date</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.date || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, date: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Requested Service</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.service || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, service: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Detailed Operational Notes</label>
+                            <textarea
+                              rows={3}
+                              value={editingRecord.data.notes || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, notes: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {editingRecord.table === 'contact_leads' && (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Company Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.company_name || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, company_name: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Company Type</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.company_type || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, company_type: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Client Contact Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.client_name || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, client_name: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Client Email Address</label>
+                              <input
+                                type="email"
+                                required
+                                value={editingRecord.data.client_email || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, client_email: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-mono"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Premium Book Volume</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.premium_volume || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, premium_volume: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Lead Progress Status</label>
+                              <select
+                                value={editingRecord.data.status || 'New'}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, status: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-bold"
+                              >
+                                <option value="New">New</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Contacted">Contacted</option>
+                              </select>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {editingRecord.table === 'job_applications' && (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Candidate Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.name || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, name: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Candidate Phone</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingRecord.data.phone || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, phone: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Email Address</label>
+                              <input
+                                type="email"
+                                required
+                                value={editingRecord.data.email || ''}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, email: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-mono"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Years of Experience</label>
+                              <input
+                                type="number"
+                                required
+                                value={editingRecord.data.experience_years || 0}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, experience_years: parseInt(e.target.value) || 0 }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">LinkedIn Profile Link</label>
+                            <input
+                              type="url"
+                              value={editingRecord.data.linkedin_profile || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, linkedin_profile: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-700 uppercase">Applicant Status</label>
+                              <select
+                                value={editingRecord.data.status || 'New'}
+                                onChange={(e) => setEditingRecord({
+                                  ...editingRecord,
+                                  data: { ...editingRecord.data, status: e.target.value }
+                                })}
+                                className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] font-bold"
+                              >
+                                <option value="New">New</option>
+                                <option value="Shortlisted">Shortlisted</option>
+                                <option value="Interview Scheduled">Interview Scheduled</option>
+                                <option value="Selected">Selected</option>
+                                <option value="Rejected">Rejected</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Cover Letter / SOP details</label>
+                            <textarea
+                              rows={3}
+                              value={editingRecord.data.cover_letter || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, cover_letter: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => setEditingRecord(null)}
+                          disabled={isSavingRecord}
+                          className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSavingRecord}
+                          className="cursor-pointer bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10"
+                        >
+                          {isSavingRecord ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <span>Save Changes</span>
+                          )}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}
