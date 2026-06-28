@@ -39,7 +39,7 @@ interface AdminProps {
   setCurrentPage: (page: PageType) => void;
 }
 
-type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications';
+type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'proposal_downloads';
 
 export default function Admin({ setCurrentPage }: AdminProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -64,6 +64,10 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   const [diagnostics, setDiagnostics] = useState<any[]>([]);
   const [callbacks, setCallbacks] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [downloads, setDownloads] = useState<any[]>([]);
+  const [isDownloadsTableMissing, setIsDownloadsTableMissing] = useState(false);
+  const [downloadSourceFilter, setDownloadSourceFilter] = useState('All');
+  const [downloadDateFilter, setDownloadDateFilter] = useState('All');
   
   // Careers & Applications CMS state
   const [jobs, setJobs] = useState<any[]>([]);
@@ -202,6 +206,23 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         if (appsData) setApplications(appsData);
       }
 
+      // 8. Proposal Downloads
+      console.log('Querying: supabase.from("proposal_downloads").select("*")');
+      const { data: downloadsData, error: downloadsError } = await supabase
+        .from('proposal_downloads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (downloadsError) {
+        console.error('Error fetching proposal_downloads:', downloadsError.message);
+        if (downloadsError.message?.includes('does not exist') || downloadsError.code === 'PGRST116') {
+          setIsDownloadsTableMissing(true);
+        }
+      } else {
+        console.log(`Successfully fetched proposal_downloads. Count: ${downloadsData?.length || 0}`);
+        if (downloadsData) setDownloads(downloadsData);
+        setIsDownloadsTableMissing(false);
+      }
+
     } catch (err) {
       console.error('Error fetching admin dashboard data:', err);
     } finally {
@@ -313,6 +334,19 @@ export default function Admin({ setCurrentPage }: AdminProps) {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'proposal_downloads' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDownloads((prev) => [payload.new, ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setDownloads((prev) => prev.filter((item) => item.id !== payload.old.id));
+          } else if (payload.eventType === 'UPDATE') {
+            setDownloads((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -383,6 +417,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       if (table === 'newsletter_subscribers') setSubscribers(subscribers.filter(x => x.id !== id));
       if (table === 'jobs') setJobs(jobs.filter(x => x.id !== id));
       if (table === 'job_applications') setApplications(applications.filter(x => x.id !== id));
+      if (table === 'proposal_downloads') setDownloads(downloads.filter(x => x.id !== id));
 
       setDeleteModalOpen(false);
       setRecordToDelete(null);
@@ -722,6 +757,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                   { id: 'subscribers', label: 'Subscribers', icon: Mail, count: subscribers.length },
                   { id: 'jobs', label: 'Careers (Jobs)', icon: Briefcase, count: jobs.length },
                   { id: 'applications', label: 'Applications', icon: Layers, count: applications.length },
+                  { id: 'proposal_downloads', label: 'Proposal Downloads', icon: Download, count: downloads.length },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -771,6 +807,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                     {activeTab === 'subscribers' && 'Newsletter Subscribers'}
                     {activeTab === 'jobs' && 'Career Job Postings CMS'}
                     {activeTab === 'applications' && 'Specialist Job Applications'}
+                    {activeTab === 'proposal_downloads' && 'Proposal Downloads Analytics'}
                   </h1>
                   <p className="text-gray-400 text-xs">
                     Real-time monitoring console for Going Technologies Global Centers.
@@ -1685,6 +1722,427 @@ alter publication supabase_realtime add table public.jobs;`}
                           })}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* PROPOSAL DOWNLOADS ANALYTICS & MONITORING TAB */}
+              {activeTab === 'proposal_downloads' && (
+                <div className="space-y-8">
+                  {isDownloadsTableMissing && (
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-6 space-y-4">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-amber-800 text-sm">Database Setup Error: "public.proposal_downloads" Table Missing</h4>
+                          <p className="text-gray-600 text-xs leading-relaxed">
+                            The proposal downloads database table was not detected in your Supabase project schema. Please execute the following SQL migration script in your Supabase SQL Editor to provision it securely:
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-900 text-gray-100 rounded-xl p-4 font-mono text-[11px] leading-relaxed select-all overflow-x-auto whitespace-pre">
+{`-- Create complete proposal_downloads table
+create table if not exists public.proposal_downloads (
+    id uuid default uuid_generate_v4() primary key,
+    email text not null,
+    company_domain text,
+    source text not null, -- Popup, Contact Page
+    page_url text,
+    downloaded_file text not null,
+    download_time timestamp with time zone default timezone('utc'::text, now()) not null,
+    ip_address text,
+    country text,
+    city text,
+    browser text,
+    device text,
+    user_agent text,
+    download_count integer default 1 not null,
+    last_downloaded_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Force Disable RLS for foolproof client/server-side operations
+alter table public.proposal_downloads disable row level security;
+
+-- Setup Policies in case RLS is re-enabled:
+drop policy if exists "Allow public select on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public select on proposal_downloads" on public.proposal_downloads for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public insert on proposal_downloads" on public.proposal_downloads for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public update on proposal_downloads" on public.proposal_downloads for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public delete on proposal_downloads" on public.proposal_downloads for delete to anon, authenticated, public using (true);
+
+-- Indexes for performance
+create index if not exists idx_proposal_downloads_email on public.proposal_downloads(email);
+create index if not exists idx_proposal_downloads_domain on public.proposal_downloads(company_domain);
+create index if not exists idx_proposal_downloads_created_at on public.proposal_downloads(created_at);`}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={fetchAllData}
+                          className="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Retry Synchronization</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* KPI STATS CARDS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Total Downloads */}
+                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                        <Download className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Downloads</span>
+                        <span className="text-xl font-bold text-[#081B8C] font-display">{downloads.length}</span>
+                      </div>
+                    </div>
+
+                    {/* Today's Downloads */}
+                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <Clock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Today's Leads</span>
+                        <span className="text-xl font-bold text-[#081B8C] font-display">
+                          {downloads.filter(d => {
+                            const date = new Date(d.created_at || d.download_time);
+                            const today = new Date();
+                            return date.toDateString() === today.toDateString();
+                          }).length}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Unique Companies */}
+                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Unique Companies</span>
+                        <span className="text-xl font-bold text-[#081B8C] font-display">
+                          {new Set(downloads.map(d => d.company_domain).filter(Boolean)).size}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Conversion Rate or Active Sessions */}
+                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                      <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                        <Sparkles className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Conversions</span>
+                        <span className="text-xs font-semibold text-gray-600">
+                          Popup: <strong className="text-[#081B8C]">{downloads.filter(d => d.source === 'Popup').length}</strong> | Contact: <strong className="text-[#081B8C]">{downloads.filter(d => d.source === 'Contact Page').length}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* VISUAL ANALYTICS SECTION */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Top Company Domains */}
+                    <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 shadow-xs space-y-4">
+                      <h3 className="text-sm font-bold text-[#081B8C] font-display">Top Downloading Company Domains</h3>
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                        {Array.from(
+                          downloads.reduce((acc, d) => {
+                            if (d.company_domain) {
+                              acc.set(d.company_domain, (acc.get(d.company_domain) || 0) + (d.download_count || 1));
+                            }
+                            return acc;
+                          }, new Map<string, number>()).entries()
+                        )
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 5)
+                          .map(([domain, count], idx) => (
+                            <div key={domain} className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-xl text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="w-5 h-5 flex items-center justify-center bg-blue-100 text-[#081B8C] rounded-md font-bold text-[10px]">
+                                  {idx + 1}
+                                </span>
+                                <span className="font-semibold text-gray-700">{domain}</span>
+                              </div>
+                              <span className="text-gray-400 text-[11px] font-bold">
+                                {count} {count === 1 ? 'download' : 'downloads'}
+                              </span>
+                            </div>
+                          ))}
+                        {downloads.length === 0 && (
+                          <p className="text-gray-400 text-xs text-center py-8">No records available yet.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Telemetry Geolocation Distribution */}
+                    <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 shadow-xs space-y-4">
+                      <h3 className="text-sm font-bold text-[#081B8C] font-display">Global Geolocation Telemetry</h3>
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                        {Array.from(
+                          downloads.reduce((acc, d) => {
+                            const loc = d.country && d.country !== 'Unknown' ? `${d.city || 'Unknown'}, ${d.country}` : 'Unknown Geolocation';
+                            acc.set(loc, (acc.get(loc) || 0) + 1);
+                            return acc;
+                          }, new Map<string, number>()).entries()
+                        )
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 5)
+                          .map(([loc, count], idx) => (
+                            <div key={loc} className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-xl text-xs">
+                              <span className="font-semibold text-gray-700">{loc}</span>
+                              <span className="text-[#2F6DFF] text-[11px] font-bold">
+                                {count} {count === 1 ? 'lead' : 'leads'}
+                              </span>
+                            </div>
+                          ))}
+                        {downloads.length === 0 && (
+                          <p className="text-gray-400 text-xs text-center py-8">No records available yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DATATABLE LIST */}
+                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    {(() => {
+                      const filteredDownloads = downloads.filter(d => {
+                        if (searchQuery) {
+                          const matched = d.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                          (d.company_domain && d.company_domain.toLowerCase().includes(searchQuery.toLowerCase()));
+                          if (!matched) return false;
+                        }
+                        if (downloadSourceFilter !== 'All') {
+                          if (d.source !== downloadSourceFilter) return false;
+                        }
+                        if (downloadDateFilter !== 'All') {
+                          const recordTime = new Date(d.last_downloaded_at || d.created_at).getTime();
+                          const now = Date.now();
+                          if (downloadDateFilter === 'Today') {
+                            const oneDayMs = 24 * 60 * 60 * 1000;
+                            if (now - recordTime > oneDayMs) return false;
+                          } else if (downloadDateFilter === '7days') {
+                            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+                            if (now - recordTime > sevenDaysMs) return false;
+                          } else if (downloadDateFilter === '30days') {
+                            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+                            if (now - recordTime > thirtyDaysMs) return false;
+                          }
+                        }
+                        return true;
+                      });
+
+                      return (
+                        <>
+                          <div className="flex flex-col xl:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                              <div className="relative w-full sm:max-w-xs">
+                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                  type="text"
+                                  placeholder="Search by email or domain..."
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                  className="w-full text-xs pl-9 pr-4 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
+                                />
+                              </div>
+
+                              {/* Filter by Date */}
+                              <select
+                                value={downloadDateFilter}
+                                onChange={(e) => setDownloadDateFilter(e.target.value)}
+                                className="text-xs px-3 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
+                              >
+                                <option value="All">All Dates</option>
+                                <option value="Today">Today</option>
+                                <option value="7days">Last 7 Days</option>
+                                <option value="30days">Last 30 Days</option>
+                              </select>
+
+                              {/* Filter by Source */}
+                              <select
+                                value={downloadSourceFilter}
+                                onChange={(e) => setDownloadSourceFilter(e.target.value)}
+                                className="text-xs px-3 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
+                              >
+                                <option value="All">All Sources</option>
+                                <option value="Exit Popup">Exit Popup</option>
+                                <option value="Contact Page">Contact Page</option>
+                                <option value="Download Section">Download Section</option>
+                                <option value="Future Download Widgets">Future Download Widgets</option>
+                              </select>
+
+                              {/* Export CSV Button */}
+                              <button
+                                onClick={() => {
+                                  const headers = ['Email', 'Domain', 'Source', 'File', 'Downloads', 'Last Download', 'IP Address', 'Country', 'City', 'Browser', 'Device', 'Page URL'];
+                                  const rows = filteredDownloads.map(d => [
+                                    d.email,
+                                    d.company_domain || '',
+                                    d.source,
+                                    d.downloaded_file || '',
+                                    d.download_count || 1,
+                                    d.last_downloaded_at || d.created_at || '',
+                                    d.ip_address || '',
+                                    d.country || '',
+                                    d.city || '',
+                                    d.browser || '',
+                                    d.device || '',
+                                    d.page_url || ''
+                                  ]);
+                                  const csvContent = "data:text/csv;charset=utf-8," 
+                                    + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+                                  const encodedUri = encodeURI(csvContent);
+                                  const link = document.createElement("a");
+                                  link.setAttribute("href", encodedUri);
+                                  link.setAttribute("download", "going_technologies_proposal_downloads.csv");
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs px-3.5 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Export CSV</span>
+                              </button>
+
+                              {/* Export Excel Button */}
+                              <button
+                                onClick={() => {
+                                  const headers = ['Email', 'Domain', 'Source', 'File', 'Downloads', 'Last Download', 'IP Address', 'Country', 'City', 'Browser', 'Device', 'Page URL'];
+                                  const rows = filteredDownloads.map(d => [
+                                    d.email,
+                                    d.company_domain || '',
+                                    d.source,
+                                    d.downloaded_file || '',
+                                    d.download_count || 1,
+                                    d.last_downloaded_at || d.created_at || '',
+                                    d.ip_address || '',
+                                    d.country || '',
+                                    d.city || '',
+                                    d.browser || '',
+                                    d.device || '',
+                                    d.page_url || ''
+                                  ]);
+                                  
+                                  let html = '<table><thead><tr>';
+                                  headers.forEach(h => {
+                                    html += `<th style="background-color: #081B8C; color: #ffffff; font-weight: bold;">${h}</th>`;
+                                  });
+                                  html += '</tr></thead><tbody>';
+                                  rows.forEach(r => {
+                                    html += '<tr>';
+                                    r.forEach(cell => {
+                                      html += `<td>${String(cell).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
+                                    });
+                                    html += '</tr>';
+                                  });
+                                  html += '</tbody></table>';
+
+                                  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+                                  const url = URL.createObjectURL(blob);
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.setAttribute('download', 'going_technologies_proposal_downloads.xls');
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                className="cursor-pointer bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xs px-3.5 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Export Excel</span>
+                              </button>
+                            </div>
+
+                            <div className="text-gray-400 text-xs font-semibold whitespace-nowrap">
+                              Showing <strong className="text-gray-700">{filteredDownloads.length}</strong> of <strong className="text-gray-700">{downloads.length}</strong> registered leads
+                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                                  <th className="p-4">Corporate Email</th>
+                                  <th className="p-4">Domain</th>
+                                  <th className="p-4">Source</th>
+                                  <th className="p-4">Downloads</th>
+                                  <th className="p-4">Last Download</th>
+                                  <th className="p-4">Telemetry</th>
+                                  <th className="p-4 text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-50">
+                                {filteredDownloads.map((item) => (
+                                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="p-4 font-bold text-[#081B8C] max-w-[200px] truncate" title={item.email}>
+                                      {item.email}
+                                    </td>
+                                    <td className="p-4 font-semibold text-gray-600 font-mono text-[11px]">
+                                      {item.company_domain || 'N/A'}
+                                    </td>
+                                    <td className="p-4">
+                                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                        item.source === 'Exit Popup'
+                                          ? 'bg-purple-50 text-purple-700 border border-purple-100'
+                                          : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                                      }`}>
+                                        {item.source}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 font-bold text-center font-mono">
+                                      {item.download_count || 1}
+                                    </td>
+                                    <td className="p-4 text-gray-500 font-medium">
+                                      {new Date(item.last_downloaded_at || item.created_at).toLocaleDateString(undefined, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </td>
+                                    <td className="p-4 space-y-0.5 text-gray-400 text-[10px]">
+                                      <p>🌍 {item.city || 'Unknown'}, {item.country || 'Unknown'}</p>
+                                      <p>💻 {item.device || 'Desktop'} ({item.browser || 'Browser'})</p>
+                                    </td>
+                                    <td className="p-4 text-right">
+                                      <button
+                                        onClick={() => triggerDelete('proposal_downloads', item.id)}
+                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                        title="Delete Record"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                                {filteredDownloads.length === 0 && (
+                                  <tr>
+                                    <td colSpan={7} className="p-8 text-center text-gray-400 font-medium">
+                                      No proposal downloads matching current filters.
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

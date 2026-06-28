@@ -420,3 +420,59 @@ begin
     alter publication supabase_realtime add table public.job_applications;
   end if;
 end $$;
+
+-- ==========================================
+-- 9. proposal_downloads Table
+-- ==========================================
+create table if not exists public.proposal_downloads (
+    id uuid default uuid_generate_v4() primary key,
+    email text not null,
+    company_domain text,
+    source text not null, -- Popup, Contact Page, Forms Page, Future Download Widget
+    page_url text,
+    downloaded_file text not null,
+    download_time timestamp with time zone default timezone('utc'::text, now()) not null,
+    ip_address text,
+    country text,
+    city text,
+    browser text,
+    device text,
+    user_agent text,
+    download_count integer default 1 not null,
+    last_downloaded_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Force Disable RLS for foolproof client/server-side operations
+alter table public.proposal_downloads disable row level security;
+
+-- Setup Policies in case RLS is re-enabled:
+drop policy if exists "Allow public select on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public select on proposal_downloads" on public.proposal_downloads for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public insert on proposal_downloads" on public.proposal_downloads for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public update on proposal_downloads" on public.proposal_downloads for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on proposal_downloads" on public.proposal_downloads;
+create policy "Allow public delete on proposal_downloads" on public.proposal_downloads for delete to anon, authenticated, public using (true);
+
+-- Indexes for performance
+create index if not exists idx_proposal_downloads_email on public.proposal_downloads(email);
+create index if not exists idx_proposal_downloads_domain on public.proposal_downloads(company_domain);
+create index if not exists idx_proposal_downloads_created_at on public.proposal_downloads(created_at);
+
+-- Add to Realtime publication
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'proposal_downloads'
+  ) then
+    alter publication supabase_realtime add table public.proposal_downloads;
+  end if;
+end $$;

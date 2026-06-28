@@ -13,7 +13,9 @@ import {
   ChevronRight,
   ArrowLeft,
   Users,
-  Loader2
+  Loader2,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { PageType } from '../types';
 import { OFFICE_LOCATIONS } from '../data';
@@ -21,9 +23,10 @@ import { supabase } from '../lib/supabase';
 
 interface ContactProps {
   setCurrentPage: (page: PageType) => void;
+  onDownloadSuccess?: () => void;
 }
 
-export default function Contact({ setCurrentPage }: ContactProps) {
+export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactProps) {
   // Lead Form multi-step state
   const [formStep, setFormStep] = useState(1);
   const [companyName, setCompanyName] = useState('');
@@ -73,6 +76,170 @@ export default function Contact({ setCurrentPage }: ContactProps) {
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [cbError, setCbError] = useState<string | null>(null);
   const [diagError, setDiagError] = useState<string | null>(null);
+
+  // Proposal Download Lead Magnet states
+  const [downloadEmail, setDownloadEmail] = useState('');
+  const [downloadError, setDownloadError] = useState('');
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+
+  const BLOCKED_DOMAINS = [
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+    'live.com', 'icloud.com', 'me.com', 'msn.com', 'aol.com', 'proton.me', 
+    'protonmail.com', 'gmx.com', 'mail.com', 'zoho.com', 'yandex.com', 
+    'rediffmail.com', 'fastmail.com', 'qq.com', '163.com', '126.com', 
+    'hey.com', 'tutanota.com'
+  ];
+
+  const handleDownloadProposal = async (e: FormEvent) => {
+    e.preventDefault();
+    setDownloadError('');
+    setDownloadLoading(true);
+
+    const totalStart = performance.now();
+
+    // 1. Email validation
+    const emailValStart = performance.now();
+    if (!downloadEmail || !downloadEmail.includes('@')) {
+      setDownloadError('Please enter a valid email address.');
+      setDownloadLoading(false);
+      return;
+    }
+    const emailValTime = performance.now() - emailValStart;
+
+    // 2. Corporate Domain Check
+    const domainCheckStart = performance.now();
+    const domain = downloadEmail.trim().split('@').pop()?.toLowerCase();
+    const isCorp = domain && !BLOCKED_DOMAINS.includes(domain);
+    const domainCheckTime = performance.now() - domainCheckStart;
+
+    if (!isCorp) {
+      setDownloadError('Please use your company email address to download this proposal.');
+      setDownloadLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/proposal/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: downloadEmail.trim(),
+          source: 'Contact Page',
+          page_url: window.location.href
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setDownloadError(data.error || 'Server error. Please try again.');
+        setDownloadLoading(false);
+        return;
+      }
+
+      const databaseTime = data.timings?.databaseTime || 0;
+      const signedUrlGenTime = data.timings?.tokenGenTime || 0;
+
+      // Trigger automatic secure download
+      if (data.token) {
+        const downloadUrl = `/api/proposal/file?token=${data.token}`;
+        
+        try {
+          console.log('[DEBUG] Initiating secure PDF fetch in Contact Page from:', downloadUrl);
+          // 5. File Retrieval
+          const fileRetrievalStart = performance.now();
+          const fileRes = await fetch(downloadUrl);
+          
+          const contentType = fileRes.headers.get('content-type') || '';
+          const contentLengthStr = fileRes.headers.get('content-length') || '0';
+          const contentLength = parseInt(contentLengthStr, 10);
+          
+          if (!fileRes.ok) {
+            const errText = await fileRes.text();
+            throw new Error(`Failed to download file. Status: ${fileRes.status}. Server response: ${errText}`);
+          }
+          
+          const blob = await fileRes.blob();
+          const fileRetrievalTime = performance.now() - fileRetrievalStart;
+          
+          console.log('[DEBUG] Blob size:', blob.size);
+          console.log('[DEBUG] Blob type:', blob.type);
+          
+          if (blob.size === 0) {
+            throw new Error('Downloaded file size is 0 bytes.');
+          }
+          
+          // Verify MIME type
+          if (!contentType.toLowerCase().includes('application/pdf')) {
+            throw new Error(`Invalid MIME type: expected application/pdf, but got "${contentType}"`);
+          }
+          
+          // 6. Browser download start (signature check + trigger)
+          const downloadStartTimer = performance.now();
+
+          // Read first 10 bytes to verify %PDF- signature
+          const arrayBuffer = await blob.slice(0, 10).arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+          const signature = new TextDecoder().decode(bytes);
+          
+          console.log('[DEBUG] First 10 bytes (Hex):', hexString);
+          console.log('[DEBUG] First 10 bytes (Text):', signature);
+          
+          const isPdf = signature.startsWith('%PDF-');
+          if (!isPdf) {
+            console.error('[DEBUG] Signature mismatch! Not a valid PDF.');
+            throw new Error(`The file does not begin with the PDF signature %PDF-. Instead, got: "${signature.replace(/[\r\n\t]/g, ' ')}"`);
+          }
+          
+          console.log('[DEBUG] PDF signature verified successfully!');
+          
+          const localUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = localUrl;
+          link.setAttribute('download', data.filename || 'Going Technologies Insurance operations proposal.pdf');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(localUrl), 100);
+
+          const downloadStartedTime = performance.now() - downloadStartTimer;
+          const totalTime = performance.now() - totalStart;
+
+          // Print highly visible, clean, and exact timing reports in developer console
+          console.log(`%c=== PROPOSAL DOWNLOAD PERFORMANCE TIMINGS ===`, 'color: #10B981; font-weight: bold; font-size: 11px;');
+          console.log(`Email Validation: ${emailValTime.toFixed(1)}ms`);
+          console.log(`Corporate Domain Check: ${domainCheckTime.toFixed(1)}ms`);
+          console.log(`Database Insert: ${databaseTime.toFixed(1)}ms`);
+          console.log(`Signed URL Generation: ${signedUrlGenTime.toFixed(1)}ms`);
+          console.log(`File Retrieval: ${fileRetrievalTime.toFixed(1)}ms`);
+          console.log(`Download Started: ${downloadStartedTime.toFixed(1)}ms`);
+          console.log(`Total Time: ${totalTime.toFixed(1)}ms`);
+          console.log(`==============================================`);
+        } catch (downloadErr: any) {
+          console.error('[ERROR] Secure PDF download failed in Contact Page:', downloadErr);
+          setDownloadError(downloadErr.message || 'Failed to download the proposal PDF.');
+          setDownloadLoading(false);
+          return;
+        }
+      }
+
+      setDownloadSuccess(true);
+      setDownloadLoading(false);
+      onDownloadSuccess?.();
+      
+      // Reset after success
+      setTimeout(() => {
+        setDownloadSuccess(false);
+        setDownloadEmail('');
+      }, 5000);
+
+    } catch (err) {
+      console.error('Download request error:', err);
+      setDownloadError('Connection failed. Please try again later.');
+      setDownloadLoading(false);
+    }
+  };
 
   const availableDays = [
     'Monday, June 29',
@@ -997,6 +1164,107 @@ export default function Contact({ setCurrentPage }: ContactProps) {
             </AnimatePresence>
           </div>
 
+        </div>
+
+        {/* PREMIUM PROPOSAL DOWNLOAD LEAD MAGNET SECTION */}
+        <div className="my-16">
+          <div className="bg-gradient-to-br from-[#081B8C]/5 via-white to-[#2F6DFF]/5 border border-[#DCE7FF]/80 rounded-3xl p-8 md:p-12 shadow-xs relative overflow-hidden">
+            {/* Background design elements */}
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#2F6DFF]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-[#081B8C]/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="max-w-3xl mx-auto text-center space-y-8 relative z-10">
+              <div className="inline-flex items-center gap-1.5 bg-[#DCE7FF]/40 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#081B8C] tracking-wide shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-[#2F6DFF]" />
+                <span>⭐ Premium Gated Operations Guide</span>
+              </div>
+              
+              <div className="space-y-3">
+                <h2 className="text-2xl md:text-3xl font-bold font-display text-[#081B8C] tracking-tight">
+                  Download Our Insurance Operations Proposal
+                </h2>
+                <p className="text-gray-500 text-xs md:text-sm max-w-2xl mx-auto leading-relaxed">
+                  Access our complete Insurance Operations Proposal to learn how Going Technologies helps agencies reduce operational costs, improve efficiency, and scale with experienced insurance professionals.
+                </p>
+              </div>
+
+              <div className="max-w-md mx-auto">
+                {downloadSuccess ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white/80 backdrop-blur-md border border-[#DCE7FF] rounded-2xl p-8 space-y-4 shadow-sm"
+                  >
+                    <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
+                      <CheckCircle className="w-6 h-6 animate-bounce" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-gray-900 text-sm">Download Initialized!</h4>
+                      <p className="text-gray-500 text-[11px] leading-normal">
+                        Your secure download has started automatically. If it didn't begin, please check your browser downloads.
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <form
+                    onSubmit={handleDownloadProposal}
+                    className="bg-white/60 backdrop-blur-md border border-white/80 rounded-2xl p-6 md:p-8 space-y-4 shadow-xs"
+                  >
+                    <div className="space-y-2 text-left">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                        Corporate Email Address
+                      </label>
+                      <div className="relative rounded-xl shadow-xs">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="email"
+                          required
+                          value={downloadEmail}
+                          onChange={(e) => {
+                            setDownloadEmail(e.target.value);
+                            if (downloadError) setDownloadError('');
+                          }}
+                          placeholder="name@company.com"
+                          className="w-full text-xs pl-10 pr-4 py-3.5 bg-gray-50/80 border border-[#DCE7FF] hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-900 placeholder-gray-400"
+                        />
+                      </div>
+                      {downloadError && (
+                        <div className="flex items-start gap-2 mt-2 text-rose-600 text-[11px] leading-relaxed bg-rose-50/50 border border-rose-100 rounded-xl p-3">
+                          <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-500" />
+                          <span>{downloadError}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <button
+                        type="submit"
+                        disabled={downloadLoading}
+                        className="cursor-pointer w-full bg-gradient-to-r from-[#081B8C] to-[#2F6DFF] hover:opacity-95 text-white text-xs font-bold py-3.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {downloadLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Verifying...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4 animate-bounce" />
+                            <span>Download Now</span>
+                          </>
+                        )}
+                      </button>
+                      <p className="text-[10px] text-gray-400 font-semibold text-center leading-normal">
+                        🔒 Secure download. Only business domains are accepted.
+                      </p>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Global Locations grid */}

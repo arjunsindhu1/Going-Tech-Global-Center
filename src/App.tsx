@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { HelpCircle, ChevronUp, ShieldCheck, Mail, Calendar, Sparkles, Phone, Clock, User, Building, MessageSquare, Check } from 'lucide-react';
+import { HelpCircle, ChevronUp, ShieldCheck, Mail, Calendar, Sparkles, Phone, Clock, User, Building, MessageSquare, Check, Download, AlertCircle, Loader2 } from 'lucide-react';
 
 import { PageType } from './types';
 import Header from './components/Header';
@@ -24,7 +24,8 @@ export default function App() {
   const [page, setPage] = useState<PageType>('home');
   const [activeServiceId, setActiveServiceId] = useState<string>('insurance-ops');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showExitIntent, setShowExitIntent] = useState(false);
+  const [showExitIntent, setShowExitIntent] = useState(true);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
 
   // Slide-in modal form tab & fields
@@ -43,6 +44,148 @@ export default function App() {
   const [cbPhone, setCbPhone] = useState('');
   const [cbTime, setCbTime] = useState('Morning (9 AM - 12 PM EST)');
   const [cbSubmitted, setCbSubmitted] = useState(false);
+
+  // Lead Magnet Popup states
+  const [popupEmail, setPopupEmail] = useState('');
+  const [popupError, setPopupError] = useState('');
+  const [popupLoading, setPopupLoading] = useState(false);
+  const [popupSuccess, setPopupSuccess] = useState(false);
+
+  const BLOCKED_DOMAINS = [
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+    'live.com', 'icloud.com', 'me.com', 'msn.com', 'aol.com', 'proton.me', 
+    'protonmail.com', 'gmx.com', 'mail.com', 'zoho.com', 'yandex.com', 
+    'rediffmail.com', 'fastmail.com', 'qq.com', '163.com', '126.com', 
+    'hey.com', 'tutanota.com'
+  ];
+
+  const handleDownloadProposal = async (emailToSubmit: string, source: string) => {
+    const totalStart = performance.now();
+
+    // 1. Email validation
+    const emailValStart = performance.now();
+    if (!emailToSubmit || !emailToSubmit.includes('@')) {
+      return { error: 'Please enter a valid email address.' };
+    }
+    const emailValTime = performance.now() - emailValStart;
+
+    // 2. Corporate Domain Check
+    const domainCheckStart = performance.now();
+    const domain = emailToSubmit.trim().split('@').pop()?.toLowerCase();
+    const isCorp = domain && !BLOCKED_DOMAINS.includes(domain);
+    const domainCheckTime = performance.now() - domainCheckStart;
+
+    if (!isCorp) {
+      return { error: 'Please use your company email address to download this proposal.' };
+    }
+
+    try {
+      const response = await fetch('/api/proposal/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailToSubmit.trim(),
+          source: source,
+          page_url: window.location.href
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.error || 'Server error. Please try again.' };
+      }
+
+      const databaseTime = data.timings?.databaseTime || 0;
+      const signedUrlGenTime = data.timings?.tokenGenTime || 0;
+
+      // Automatically trigger secure download
+      if (data.token) {
+        const downloadUrl = `/api/proposal/file?token=${data.token}`;
+        
+        try {
+          console.log('[DEBUG] Initiating secure PDF fetch from:', downloadUrl);
+          // 5. File Retrieval
+          const fileRetrievalStart = performance.now();
+          const fileRes = await fetch(downloadUrl);
+          
+          const contentType = fileRes.headers.get('content-type') || '';
+          const contentLengthStr = fileRes.headers.get('content-length') || '0';
+          const contentLength = parseInt(contentLengthStr, 10);
+          
+          if (!fileRes.ok) {
+            const errText = await fileRes.text();
+            throw new Error(`Failed to download file. Status: ${fileRes.status}. Server response: ${errText}`);
+          }
+          
+          const blob = await fileRes.blob();
+          const fileRetrievalTime = performance.now() - fileRetrievalStart;
+          
+          console.log('[DEBUG] Blob size:', blob.size);
+          console.log('[DEBUG] Blob type:', blob.type);
+          
+          if (blob.size === 0) {
+            throw new Error('Downloaded file size is 0 bytes.');
+          }
+          
+          // Verify MIME type
+          if (!contentType.toLowerCase().includes('application/pdf')) {
+            throw new Error(`Invalid MIME type: expected application/pdf, but got "${contentType}"`);
+          }
+          
+          // 6. Browser download start (signature check + trigger)
+          const downloadStartTimer = performance.now();
+          
+          // Read first 10 bytes to verify %PDF- signature
+          const arrayBuffer = await blob.slice(0, 10).arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+          const signature = new TextDecoder().decode(bytes);
+          
+          console.log('[DEBUG] First 10 bytes (Hex):', hexString);
+          console.log('[DEBUG] First 10 bytes (Text):', signature);
+          
+          const isPdf = signature.startsWith('%PDF-');
+          if (!isPdf) {
+            console.error('[DEBUG] Signature mismatch! Not a valid PDF.');
+            throw new Error(`The file does not begin with the PDF signature %PDF-. Instead, got: "${signature.replace(/[\r\n\t]/g, ' ')}"`);
+          }
+          
+          console.log('[DEBUG] PDF signature verified successfully!');
+          
+          const localUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = localUrl;
+          link.setAttribute('download', data.filename || 'Going Technologies Insurance operations proposal.pdf');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(localUrl), 100);
+          
+          const downloadStartedTime = performance.now() - downloadStartTimer;
+          const totalTime = performance.now() - totalStart;
+
+          // Print highly visible, clean, and exact timing reports in developer console
+          console.log(`%c=== PROPOSAL DOWNLOAD PERFORMANCE TIMINGS ===`, 'color: #10B981; font-weight: bold; font-size: 11px;');
+          console.log(`Email Validation: ${emailValTime.toFixed(1)}ms`);
+          console.log(`Corporate Domain Check: ${domainCheckTime.toFixed(1)}ms`);
+          console.log(`Database Insert: ${databaseTime.toFixed(1)}ms`);
+          console.log(`Signed URL Generation: ${signedUrlGenTime.toFixed(1)}ms`);
+          console.log(`File Retrieval: ${fileRetrievalTime.toFixed(1)}ms`);
+          console.log(`Download Started: ${downloadStartedTime.toFixed(1)}ms`);
+          console.log(`Total Time: ${totalTime.toFixed(1)}ms`);
+          console.log(`==============================================`);
+        } catch (downloadErr: any) {
+          console.error('[ERROR] Secure PDF download failed:', downloadErr);
+          return { error: downloadErr.message || 'Failed to download the proposal PDF.' };
+        }
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('Download request error:', err);
+      return { error: 'Connection failed. Please try again later.' };
+    }
+  };
 
   // Submit to diagnostic_requests
   const handleDiagSubmit = async (e: React.FormEvent) => {
@@ -150,16 +293,9 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Exit intent popup (triggered when cursor leaves top of screen, once per session)
+  // Ensure exit intent popup starts as active on reload/refresh
   useEffect(() => {
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY < 20 && !sessionStorage.getItem('exitIntentTriggered')) {
-        setShowExitIntent(true);
-        sessionStorage.setItem('exitIntentTriggered', 'true');
-      }
-    };
-    document.addEventListener('mouseleave', handleMouseLeave);
-    return () => document.removeEventListener('mouseleave', handleMouseLeave);
+    setShowExitIntent(true);
   }, []);
 
   const setCurrentPage = (newPage: PageType) => {
@@ -200,7 +336,15 @@ export default function App() {
       case 'blog':
         return <Blog setCurrentPage={setCurrentPage} />;
       case 'contact':
-        return <Contact setCurrentPage={setCurrentPage} />;
+        return (
+          <Contact
+            setCurrentPage={setCurrentPage}
+            onDownloadSuccess={() => {
+              setHasDownloaded(true);
+              setShowExitIntent(false);
+            }}
+          />
+        );
       case 'careers':
         return <Careers setCurrentPage={setCurrentPage} />;
       case 'privacy':
@@ -275,7 +419,7 @@ export default function App() {
 
       {/* CONVERSION OPTIMIZATION: Exit Intent Popup Modal */}
       <AnimatePresence>
-        {showExitIntent && (
+        {showExitIntent && !hasDownloaded && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -286,7 +430,7 @@ export default function App() {
               {/* Close triggers */}
               <button
                 onClick={() => setShowExitIntent(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-black font-bold text-sm cursor-pointer"
+                className="absolute top-4 right-4 text-gray-400 hover:text-black font-bold text-sm cursor-pointer p-1 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 ✕
               </button>
@@ -296,29 +440,112 @@ export default function App() {
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold font-display text-[#081B8C]">Wait! Before You Leave...</h3>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#2F6DFF] block">Wait! Before You Leave...</span>
+                <h3 className="text-xl font-bold font-display text-[#081B8C] leading-snug">
+                  Download Our Insurance Operations Proposal
+                </h3>
                 <p className="text-gray-500 text-xs leading-relaxed max-w-sm mx-auto">
-                  Download our exclusive operational handbook: <strong>"The MGA & Agency Scale Playbook: Reclaiming Underwriter Capacity Overnight."</strong> Free immediate delivery.
+                  Explore how Going Technologies helps insurance agencies streamline operations across Property & Casualty, Health Insurance, Life Insurance, and Medicare through secure, scalable outsourcing solutions.
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setShowExitIntent(false);
-                    setCurrentPage('contact');
+              {popupSuccess ? (
+                <div className="py-6 space-y-4">
+                  <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-100 animate-bounce">
+                    <Check className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-gray-900 text-base">Download Started!</h4>
+                    <p className="text-gray-500 text-xs">
+                      Your proposal has been compiled and is downloading.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowExitIntent(false);
+                      setPopupSuccess(false);
+                      setPopupEmail('');
+                    }}
+                    className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-6 py-2.5 rounded-xl transition-colors"
+                  >
+                    Close Window
+                  </button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setPopupError('');
+                    setPopupLoading(true);
+                    const res = await handleDownloadProposal(popupEmail, 'Popup');
+                    setPopupLoading(false);
+                    if (res.error) {
+                      setPopupError(res.error);
+                    } else {
+                      setPopupSuccess(true);
+                      setHasDownloaded(true);
+                      // Auto-close popup after 1.5 seconds
+                      setTimeout(() => {
+                        setShowExitIntent(false);
+                        setPopupSuccess(false);
+                        setPopupEmail('');
+                      }, 1500);
+                    }
                   }}
-                  className="cursor-pointer w-full text-center bg-[#081B8C] hover:bg-[#2F6DFF] text-white text-xs font-bold py-3 rounded-xl transition-colors"
+                  className="space-y-4"
                 >
-                  Request Copy & Free Diagnostic
-                </button>
-                <button
-                  onClick={() => setShowExitIntent(false)}
-                  className="cursor-pointer text-gray-400 hover:text-gray-600 text-[11px] font-semibold"
-                >
-                  No thanks, let me close this
-                </button>
-              </div>
+                  <div className="space-y-1.5 text-left">
+                    <label className="text-xs font-bold text-gray-700 block">
+                      Corporate Email Address
+                    </label>
+                    <div className="relative rounded-xl shadow-xs">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={popupEmail}
+                        onChange={(e) => {
+                          setPopupEmail(e.target.value);
+                          if (popupError) setPopupError('');
+                        }}
+                        placeholder="name@company.com"
+                        className="w-full text-xs pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-900 placeholder-gray-400"
+                      />
+                    </div>
+                    {popupError && (
+                      <div className="flex items-start gap-1.5 mt-2 text-rose-600 text-[11px] leading-relaxed bg-rose-50/50 border border-rose-100 rounded-xl p-2.5">
+                        <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{popupError}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <button
+                      type="submit"
+                      disabled={popupLoading}
+                      className="cursor-pointer w-full bg-gradient-to-r from-[#081B8C] to-[#2F6DFF] hover:opacity-95 text-white text-xs font-bold py-3.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {popupLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Verifying Domain...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4" />
+                          <span>Download Proposal</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[10px] text-gray-400 font-semibold text-center leading-normal">
+                      Only business email addresses are accepted.
+                    </p>
+                  </div>
+                </form>
+              )}
             </motion.div>
           </div>
         )}
