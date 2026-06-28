@@ -21,6 +21,7 @@ import { PageType } from '../types';
 import { OFFICE_LOCATIONS } from '../data';
 import { supabase } from '../lib/supabase';
 import { logDetailedError, getActualReason } from '../utils/errorLogger';
+import { downloadProposal } from '../utils/proposalDownloader';
 
 interface ContactProps {
   setCurrentPage: (page: PageType) => void;
@@ -84,235 +85,18 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  const BLOCKED_DOMAINS = [
-    'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
-    'live.com', 'icloud.com', 'me.com', 'msn.com', 'aol.com', 'proton.me', 
-    'protonmail.com', 'gmx.com', 'mail.com', 'zoho.com', 'yandex.com', 
-    'rediffmail.com', 'fastmail.com', 'qq.com', '163.com', '126.com', 
-    'hey.com', 'tutanota.com'
-  ];
-
   const handleDownloadProposal = async (e: FormEvent) => {
     e.preventDefault();
     setDownloadError('');
     setDownloadLoading(true);
 
-    const totalStart = performance.now();
+    const res = await downloadProposal(downloadEmail, 'Contact Page', window.location.href);
+    setDownloadLoading(false);
 
-    // 1. Email validation
-    const emailValStart = performance.now();
-    if (!downloadEmail || !downloadEmail.includes('@')) {
-      setDownloadError('Please enter a valid email address.');
-      setDownloadLoading(false);
-      return;
-    }
-    const emailValTime = performance.now() - emailValStart;
-
-    // 2. Corporate Domain Check
-    const domainCheckStart = performance.now();
-    const domain = downloadEmail.trim().split('@').pop()?.toLowerCase();
-    const isCorp = domain && !BLOCKED_DOMAINS.includes(domain);
-    const domainCheckTime = performance.now() - domainCheckStart;
-
-    if (!isCorp) {
-      setDownloadError('Please use your company email address to download this proposal.');
-      setDownloadLoading(false);
-      return;
-    }
-
-    let response: Response | null = null;
-    let responseBody = '';
-    let parsedData: any = null;
-    const requestUrl = new URL('/api/proposal/download', window.location.href).href;
-
-    try {
-      try {
-        response = await fetch('/api/proposal/download', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: downloadEmail.trim(),
-            source: 'Contact Page',
-            page_url: window.location.href
-          })
-        });
-      } catch (fetchErr: any) {
-        // Network error / CORS block
-        const reason = getActualReason(fetchErr, requestUrl);
-        
-        logDetailedError({
-          url: requestUrl,
-          errorMessage: fetchErr.message || 'Fetch failed',
-          errorCode: fetchErr.code || fetchErr.name,
-          stack: fetchErr.stack,
-          functionName: 'handleDownloadProposalContact'
-        });
-
-        setDownloadError(reason);
-        setDownloadLoading(false);
-        return;
-      }
-
-      // Read response body as text first to preserve it
-      try {
-        responseBody = await response.text();
-      } catch (readErr) {
-        console.error('Failed to read response body:', readErr);
-      }
-
-      // Try parsing as JSON
-      if (responseBody) {
-        try {
-          parsedData = JSON.parse(responseBody);
-        } catch (jsonErr) {
-          console.warn('Response is not valid JSON:', responseBody);
-        }
-      }
-
-      if (!response.ok) {
-        const errorMsg = parsedData?.error || responseBody || `HTTP ${response.status} ${response.statusText}`;
-        const reason = getActualReason(new Error(errorMsg), requestUrl, response.status, responseBody);
-
-        logDetailedError({
-          url: requestUrl,
-          status: response.status,
-          responseBody: responseBody,
-          errorMessage: errorMsg,
-          errorCode: `HTTP_${response.status}`,
-          functionName: 'handleDownloadProposalContact'
-        });
-
-        setDownloadError(reason);
-        setDownloadLoading(false);
-        return;
-      }
-
-      // If response is OK, process the data
-      const data = parsedData || {};
-      const databaseTime = data.timings?.databaseTime || 0;
-      const signedUrlGenTime = data.timings?.tokenGenTime || 0;
-
-      // Trigger automatic secure download
-      if (data.token) {
-        const downloadUrl = `/api/proposal/file?token=${data.token}`;
-        const fullDownloadUrl = new URL(downloadUrl, window.location.href).href;
-        
-        try {
-          console.log('[DEBUG] Initiating secure PDF fetch in Contact Page from:', downloadUrl);
-          // 5. File Retrieval
-          const fileRetrievalStart = performance.now();
-          
-          let fileRes: Response;
-          try {
-            fileRes = await fetch(downloadUrl);
-          } catch (fileFetchErr: any) {
-            const reason = getActualReason(fileFetchErr, fullDownloadUrl);
-
-            logDetailedError({
-              url: fullDownloadUrl,
-              errorMessage: fileFetchErr.message || 'Fetch failed',
-              errorCode: fileFetchErr.code || fileFetchErr.name,
-              stack: fileFetchErr.stack,
-              functionName: 'handleDownloadProposalContact -> file fetch'
-            });
-
-            throw new Error(reason);
-          }
-
-          let fileResBody = '';
-          if (!fileRes.ok) {
-            try {
-              fileResBody = await fileRes.text();
-            } catch (readErr) {
-              console.error('Failed to read file response body:', readErr);
-            }
-
-            const errorMsg = fileResBody || `HTTP ${fileRes.status} ${fileRes.statusText}`;
-            const reason = getActualReason(new Error(errorMsg), fullDownloadUrl, fileRes.status, fileResBody);
-
-            logDetailedError({
-              url: fullDownloadUrl,
-              status: fileRes.status,
-              responseBody: fileResBody,
-              errorMessage: errorMsg,
-              errorCode: `HTTP_${fileRes.status}`,
-              functionName: 'handleDownloadProposalContact -> file res'
-            });
-
-            throw new Error(reason);
-          }
-          
-          const contentType = fileRes.headers.get('content-type') || '';
-          const contentLengthStr = fileRes.headers.get('content-length') || '0';
-          const contentLength = parseInt(contentLengthStr, 10);
-          
-          const blob = await fileRes.blob();
-          const fileRetrievalTime = performance.now() - fileRetrievalStart;
-          
-          console.log('[DEBUG] Blob size:', blob.size);
-          console.log('[DEBUG] Blob type:', blob.type);
-          
-          if (blob.size === 0) {
-            throw new Error('Downloaded file size is 0 bytes.');
-          }
-          
-          // Verify MIME type
-          if (!contentType.toLowerCase().includes('application/pdf')) {
-            throw new Error(`Invalid MIME type: expected application/pdf, but got "${contentType}"`);
-          }
-          
-          // 6. Browser download start (signature check + trigger)
-          const downloadStartTimer = performance.now();
-
-          // Read first 10 bytes to verify %PDF- signature
-          const arrayBuffer = await blob.slice(0, 10).arrayBuffer();
-          const bytes = new Uint8Array(arrayBuffer);
-          const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-          const signature = new TextDecoder().decode(bytes);
-          
-          console.log('[DEBUG] First 10 bytes (Hex):', hexString);
-          console.log('[DEBUG] First 10 bytes (Text):', signature);
-          
-          const isPdf = signature.startsWith('%PDF-');
-          if (!isPdf) {
-            console.error('[DEBUG] Signature mismatch! Not a valid PDF.');
-            throw new Error(`The file does not begin with the PDF signature %PDF-. Instead, got: "${signature.replace(/[\r\n\t]/g, ' ')}"`);
-          }
-          
-          console.log('[DEBUG] PDF signature verified successfully!');
-          
-          const localUrl = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = localUrl;
-          link.setAttribute('download', data.filename || 'Going Technologies Insurance operations proposal.pdf');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setTimeout(() => URL.revokeObjectURL(localUrl), 100);
-
-          const downloadStartedTime = performance.now() - downloadStartTimer;
-          const totalTime = performance.now() - totalStart;
-
-          // Print highly visible, clean, and exact timing reports in developer console
-          console.log(`%c=== PROPOSAL DOWNLOAD PERFORMANCE TIMINGS ===`, 'color: #10B981; font-weight: bold; font-size: 11px;');
-          console.log(`Email Validation: ${emailValTime.toFixed(1)}ms`);
-          console.log(`Corporate Domain Check: ${domainCheckTime.toFixed(1)}ms`);
-          console.log(`Database Insert: ${databaseTime.toFixed(1)}ms`);
-          console.log(`Signed URL Generation: ${signedUrlGenTime.toFixed(1)}ms`);
-          console.log(`File Retrieval: ${fileRetrievalTime.toFixed(1)}ms`);
-          console.log(`Download Started: ${downloadStartedTime.toFixed(1)}ms`);
-          console.log(`Total Time: ${totalTime.toFixed(1)}ms`);
-          console.log(`==============================================`);
-        } catch (downloadErr: any) {
-          console.error('[ERROR] Secure PDF download failed in Contact Page:', downloadErr);
-          setDownloadError(downloadErr.message || 'Failed to download the proposal PDF.');
-          setDownloadLoading(false);
-          return;
-        }
-      }
-
+    if (res.error) {
+      setDownloadError(res.error);
+    } else {
       setDownloadSuccess(true);
-      setDownloadLoading(false);
       onDownloadSuccess?.();
       
       // Reset after success
@@ -320,21 +104,6 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
         setDownloadSuccess(false);
         setDownloadEmail('');
       }, 5000);
-
-    } catch (err: any) {
-      console.error('Download request error:', err);
-      const reason = getActualReason(err, requestUrl);
-      
-      logDetailedError({
-        url: requestUrl,
-        errorMessage: err.message || 'Connection failed',
-        errorCode: err.code || err.name,
-        stack: err.stack,
-        functionName: 'handleDownloadProposalContact -> final catch'
-      });
-
-      setDownloadError(reason);
-      setDownloadLoading(false);
     }
   };
 

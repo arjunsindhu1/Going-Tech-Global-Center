@@ -83,13 +83,11 @@ export async function runProductionAudit(): Promise<void> {
   // Initialize status flags
   let isDbConnected = false;
   let isStorageConnected = false;
-  let isSignedUrlGenWorking = false;
-  let isProposalDownloadWorking = false;
+  let isPublicUrlWorking = false;
   let isInsertWorking = false;
   let dbErrorStr = '';
   let storageErrorStr = '';
-  let signedUrlErrorStr = '';
-  let downloadErrorStr = '';
+  let publicUrlErrorStr = '';
   let insertErrorStr = '';
 
   console.log('%c=== 3. SUPABASE CORE SERVICES AUDIT ===', 'font-weight: bold; color: #4B5563;');
@@ -150,49 +148,19 @@ export async function runProductionAudit(): Promise<void> {
     console.log('✗ Storage Connection: Failed. Exception:', err);
   }
 
-  // D. Signed URL Generation (Testing a standard bucket named 'proposals' if present)
+  // D. Public URL Verification (Testing standard public bucket 'goingtechnologies')
   try {
-    // Generate signed URL
-    const { data, error } = await supabase.storage.from('proposals').createSignedUrl('Going Technologies Insurance operations proposal.pdf', 60);
-    if (error) {
-      signedUrlErrorStr = error.message;
-      console.log('✗ Storage Signed URL Generation: Failed (Could be due to missing bucket or bucket permissions). Error:', error);
+    const { data } = supabase.storage.from('goingtechnologies').getPublicUrl('Going Technologies Insurance operations proposal.pdf');
+    if (!data || !data.publicUrl) {
+      publicUrlErrorStr = 'Failed to generate public URL';
+      console.log('✗ Public Storage URL Generation: Failed.');
     } else {
-      isSignedUrlGenWorking = true;
-      console.log('✓ Storage Signed URL Generation: Success. Signed URL:', data.signedUrl);
+      isPublicUrlWorking = true;
+      console.log('✓ Public Storage URL Generation: Success. Public URL:', data.publicUrl);
     }
   } catch (err: any) {
-    signedUrlErrorStr = err.message || String(err);
-    console.log('✗ Storage Signed URL Generation: Failed. Exception:', err);
-  }
-
-  // E. API Route validation (Check /api/proposal/download status and headers)
-  console.log('%c=== 4. API ENDPOINTS & ROUTES AUDIT ===', 'font-weight: bold; color: #4B5563;');
-  try {
-    const startTime = performance.now();
-    const res = await fetch('/api/proposal/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'audit-probe@goingtechnologies.com', source: 'Audit Probe' })
-    });
-    const latency = performance.now() - startTime;
-    const bodyText = await res.text();
-    console.log(`[API Probe] POST /api/proposal/download -> Status: ${res.status}, Latency: ${latency.toFixed(1)}ms`);
-    console.log('[API Probe] Response Body:', bodyText);
-
-    if (res.status === 404) {
-      downloadErrorStr = 'POST Route not found on this domain. Ensure server is deployed and running.';
-      console.log('✗ API Endpoint: POST /api/proposal/download returned 404.');
-    } else if (!res.ok) {
-      downloadErrorStr = `Status ${res.status}: ${bodyText}`;
-      console.log(`✗ API Endpoint: POST /api/proposal/download returned HTTP ${res.status}.`);
-    } else {
-      isProposalDownloadWorking = true;
-      console.log('✓ API Endpoint: POST /api/proposal/download responds successfully.');
-    }
-  } catch (err: any) {
-    downloadErrorStr = err.message || String(err);
-    console.log('✗ API Endpoint: POST /api/proposal/download fetch failed. Exception:', err);
+    publicUrlErrorStr = err.message || String(err);
+    console.log('✗ Public Storage URL Generation: Failed. Exception:', err);
   }
 
   // Final structured output report
@@ -207,11 +175,8 @@ export async function runProductionAudit(): Promise<void> {
   console.log(isStorageConnected ? '✓ Storage Connected' : '✗ Storage Connection Failed');
   if (!isStorageConnected) console.log(`  Reason: ${storageErrorStr}`);
 
-  console.log(isSignedUrlGenWorking ? '✓ Signed URL Generation Succeeded' : '✗ Signed URL Generation Failed');
-  if (!isSignedUrlGenWorking) console.log(`  Reason: ${signedUrlErrorStr}`);
-
-  console.log(isProposalDownloadWorking ? '✓ API Route /api/proposal/download Reachable' : '✗ API Route /api/proposal/download Unreachable');
-  if (!isProposalDownloadWorking) console.log(`  Reason: ${downloadErrorStr}`);
+  console.log(isPublicUrlWorking ? '✓ Public URL Generation Succeeded' : '✗ Public URL Generation Failed');
+  if (!isPublicUrlWorking) console.log(`  Reason: ${publicUrlErrorStr}`);
 
   // Missing Env check output
   const missingEnvs = Object.entries(envsReport).filter(([_, val]) => !val).map(([key]) => key);
