@@ -174,6 +174,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
   const [employeeScale, setEmployeeScale] = useState<number>(25);
   const [isHovered1, setIsHovered1] = useState(false);
   const [isHovered2, setIsHovered2] = useState(false);
+  const [isTestimonialExpanded, setIsTestimonialExpanded] = useState(false);
 
   // Canvas interactive network particle animation
   useEffect(() => {
@@ -1311,17 +1312,134 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
           </div>
 
           {/* Title Stack */}
-          <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
-            <div className="inline-flex items-center gap-2 bg-[#DCE7FF]/40 border border-[#DCE7FF]/80 px-3.5 py-1 rounded-full">
-              <Sparkles className="w-3.5 h-3.5 text-[#2F6DFF] animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#2F6DFF]">TRUSTED EXCELLENCE</span>
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-xs select-none">
+              <span className="text-sm">⭐</span> Featured Client Testimonial
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
-              Trusted By Teams Focused On Operational Excellence
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
+              Trusted by Leading Insurance Agencies
             </h2>
-            <p className="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
-              Organizations choose Going Technologies to streamline operations, reduce administrative workload, and improve business efficiency.
+            <p className="text-gray-500 text-sm sm:text-base leading-relaxed italic max-w-2xl mx-auto">
+              A message from one of our valued long-term clients.
             </p>
+          </div>
+
+          {/* Featured Client Testimonial Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="max-w-5xl mx-auto mb-16 relative group"
+          >
+            {/* Subtle animated glow on hover around the section */}
+            <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-[#2F6DFF]/15 via-[#A93DFF]/15 to-[#2F6DFF]/15 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl pointer-events-none" />
+            
+            <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+              
+              {/* Left Column (35%) - Premium Client Information Card */}
+              <div className="lg:col-span-4 flex flex-col justify-between bg-gradient-to-br from-[#081B8C] via-[#1E3A8A] to-[#2F6DFF] rounded-3xl p-8 lg:p-10 text-white shadow-xl relative overflow-hidden group/card transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl">
+                {/* Visual patterns & glowing orbs in background */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-[#A93DFF]/25 blur-3xl rounded-full pointer-events-none" />
+                <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-cyan-500/20 blur-3xl rounded-full pointer-events-none" />
+                
+                {/* Accent design pattern - grid dots */}
+                <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+                
+                {/* Large Quote Icon background */}
+                <Quote className="absolute -right-4 -bottom-4 w-40 h-40 text-white/[0.04] -rotate-12 pointer-events-none shrink-0" />
+                
+                <div className="relative z-10 space-y-6 flex-1 flex flex-col justify-between">
+                  {/* Top: Icon & Rating */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-start">
+                      {/* Company/Institutional Icon */}
+                      <div className="p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 inline-flex items-center justify-center shadow-lg">
+                        <Shield className="w-6 h-6 text-cyan-300" />
+                      </div>
+                      
+                      {/* Quote indicator */}
+                      <Quote className="w-8 h-8 text-white/20 shrink-0" />
+                    </div>
+                    
+                    {/* Five-Star Rating */}
+                    <div className="flex items-center gap-1.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400 filter drop-shadow-[0_2px_4px_rgba(251,191,36,0.2)]" />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Bottom: Name & Designation */}
+                  <div className="mt-8 lg:mt-0 space-y-3">
+                    <div className="h-px bg-white/20 w-12" />
+                    <div>
+                      <h4 className="text-2xl font-bold font-display tracking-tight text-white">
+                        Ralph
+                      </h4>
+                      <p className="text-sm text-cyan-200 font-medium tracking-wide mt-1">
+                        Insurance Brokerage Client
+                      </p>
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest text-white/60 font-mono font-bold">
+                      Verified Enterprise Partner
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right Column (65%) - Large Premium Testimonial Container */}
+              <div className="lg:col-span-8 bg-white/70 backdrop-blur-md border border-[#DCE7FF]/80 rounded-3xl p-8 sm:p-10 lg:p-12 shadow-xl hover:shadow-2xl transition-all duration-500 flex flex-col justify-between relative overflow-hidden">
+                {/* Left accent vertical line using brand gradient */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-[#2F6DFF] via-[#A93DFF] to-cyan-400" />
+                
+                {/* Background glow overlay */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#2F6DFF]/5 blur-3xl rounded-full pointer-events-none" />
+                
+                <div className="relative z-10 flex-1 flex flex-col justify-between">
+                  {/* Testimonial body with expand/collapse */}
+                  <div>
+                    <div 
+                      className="relative overflow-hidden transition-all duration-300 ease-in-out"
+                      style={{ 
+                        maxHeight: isTestimonialExpanded ? '1000px' : '230px'
+                      }}
+                    >
+                      <blockquote className="text-gray-700 text-[17px] sm:text-[18px] leading-[1.8] font-medium font-display italic">
+                        "I have had the privilege of working with Shirish since his time as our team leader at a previous virtual assistant firm. When he left to found Going Technologies, I knew immediately that I wanted to follow his leadership and become one of his very first clients. Training up a new VA team takes time and well-founded SOPs. Today, our insurance brokerage is proud to be one of its larger clients, currently utilizing six exceptional VAs with plans to add a seventh very soon. Shirish’s ability to train, manage, and elevate a support team is unparalleled. His dedication and expertise have been absolutely instrumental in shaping our back-office operations into the highly efficient team we rely on today. For any organization seeking reliable, top-tier operational support, I cannot recommend Shirish and Going Technologies highly enough."
+                      </blockquote>
+                      
+                      {/* Subtle fade-out overlay when collapsed */}
+                      {!isTestimonialExpanded && (
+                        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Expand / Collapse Button */}
+                  <div className="mt-6 flex justify-start">
+                    <button
+                      onClick={() => setIsTestimonialExpanded(!isTestimonialExpanded)}
+                      className="inline-flex items-center gap-2 text-sm font-bold text-[#2F6DFF] hover:text-[#081B8C] transition-colors duration-300 py-1 cursor-pointer group/btn"
+                    >
+                      <span className="relative overflow-hidden">
+                        {isTestimonialExpanded ? 'Show Less' : 'Read Full Testimonial'}
+                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-current transform origin-left transition-transform duration-300 scale-x-0 group-hover/btn:scale-x-100" />
+                      </span>
+                      <ChevronRight className={`w-4 h-4 transform transition-transform duration-300 ${isTestimonialExpanded ? '-rotate-90' : 'rotate-90 group-hover/btn:translate-x-0.5'}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </motion.div>
+
+          {/* Professional Divider to the regular testimonials */}
+          <div className="flex items-center justify-center gap-4 max-w-xl mx-auto my-16">
+            <div className="h-px bg-gradient-to-r from-transparent via-[#DCE7FF] to-transparent flex-1" />
+            <span className="text-[10px] font-mono tracking-widest text-gray-400 uppercase select-none">MORE PARTNER SUCCESS STORIES</span>
+            <div className="h-px bg-gradient-to-r from-transparent via-[#DCE7FF] to-transparent flex-1" />
           </div>
 
           {/* Testimonial Cards Layout - Slider on mobile, Continuous marquee slider on Desktop */}
