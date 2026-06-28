@@ -401,28 +401,135 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     if (!recordToDelete) return;
     const { table, id } = recordToDelete;
     setIsDeleting(true);
+
+    console.log(`%c=== DELETION INITIATED ===`, 'color: #EF4444; font-weight: bold;');
+    console.log(`Record ID: ${id}`);
+    console.log(`Delete Query: await supabase.from("${table}").delete().eq("id", "${id}");`);
+
     try {
-      const { error } = await supabase
+      // Step 6 & 2: Delete from table, waiting for the promise, and log the results
+      const { data, error, count } = await supabase
         .from(table)
-        .delete()
-        .eq('id', id);
+        .delete({ count: 'exact' })
+        .eq('id', id)
+        .select();
 
-      if (error) throw error;
+      console.log('Supabase Response Data:', data);
+      console.log('Supabase Response Error:', error);
+      console.log('Supabase Response Count:', count);
 
-      // Update local state accordingly
-      if (table === 'contact_leads') setLeads(leads.filter(x => x.id !== id));
-      if (table === 'consultation_requests') setConsultations(consultations.filter(x => x.id !== id));
-      if (table === 'diagnostic_requests') setDiagnostics(diagnostics.filter(x => x.id !== id));
-      if (table === 'callback_requests') setCallbacks(callbacks.filter(x => x.id !== id));
-      if (table === 'newsletter_subscribers') setSubscribers(subscribers.filter(x => x.id !== id));
-      if (table === 'jobs') setJobs(jobs.filter(x => x.id !== id));
-      if (table === 'job_applications') setApplications(applications.filter(x => x.id !== id));
-      if (table === 'proposal_downloads') setDownloads(downloads.filter(x => x.id !== id));
+      if (error) {
+        console.log('Delete Request:', {
+          ID: id,
+          Success: false,
+          Error: {
+            message: error.message || 'Unknown error',
+            code: error.code || 'UNKNOWN',
+            details: error.details || '',
+            hint: error.hint || ''
+          }
+        });
+        throw error;
+      }
+
+      // Step 7: Verification Check via a fresh SELECT query to check if the row still exists
+      console.log(`Verifying deletion: SELECT id FROM ${table} WHERE id = '${id}'`);
+      const { data: verifyData, error: verifyError } = await supabase
+        .from(table)
+        .select('id')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (verifyError) {
+        console.warn('Verification select query encountered an error:', verifyError);
+      }
+
+      if (verifyData) {
+        // The record still exists in the database. Deletion failed (likely silently blocked by RLS policies).
+        const errMsg = `The record still exists in table "${table}". Deletion was likely silently blocked by database Row Level Security (RLS) or missing DELETE policies.`;
+        console.error(`%c✗ DELETION FAILED: ${errMsg}`, 'color: #DC2626; font-weight: bold;');
+        
+        console.log('Delete Request:', {
+          ID: id,
+          Success: false,
+          Error: {
+            message: errMsg,
+            code: 'RLS_DELETE_BLOCKED',
+            details: 'Postgres Row Level Security (RLS) is enabled but no matching DELETE policy permits this operation for the current role.',
+            hint: `Run the required SQL to enable DELETE on this table:
+            
+  CREATE POLICY "Allow public delete on ${table}" ON public.${table} FOR DELETE TO anon, authenticated, public USING (true);`
+          }
+        });
+
+        alert(`Deletion Failed!\n\n${errMsg}\n\nPlease verify your Supabase Row Level Security (RLS) policies for table "${table}".`);
+        setDeleteModalOpen(false);
+        setRecordToDelete(null);
+        return;
+      }
+
+      // If we reach here, verification confirms the record is actually deleted
+      const rowsDeleted = data ? data.length : (count !== null ? count : 1);
+      console.log(`%c✓ DELETION SUCCESSFUL. ID ${id} is no longer present in the database.`, 'color: #10B981; font-weight: bold;');
+      console.log('Delete Request:', {
+        ID: id,
+        Success: true,
+        RowsDeleted: rowsDeleted
+      });
+
+      // Step 4: Immediately remove the row from local state. Do NOT wait for realtime sync.
+      if (table === 'contact_leads') setLeads(prev => prev.filter(x => x.id !== id));
+      if (table === 'consultation_requests') setConsultations(prev => prev.filter(x => x.id !== id));
+      if (table === 'diagnostic_requests') setDiagnostics(prev => prev.filter(x => x.id !== id));
+      if (table === 'callback_requests') setCallbacks(prev => prev.filter(x => x.id !== id));
+      if (table === 'newsletter_subscribers') setSubscribers(prev => prev.filter(x => x.id !== id));
+      if (table === 'jobs') setJobs(prev => prev.filter(x => x.id !== id));
+      if (table === 'job_applications') setApplications(prev => prev.filter(x => x.id !== id));
+      if (table === 'proposal_downloads') setDownloads(prev => prev.filter(x => x.id !== id));
 
       setDeleteModalOpen(false);
       setRecordToDelete(null);
+
+      // Refresh the data from Supabase to ensure UI is in perfect sync with database
+      console.log('Refreshing database state...');
+      if (table === 'contact_leads') {
+        const { data: fresh } = await supabase.from('contact_leads').select('*').order('created_at', { ascending: false });
+        if (fresh) setLeads(fresh);
+      } else if (table === 'consultation_requests') {
+        const { data: fresh } = await supabase.from('consultation_requests').select('*').order('created_at', { ascending: false });
+        if (fresh) setConsultations(fresh);
+      } else if (table === 'diagnostic_requests') {
+        const { data: fresh } = await supabase.from('diagnostic_requests').select('*').order('created_at', { ascending: false });
+        if (fresh) setDiagnostics(fresh);
+      } else if (table === 'callback_requests') {
+        const { data: fresh } = await supabase.from('callback_requests').select('*').order('created_at', { ascending: false });
+        if (fresh) setCallbacks(fresh);
+      } else if (table === 'newsletter_subscribers') {
+        const { data: fresh } = await supabase.from('newsletter_subscribers').select('*').order('created_at', { ascending: false });
+        if (fresh) setSubscribers(fresh);
+      } else if (table === 'jobs') {
+        const { data: fresh } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+        if (fresh) setJobs(fresh);
+      } else if (table === 'job_applications') {
+        const { data: fresh } = await supabase.from('job_applications').select('*').order('created_at', { ascending: false });
+        if (fresh) setApplications(fresh);
+      } else if (table === 'proposal_downloads') {
+        const { data: fresh } = await supabase.from('proposal_downloads').select('*').order('created_at', { ascending: false });
+        if (fresh) setDownloads(fresh);
+      }
+
     } catch (err: any) {
       console.error('Error deleting record:', err);
+      console.log('Delete Request:', {
+        ID: id,
+        Success: false,
+        Error: {
+          message: err.message || 'Unknown error',
+          code: err.code || 'UNKNOWN',
+          details: err.details || '',
+          hint: err.hint || ''
+        }
+      });
       alert(err.message || 'Failed to delete record. Please verify database write/delete access.');
     } finally {
       setIsDeleting(false);
