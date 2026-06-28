@@ -98,17 +98,17 @@ export default function App() {
         });
       } catch (fetchErr: any) {
         // Network error / CORS block
-        const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
         const reason = getActualReason(fetchErr, requestUrl);
         
         logDetailedError({
           url: requestUrl,
           errorMessage: fetchErr.message || 'Fetch failed',
           errorCode: fetchErr.code || fetchErr.name,
-          stack: fetchErr.stack
+          stack: fetchErr.stack,
+          functionName: 'handleDownloadProposal'
         });
 
-        return { error: isDev ? reason : 'Connection failed. Please try again later.' };
+        return { error: reason };
       }
 
       // Read response body as text first to preserve it
@@ -128,7 +128,6 @@ export default function App() {
       }
 
       if (!response.ok) {
-        const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
         const errorMsg = parsedData?.error || responseBody || `HTTP ${response.status} ${response.statusText}`;
         const reason = getActualReason(new Error(errorMsg), requestUrl, response.status, responseBody);
 
@@ -137,10 +136,11 @@ export default function App() {
           status: response.status,
           responseBody: responseBody,
           errorMessage: errorMsg,
-          errorCode: `HTTP_${response.status}`
+          errorCode: `HTTP_${response.status}`,
+          functionName: 'handleDownloadProposal'
         });
 
-        return { error: isDev ? reason : 'Connection failed. Please try again later.' };
+        return { error: reason };
       }
 
       // If response is OK, process the data
@@ -162,17 +162,17 @@ export default function App() {
           try {
             fileRes = await fetch(downloadUrl);
           } catch (fileFetchErr: any) {
-            const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
             const reason = getActualReason(fileFetchErr, fullDownloadUrl);
 
             logDetailedError({
               url: fullDownloadUrl,
               errorMessage: fileFetchErr.message || 'Fetch failed',
               errorCode: fileFetchErr.code || fileFetchErr.name,
-              stack: fileFetchErr.stack
+              stack: fileFetchErr.stack,
+              functionName: 'handleDownloadProposal -> file fetch'
             });
 
-            throw new Error(isDev ? reason : 'Connection failed. Please try again later.');
+            throw new Error(reason);
           }
 
           let fileResBody = '';
@@ -183,7 +183,6 @@ export default function App() {
               console.error('Failed to read file response body:', readErr);
             }
 
-            const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
             const errorMsg = fileResBody || `HTTP ${fileRes.status} ${fileRes.statusText}`;
             const reason = getActualReason(new Error(errorMsg), fullDownloadUrl, fileRes.status, fileResBody);
 
@@ -192,10 +191,11 @@ export default function App() {
               status: fileRes.status,
               responseBody: fileResBody,
               errorMessage: errorMsg,
-              errorCode: `HTTP_${fileRes.status}`
+              errorCode: `HTTP_${fileRes.status}`,
+              functionName: 'handleDownloadProposal -> file res'
             });
 
-            throw new Error(isDev ? reason : 'Connection failed. Please try again later.');
+            throw new Error(reason);
           }
           
           const contentType = fileRes.headers.get('content-type') || '';
@@ -268,17 +268,17 @@ export default function App() {
       return { success: true };
     } catch (err: any) {
       console.error('Download request error:', err);
-      const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
       const reason = getActualReason(err, requestUrl);
       
       logDetailedError({
         url: requestUrl,
         errorMessage: err.message || 'Connection failed',
         errorCode: err.code || err.name,
-        stack: err.stack
+        stack: err.stack,
+        functionName: 'handleDownloadProposal -> general catch'
       });
 
-      return { error: isDev ? reason : 'Connection failed. Please try again later.' };
+      return { error: reason };
     }
   };
 

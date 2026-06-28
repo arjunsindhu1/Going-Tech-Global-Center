@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase';
+
 export interface ErrorDetails {
   url: string;
   status?: number;
@@ -5,27 +7,249 @@ export interface ErrorDetails {
   errorCode?: string;
   errorMessage: string;
   stack?: string;
+  supabaseError?: any;
+  functionName?: string;
 }
 
+// Function to print the requested structured error details in the specified format
 export function logDetailedError(details: ErrorDetails) {
-  console.group('%c=== PRODUCTION DEPLOYMENT AUDIT ERROR REPORT ===', 'color: #EF4444; font-weight: bold;');
-  console.log('%cRequest URL:', 'font-weight: bold;', details.url);
-  console.log('%cHTTP Status:', 'font-weight: bold;', details.status !== undefined ? details.status : 'N/A');
-  console.log('%cError Code:', 'font-weight: bold;', details.errorCode || 'N/A');
-  console.log('%cError Message:', 'font-weight: bold;', details.errorMessage);
-  if (details.responseBody) {
-    console.log('%cResponse Body:', 'font-weight: bold;', details.responseBody);
-  }
-  if (details.stack) {
-    console.log('%cStack Trace:', 'font-weight: bold;', details.stack);
-  }
+  const currentOrigin = window.location.origin;
+  const currentHost = window.location.host;
+  const currentUrl = window.location.href;
+
+  const envVars = {
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? 'Loaded (masked: ' + import.meta.env.VITE_SUPABASE_URL.substring(0, 15) + '...)' : 'Missing',
+    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Loaded' : 'Missing',
+    NEXT_PUBLIC_SUPABASE_URL: import.meta.env.NEXT_PUBLIC_SUPABASE_URL ? 'Loaded (masked: ' + import.meta.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 15) + '...)' : 'Missing',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Loaded' : 'Missing',
+    SUPABASE_URL: (import.meta.env as any).SUPABASE_URL ? 'Loaded' : 'Missing',
+    SUPABASE_ANON_KEY: (import.meta.env as any).SUPABASE_ANON_KEY ? 'Loaded' : 'Missing'
+  };
+
+  console.error(
+    `%cProduction Error\n` +
+    `HTTP Status: ${details.status !== undefined ? details.status : 'N/A'}\n` +
+    `Request URL: ${details.url}\n` +
+    `Response Body: ${details.responseBody || 'N/A'}\n` +
+    `Supabase Error: ${details.supabaseError ? JSON.stringify(details.supabaseError, null, 2) : 'N/A'}\n` +
+    `Stack Trace: ${details.stack || 'N/A'}`,
+    'color: #EF4444; font-weight: bold; font-size: 12px;'
+  );
+
+  console.group('%c=== PRODUCTION DEPLOYMENT AUDIT LOG ===', 'color: #3B82F6; font-weight: bold;');
+  console.log('%cFunction Name:', 'font-weight: bold;', details.functionName || 'N/A');
+  console.log('%cCurrent Origin:', 'font-weight: bold;', currentOrigin);
+  console.log('%cCurrent Host:', 'font-weight: bold;', currentHost);
+  console.log('%cCurrent URL:', 'font-weight: bold;', currentUrl);
+  console.log('%cEnvironment Variables Loaded:', 'font-weight: bold;', envVars);
   console.groupEnd();
+
+  // Run the full diagnostic check in the background automatically when any error occurs
+  runProductionAudit().catch(err => console.error('Audit run failed:', err));
+}
+
+// Function to run complete diagnostics on demand and print a final report
+export async function runProductionAudit(): Promise<void> {
+  console.log('%c[AUDIT] Starting full production deployment audit...', 'color: #3B82F6; font-weight: bold;');
+  
+  const currentOrigin = window.location.origin;
+  const currentHost = window.location.host;
+  const currentUrl = window.location.href;
+
+  const envsReport = {
+    SUPABASE_URL: !!(import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL),
+    SUPABASE_ANON_KEY: !!(import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    PUBLIC_SUPABASE_URL: !!(import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL),
+    PUBLIC_SUPABASE_ANON_KEY: !!(import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    SUPABASE_SERVICE_ROLE_KEY: !!((import.meta.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || (import.meta.env as any).SUPABASE_SERVICE_ROLE_KEY)
+  };
+
+  console.log('%c=== 1. ENVIRONMENT VARIABLES AUDIT ===', 'font-weight: bold; color: #4B5563;');
+  console.log('SUPABASE_URL:', envsReport.SUPABASE_URL ? '✓ Present' : '✗ Missing');
+  console.log('SUPABASE_ANON_KEY:', envsReport.SUPABASE_ANON_KEY ? '✓ Present' : '✗ Missing');
+  console.log('PUBLIC_SUPABASE_URL:', envsReport.PUBLIC_SUPABASE_URL ? '✓ Present' : '✗ Missing');
+  console.log('PUBLIC_SUPABASE_ANON_KEY:', envsReport.PUBLIC_SUPABASE_ANON_KEY ? '✓ Present' : '✗ Missing');
+  console.log('SUPABASE_SERVICE_ROLE_KEY:', envsReport.SUPABASE_SERVICE_ROLE_KEY ? '✓ Present' : '✗ Missing (Optional client-side)');
+
+  console.log('%c=== 2. DOMAIN & CORS AUDIT ===', 'font-weight: bold; color: #4B5563;');
+  console.log('Current Origin:', currentOrigin);
+  console.log('Current Host:', currentHost);
+  console.log('Current URL:', currentUrl);
+  
+  const allowedOrigins = ['https://goingtechnologies.com', 'https://www.goingtechnologies.com'];
+  const isAuthorizedDomain = allowedOrigins.includes(currentOrigin) || currentHost.includes('localhost') || currentHost.includes('127.0.0.1') || currentHost.includes('run.app');
+  console.log('Domain Authorized in CORS Config:', isAuthorizedDomain ? '✓ Yes' : '⚠️ Unknown (Ensure goingtechnologies.com is whitelisted in Supabase Dashboard -> API -> CORS)');
+
+  // Initialize status flags
+  let isDbConnected = false;
+  let isStorageConnected = false;
+  let isSignedUrlGenWorking = false;
+  let isProposalDownloadWorking = false;
+  let isInsertWorking = false;
+  let dbErrorStr = '';
+  let storageErrorStr = '';
+  let signedUrlErrorStr = '';
+  let downloadErrorStr = '';
+  let insertErrorStr = '';
+
+  console.log('%c=== 3. SUPABASE CORE SERVICES AUDIT ===', 'font-weight: bold; color: #4B5563;');
+
+  // A. Database Select connection
+  try {
+    const { data, error } = await supabase.from('proposal_downloads').select('id').limit(1);
+    if (error) {
+      dbErrorStr = error.message;
+      console.log('✗ Database Connection: Failed. Error:', error);
+    } else {
+      isDbConnected = true;
+      console.log('✓ Database Connection: Success. Records queried:', data?.length);
+    }
+  } catch (err: any) {
+    dbErrorStr = err.message || String(err);
+    console.log('✗ Database Connection: Failed. Exception:', err);
+  }
+
+  // B. Database Insert connection
+  try {
+    const tempEmail = `audit-test-${Date.now()}@goingtechnologies.com`;
+    const { error } = await supabase.from('proposal_downloads').insert([{
+      email: tempEmail,
+      company_domain: 'goingtechnologies.com',
+      source: 'Audit Test',
+      page_url: currentUrl,
+      downloaded_file: 'Going Technologies Insurance operations proposal.pdf'
+    }]);
+
+    if (error) {
+      insertErrorStr = error.message;
+      console.log('✗ Insert Into proposal_downloads: Failed. Error:', error);
+    } else {
+      isInsertWorking = true;
+      console.log('✓ Insert Into proposal_downloads: Success.');
+      
+      // Clean up the audit test record
+      await supabase.from('proposal_downloads').delete().eq('email', tempEmail);
+    }
+  } catch (err: any) {
+    insertErrorStr = err.message || String(err);
+    console.log('✗ Insert Into proposal_downloads: Failed. Exception:', err);
+  }
+
+  // C. Storage connection & buckets
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    if (error) {
+      storageErrorStr = error.message;
+      console.log('✗ Storage Connection: Failed. Error:', error);
+    } else {
+      isStorageConnected = true;
+      console.log('✓ Storage Connection: Success. Available Buckets:', buckets?.map(b => b.name));
+    }
+  } catch (err: any) {
+    storageErrorStr = err.message || String(err);
+    console.log('✗ Storage Connection: Failed. Exception:', err);
+  }
+
+  // D. Signed URL Generation (Testing a standard bucket named 'proposals' if present)
+  try {
+    // Generate signed URL
+    const { data, error } = await supabase.storage.from('proposals').createSignedUrl('Going Technologies Insurance operations proposal.pdf', 60);
+    if (error) {
+      signedUrlErrorStr = error.message;
+      console.log('✗ Storage Signed URL Generation: Failed (Could be due to missing bucket or bucket permissions). Error:', error);
+    } else {
+      isSignedUrlGenWorking = true;
+      console.log('✓ Storage Signed URL Generation: Success. Signed URL:', data.signedUrl);
+    }
+  } catch (err: any) {
+    signedUrlErrorStr = err.message || String(err);
+    console.log('✗ Storage Signed URL Generation: Failed. Exception:', err);
+  }
+
+  // E. API Route validation (Check /api/proposal/download status and headers)
+  console.log('%c=== 4. API ENDPOINTS & ROUTES AUDIT ===', 'font-weight: bold; color: #4B5563;');
+  try {
+    const startTime = performance.now();
+    const res = await fetch('/api/proposal/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'audit-probe@goingtechnologies.com', source: 'Audit Probe' })
+    });
+    const latency = performance.now() - startTime;
+    const bodyText = await res.text();
+    console.log(`[API Probe] POST /api/proposal/download -> Status: ${res.status}, Latency: ${latency.toFixed(1)}ms`);
+    console.log('[API Probe] Response Body:', bodyText);
+
+    if (res.status === 404) {
+      downloadErrorStr = 'POST Route not found on this domain. Ensure server is deployed and running.';
+      console.log('✗ API Endpoint: POST /api/proposal/download returned 404.');
+    } else if (!res.ok) {
+      downloadErrorStr = `Status ${res.status}: ${bodyText}`;
+      console.log(`✗ API Endpoint: POST /api/proposal/download returned HTTP ${res.status}.`);
+    } else {
+      isProposalDownloadWorking = true;
+      console.log('✓ API Endpoint: POST /api/proposal/download responds successfully.');
+    }
+  } catch (err: any) {
+    downloadErrorStr = err.message || String(err);
+    console.log('✗ API Endpoint: POST /api/proposal/download fetch failed. Exception:', err);
+  }
+
+  // Final structured output report
+  console.log('%c==================================================', 'color: #10B981; font-weight: bold;');
+  console.log('%c=== FINAL PRODUCTION DEPLOYMENT AUDIT REPORT ===', 'color: #10B981; font-weight: bold; font-size: 13px;');
+  console.log(isDbConnected ? '✓ Database Connected' : '✗ Database Connection Failed');
+  if (!isDbConnected) console.log(`  Reason: ${dbErrorStr}`);
+
+  console.log(isInsertWorking ? '✓ Insert Into proposal_downloads Succeeded' : '✗ Insert Into proposal_downloads Failed');
+  if (!isInsertWorking) console.log(`  Reason: ${insertErrorStr}`);
+
+  console.log(isStorageConnected ? '✓ Storage Connected' : '✗ Storage Connection Failed');
+  if (!isStorageConnected) console.log(`  Reason: ${storageErrorStr}`);
+
+  console.log(isSignedUrlGenWorking ? '✓ Signed URL Generation Succeeded' : '✗ Signed URL Generation Failed');
+  if (!isSignedUrlGenWorking) console.log(`  Reason: ${signedUrlErrorStr}`);
+
+  console.log(isProposalDownloadWorking ? '✓ API Route /api/proposal/download Reachable' : '✗ API Route /api/proposal/download Unreachable');
+  if (!isProposalDownloadWorking) console.log(`  Reason: ${downloadErrorStr}`);
+
+  // Missing Env check output
+  const missingEnvs = Object.entries(envsReport).filter(([_, val]) => !val).map(([key]) => key);
+  if (missingEnvs.length > 0) {
+    console.log(`✗ Missing Production Environment Variable\n  Name: ${missingEnvs.join(', ')}`);
+  } else {
+    console.log('✓ All Production Environment Variables Configured');
+  }
+
+  // CORS report
+  if (!isAuthorizedDomain) {
+    console.log(`✗ CORS Blocked\n  Origin: ${currentOrigin}`);
+  } else {
+    console.log('✓ CORS Check: Origin is in allowed domain wildcard/local ranges');
+  }
+  console.log('%c==================================================', 'color: #10B981; font-weight: bold;');
+}
+
+// Global expose for on-demand console execution
+if (typeof window !== 'undefined') {
+  (window as any).runProductionAudit = runProductionAudit;
 }
 
 export function getActualReason(err: any, url: string, status?: number, body?: string): string {
   const errMsg = (err?.message || '').toLowerCase();
   const bodyLower = (body || '').toLowerCase();
   const urlLower = url.toLowerCase();
+
+  // Explicit env var checks
+  const hasSupabaseUrl = !!(import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL);
+  const hasSupabaseKey = !!(import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+  if (!hasSupabaseUrl) {
+    return 'Supabase URL missing (VITE_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL)';
+  }
+  if (!hasSupabaseKey) {
+    return 'Supabase Anon Key missing (VITE_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY)';
+  }
 
   // 1. Supabase URL missing
   if (
@@ -52,7 +276,6 @@ export function getActualReason(err: any, url: string, status?: number, body?: s
   }
 
   // 3. CORS blocked
-  // Typically, a failed fetch with no status is due to CORS or network offline
   if (
     errMsg.includes('failed to fetch') || 
     errMsg.includes('networkerror') || 
@@ -63,7 +286,7 @@ export function getActualReason(err: any, url: string, status?: number, body?: s
     if (!window.navigator.onLine) {
       return 'Network offline';
     }
-    return 'CORS blocked';
+    return `CORS blocked: Ensure ${window.location.origin} is authorized in your Supabase API settings.`;
   }
 
   // 4. Storage bucket not found
@@ -91,7 +314,7 @@ export function getActualReason(err: any, url: string, status?: number, body?: s
     bodyLower.includes('signed url') || 
     errMsg.includes('signed url') || 
     (bodyLower.includes('token') && bodyLower.includes('fail')) ||
-    bodyLower.includes('signature') && bodyLower.includes('fail')
+    (bodyLower.includes('signature') && bodyLower.includes('fail'))
   ) {
     return 'Signed URL generation failed';
   }
@@ -122,7 +345,7 @@ export function getActualReason(err: any, url: string, status?: number, body?: s
 
   // Fallbacks:
   if (status === 404) {
-    return `API endpoint not found (404): ${url}`;
+    return `API endpoint not found (404) - Backend server might not be running or accessible at: ${url}`;
   }
 
   if (status === 502 || status === 503 || status === 504) {
