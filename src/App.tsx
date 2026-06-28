@@ -19,6 +19,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Admin from './pages/Admin';
 import { supabase } from './lib/supabase';
+import { logDetailedError, getActualReason } from './utils/errorLogger';
 
 export default function App() {
   const [page, setPage] = useState<PageType>('home');
@@ -79,43 +80,127 @@ export default function App() {
       return { error: 'Please use your company email address to download this proposal.' };
     }
 
-    try {
-      const response = await fetch('/api/proposal/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailToSubmit.trim(),
-          source: source,
-          page_url: window.location.href
-        })
-      });
+    let response: Response | null = null;
+    let responseBody = '';
+    let parsedData: any = null;
+    const requestUrl = new URL('/api/proposal/download', window.location.href).href;
 
-      const data = await response.json();
-      if (!response.ok) {
-        return { error: data.error || 'Server error. Please try again.' };
+    try {
+      try {
+        response = await fetch('/api/proposal/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailToSubmit.trim(),
+            source: source,
+            page_url: window.location.href
+          })
+        });
+      } catch (fetchErr: any) {
+        // Network error / CORS block
+        const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+        const reason = getActualReason(fetchErr, requestUrl);
+        
+        logDetailedError({
+          url: requestUrl,
+          errorMessage: fetchErr.message || 'Fetch failed',
+          errorCode: fetchErr.code || fetchErr.name,
+          stack: fetchErr.stack
+        });
+
+        return { error: isDev ? reason : 'Connection failed. Please try again later.' };
       }
 
+      // Read response body as text first to preserve it
+      try {
+        responseBody = await response.text();
+      } catch (readErr) {
+        console.error('Failed to read response body:', readErr);
+      }
+
+      // Try parsing as JSON
+      if (responseBody) {
+        try {
+          parsedData = JSON.parse(responseBody);
+        } catch (jsonErr) {
+          console.warn('Response is not valid JSON:', responseBody);
+        }
+      }
+
+      if (!response.ok) {
+        const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+        const errorMsg = parsedData?.error || responseBody || `HTTP ${response.status} ${response.statusText}`;
+        const reason = getActualReason(new Error(errorMsg), requestUrl, response.status, responseBody);
+
+        logDetailedError({
+          url: requestUrl,
+          status: response.status,
+          responseBody: responseBody,
+          errorMessage: errorMsg,
+          errorCode: `HTTP_${response.status}`
+        });
+
+        return { error: isDev ? reason : 'Connection failed. Please try again later.' };
+      }
+
+      // If response is OK, process the data
+      const data = parsedData || {};
       const databaseTime = data.timings?.databaseTime || 0;
       const signedUrlGenTime = data.timings?.tokenGenTime || 0;
 
       // Automatically trigger secure download
       if (data.token) {
         const downloadUrl = `/api/proposal/file?token=${data.token}`;
+        const fullDownloadUrl = new URL(downloadUrl, window.location.href).href;
         
         try {
           console.log('[DEBUG] Initiating secure PDF fetch from:', downloadUrl);
           // 5. File Retrieval
           const fileRetrievalStart = performance.now();
-          const fileRes = await fetch(downloadUrl);
+          
+          let fileRes: Response;
+          try {
+            fileRes = await fetch(downloadUrl);
+          } catch (fileFetchErr: any) {
+            const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+            const reason = getActualReason(fileFetchErr, fullDownloadUrl);
+
+            logDetailedError({
+              url: fullDownloadUrl,
+              errorMessage: fileFetchErr.message || 'Fetch failed',
+              errorCode: fileFetchErr.code || fileFetchErr.name,
+              stack: fileFetchErr.stack
+            });
+
+            throw new Error(isDev ? reason : 'Connection failed. Please try again later.');
+          }
+
+          let fileResBody = '';
+          if (!fileRes.ok) {
+            try {
+              fileResBody = await fileRes.text();
+            } catch (readErr) {
+              console.error('Failed to read file response body:', readErr);
+            }
+
+            const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+            const errorMsg = fileResBody || `HTTP ${fileRes.status} ${fileRes.statusText}`;
+            const reason = getActualReason(new Error(errorMsg), fullDownloadUrl, fileRes.status, fileResBody);
+
+            logDetailedError({
+              url: fullDownloadUrl,
+              status: fileRes.status,
+              responseBody: fileResBody,
+              errorMessage: errorMsg,
+              errorCode: `HTTP_${fileRes.status}`
+            });
+
+            throw new Error(isDev ? reason : 'Connection failed. Please try again later.');
+          }
           
           const contentType = fileRes.headers.get('content-type') || '';
           const contentLengthStr = fileRes.headers.get('content-length') || '0';
           const contentLength = parseInt(contentLengthStr, 10);
-          
-          if (!fileRes.ok) {
-            const errText = await fileRes.text();
-            throw new Error(`Failed to download file. Status: ${fileRes.status}. Server response: ${errText}`);
-          }
           
           const blob = await fileRes.blob();
           const fileRetrievalTime = performance.now() - fileRetrievalStart;
@@ -181,11 +266,22 @@ export default function App() {
       }
 
       return { success: true };
-    } catch (err) {
+    } catch (err: any) {
       console.error('Download request error:', err);
-      return { error: 'Connection failed. Please try again later.' };
+      const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+      const reason = getActualReason(err, requestUrl);
+      
+      logDetailedError({
+        url: requestUrl,
+        errorMessage: err.message || 'Connection failed',
+        errorCode: err.code || err.name,
+        stack: err.stack
+      });
+
+      return { error: isDev ? reason : 'Connection failed. Please try again later.' };
     }
   };
+
 
   // Submit to diagnostic_requests
   const handleDiagSubmit = async (e: React.FormEvent) => {
