@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Shield, Eye, Target, Award, Users, ChevronRight, Compass, CheckCircle2, MapPin, TrendingUp, DollarSign } from 'lucide-react';
 import { PageType } from '../types';
+import ClientJourney from '../components/ClientJourney';
 
 interface AboutProps {
   setCurrentPage: (page: PageType) => void;
@@ -359,6 +360,25 @@ export default function About({ setCurrentPage }: AboutProps) {
               </div>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Onboarding / Client Onboarding Journey */}
+      <section className="bg-slate-50 border-y border-[#DCE7FF] py-24 relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#2F6DFF]/5 blur-[120px] rounded-full" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Interactive Onboarding</span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              Our Onboarding Process & Journey
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Transition from manual backlogs to hyper-efficient, secure, carrier-trained global operations in just simple, transparent phases.
+            </p>
+          </div>
+
+          <ClientJourney />
         </div>
       </section>
 

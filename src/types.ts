@@ -4,6 +4,7 @@ export type PageType =
   | 'services'
   | 'industries'
   | 'case-studies'
+  | 'business-tools'
   | 'blog'
   | 'contact'
   | 'careers'

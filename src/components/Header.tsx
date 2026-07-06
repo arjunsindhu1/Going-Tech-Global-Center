@@ -32,6 +32,7 @@ export default function Header({ currentPage, setCurrentPage, onNavigateToServic
     { label: 'Services', page: 'services' },
     { label: 'Industries', page: 'industries' },
     { label: 'Case Studies', page: 'case-studies' },
+    { label: 'Business Tools', page: 'business-tools' },
     { label: 'Insights', page: 'blog' },
     { label: 'Careers', page: 'careers' },
   ];

@@ -12,6 +12,7 @@ import About from './pages/About';
 import Services from './pages/Services';
 import Industries from './pages/Industries';
 import CaseStudies from './pages/CaseStudies';
+import BusinessTools from './pages/BusinessTools';
 import Blog from './pages/Blog';
 import Contact from './pages/Contact';
 import Careers from './pages/Careers';
@@ -130,6 +131,7 @@ export default function App() {
           'services',
           'industries',
           'case-studies',
+          'business-tools',
           'blog',
           'contact',
           'careers',
@@ -204,6 +206,8 @@ export default function App() {
         return <Industries setCurrentPage={setCurrentPage} />;
       case 'case-studies':
         return <CaseStudies setCurrentPage={setCurrentPage} />;
+      case 'business-tools':
+        return <BusinessTools setCurrentPage={setCurrentPage} />;
       case 'blog':
         return <Blog setCurrentPage={setCurrentPage} />;
       case 'contact':

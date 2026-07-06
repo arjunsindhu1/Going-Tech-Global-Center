@@ -81,6 +81,7 @@ export default function Footer({ setCurrentPage }: FooterProps) {
               {[
                 { name: 'Home', id: 'home' as PageType },
                 { name: 'About Story', id: 'about' as PageType },
+                { name: 'Business Tools', id: 'business-tools' as PageType },
                 { name: 'Case Studies', id: 'case-studies' as PageType },
                 { name: 'Career Board', id: 'careers' as PageType },
                 { name: 'Contact & Locations', id: 'contact' as PageType }

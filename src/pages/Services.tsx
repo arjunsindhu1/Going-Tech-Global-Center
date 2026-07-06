@@ -14,6 +14,8 @@ import {
   TrendingUp,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
+  AlertTriangle,
   HelpCircle
 } from 'lucide-react';
 import { PageType, ServiceDetail } from '../types';
@@ -25,9 +27,43 @@ interface ServicesProps {
   setActiveServiceId: (id: string) => void;
 }
 
+const challenges = [
+  {
+    title: 'Renewal Backlogs',
+    symptom: 'Wholesale brokers place business with competitors when rate indications take over 24 hours.',
+    cure: 'Our overnight processing teams enter, quote, and map submissions before your underwriters open.'
+  },
+  {
+    title: 'Policy Processing Delays',
+    symptom: 'Carrier binder checking backlogs delay policy deliveries, creating compliance risks.',
+    cure: 'Dual-check automated indexing guarantees policy checking is cleared within tight 12-hour windows.'
+  },
+  {
+    title: 'Administrative Overload',
+    symptom: 'Producers spend 40% of their workday filling fields rather than speaking to prospective clients.',
+    cure: 'Dedicated virtual BPO assistants manage certificates, policy checksheets, and ledger updates.'
+  },
+  {
+    title: 'Data Management Issues',
+    symptom: 'Critical client data is fragmented across emails, spreadsheets, and disconnected systems.',
+    cure: 'We build custom cloud middleware and databases that act as a centralized single source of truth.'
+  },
+  {
+    title: 'Operational Inefficiencies',
+    symptom: 'Manual processing costs expand line-by-line as transaction volume grows.',
+    cure: 'We inject advanced OCR and LLM intelligence to automate 85% of standard administrative entries.'
+  },
+  {
+    title: 'Compliance Complexity',
+    symptom: 'Continuous audits and licensing checks consume high internal hours and risk regulatory fines.',
+    cure: 'Operations are strictly managed within dedicated SOC 2 Type II and HIPAA secure environments.'
+  }
+];
+
 export default function Services({ setCurrentPage, activeServiceId, setActiveServiceId }: ServicesProps) {
   const [activeTab, setActiveTab] = useState<string>(activeServiceId || 'insurance-ops');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [activeChallenge, setActiveChallenge] = useState<number>(0);
 
   useEffect(() => {
     if (activeServiceId) {
@@ -303,6 +339,104 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
 
         </div>
       </div>
+
+      {/* SECTION: OPERATIONAL CHALLENGES (Pain Point Solver Board) - Migrated from Homepage */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#DCE7FF]/60 mt-12">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Operational Pain Points</h2>
+          <p className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+            Stop Letting Bottlenecks Halt Your Enterprise Growth
+          </p>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Running high-volume transaction centers is highly volatile. Click below to see how our targeted operations teams convert systematic hurdles into structural wins.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* Challenges selector sidebar */}
+          <div className="lg:col-span-4 flex flex-col gap-2">
+            {challenges.map((chal, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveChallenge(idx)}
+                className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                  activeChallenge === idx
+                    ? 'bg-white border-[#2F6DFF] shadow-md font-bold text-[#081B8C]'
+                    : 'bg-transparent border-[#DCE7FF]/40 hover:bg-white text-gray-600'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-mono font-bold ${activeChallenge === idx ? 'text-[#2F6DFF]' : 'text-gray-400'}`}>
+                    0{idx + 1}
+                  </span>
+                  <span className="text-sm font-semibold">{chal.title}</span>
+                </div>
+                <ChevronRight className={`w-4 h-4 transition-transform ${activeChallenge === idx ? 'text-[#2F6DFF] translate-x-1' : 'text-gray-300'}`} />
+              </button>
+            ))}
+          </div>
+
+          {/* Interactive display board */}
+          <div className="lg:col-span-8 bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden shadow-lg">
+            {/* Top graphic accent */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#A93DFF]/5 blur-2xl rounded-full" />
+
+            <div className="space-y-8 relative z-10">
+              <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100 text-xs font-bold px-3 py-1 rounded-md">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Critical Bottleneck Symptom</span>
+              </div>
+              <h3 className="text-2xl font-bold text-[#081B8C] font-display">
+                {challenges[activeChallenge].title}
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed italic bg-gray-50 p-5 rounded-xl border-l-4 border-red-400">
+                "{challenges[activeChallenge].symptom}"
+              </p>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-100 relative z-10 space-y-4">
+              <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-bold px-3 py-1 rounded-md">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>The Going Technologies Cure</span>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {challenges[activeChallenge].cure}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sticky / Prominent Business Tools CTA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 mt-8">
+        <div className="bg-gradient-to-r from-[#081B8C] to-[#0A2540] rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden shadow-xl border border-blue-900">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6DFF]/15 blur-2xl rounded-full" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#A93DFF]/10 blur-3xl rounded-full" />
+          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+            <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              Growth & Savings Diagnostics
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-bold font-display">
+              Not sure how much you could save?
+            </h3>
+            <p className="text-white/80 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+              Use our interactive calculators and assessment tools to model your agency's operations and discover hidden payroll efficiencies.
+            </p>
+            <div className="pt-4">
+              <button
+                onClick={() => {
+                  setCurrentPage('business-tools');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="cursor-pointer inline-flex items-center gap-2 bg-gradient-to-r from-[#2F6DFF] to-[#1E4DFF] text-white hover:from-[#1E4DFF] hover:to-[#002DFF] px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20"
+              >
+                <span>Try our free Business Tools</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
     </div>
   );

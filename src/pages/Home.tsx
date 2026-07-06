@@ -22,6 +22,8 @@ import {
   ClipboardCheck,
   Quote,
   Sparkles,
+  Calculator,
+  Activity,
   Star
 } from 'lucide-react';
 import { PageType } from '../types';
@@ -584,97 +586,79 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
       {/* FEATURED IN SECTION */}
       <FeaturedIn />
 
-      {/* SECTION 2: OPERATIONAL CAPABILITIES */}
-      <section className="bg-white border-y border-[#DCE7FF] py-20 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Our Deliverables</h2>
-            <h2 className="text-3xl font-bold font-display text-[#081B8C] tracking-tight">
-              Operational Capabilities
-            </h2>
-            <p className="text-gray-500 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
-              Highly specialized carrier-grade teams integrated natively inside your agency management systems under strict SLA guarantees.
+      {/* SECTION: ABOUT PREVIEW / CORPORATE OVERVIEW */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Subtle decorative glow */}
+        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-[#2F6DFF]/5 blur-[100px] rounded-full pointer-events-none" />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Visual card content */}
+          <div className="lg:col-span-5 space-y-6 bg-gradient-to-br from-[#081B8C] to-[#0A2540] rounded-3xl p-8 lg:p-10 text-white shadow-xl border border-blue-900/40 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#2F6DFF]/20 blur-xl rounded-full" />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4AB7FF] block">
+              Corporate Overview
+            </span>
+            <h3 className="text-2xl lg:text-3xl font-bold font-display tracking-tight">
+              A Carrier-Aligned Global Delivery Center
+            </h3>
+            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+              We operate secure, Six Sigma-controlled operations centers in India under strict US-based day-shift overlaps and SOC 2 Type II controls.
             </p>
+            <div className="border-t border-blue-800/60 pt-6 flex justify-between items-center text-xs text-slate-400 font-mono">
+              <div>
+                <p className="text-white font-extrabold text-base">SOC 2 II</p>
+                <p className="text-[9px] uppercase tracking-wider mt-0.5">Security</p>
+              </div>
+              <div>
+                <p className="text-white font-extrabold text-base">99.98%</p>
+                <p className="text-[9px] uppercase tracking-wider mt-0.5">Accuracy</p>
+              </div>
+              <div>
+                <p className="text-white font-extrabold text-base">100%</p>
+                <p className="text-[9px] uppercase tracking-wider mt-0.5">US Shifts</p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                title: 'Renewal Processing',
-                desc: 'Optimize submission speeds by preparing pre-renewal questionnaires, loss runs, and ACORD records overnight.',
-                icon: <Clock className="w-5 h-5 text-[#2F6DFF]" />
-              },
-              {
-                title: 'Policy Administration',
-                desc: 'Comprehensive carrier binder checking, policy checking audits, endorsement updates, and database indexing.',
-                icon: <FileText className="w-5 h-5 text-[#A93DFF]" />
-              },
-              {
-                title: 'COI Management',
-                desc: 'Rapid certificate issuance and holder compliance tracking to hit carrier standards under tight client timelines.',
-                icon: <FileCheck className="w-5 h-5 text-[#2F6DFF]" />
-              },
-              {
-                title: 'Back Office Operations',
-                desc: 'Sub-ledger ledger reconciliation, policy invoice indexing, direct-bill audits, and database cleanup.',
-                icon: <ClipboardCheck className="w-5 h-5 text-[#081B8C]" />
-              },
-              {
-                title: 'Medicare Support',
-                desc: 'Complete CMS marketing guidelines compliance support, Scope of Appointment (SOA) archiving, and file scrubbing.',
-                icon: <Shield className="w-5 h-5 text-emerald-600" />
-              },
-              {
-                title: 'Data Processing',
-                desc: 'Structural data extraction, advanced electronic scanning indexation, and dual-check verification procedures.',
-                icon: <Layers className="w-5 h-5 text-[#4AB7FF]" />
-              },
-              {
-                title: 'Business Process Outsourcing',
-                desc: 'Dedicated team pods working exclusively on your systems under strict operational governance.',
-                icon: <Users className="w-5 h-5 text-[#2F6DFF]" />
-              },
-              {
-                title: 'Insurance Operations',
-                desc: 'SOP compliance coverage for surplus lines filings, comparative broker quoting, and wholesale carrier indexing.',
-                icon: <TrendingUp className="w-5 h-5 text-[#A93DFF]" />
-              }
-            ].map((cap, idx) => (
-              <div
-                key={idx}
-                className="bg-[#F8FAFF] border border-[#DCE7FF]/50 hover:border-[#2F6DFF] rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group flex flex-col justify-between"
+          {/* Description & Link */}
+          <div className="lg:col-span-7 space-y-6">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Who We Are</span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              We Liberate Producers to Drive Premium Acquisitions
+            </h2>
+            <p className="text-gray-500 text-sm sm:text-base leading-relaxed">
+              Going Technologies is built to solve administrative overhead. We don't use unmanaged generalist outsourcing or fragile automated bots. Instead, we scale your agency with college-educated, carrier-trained specialists who act as a direct extension of your back-office operations.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  setCurrentPage('about');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="cursor-pointer inline-flex items-center gap-2 bg-slate-100 hover:bg-[#DCE7FF]/40 text-[#081B8C] px-6 py-3 rounded-full font-bold text-sm transition-all border border-[#DCE7FF]/60"
               >
-                <div className="space-y-4">
-                  <div className="p-2.5 bg-white border border-[#DCE7FF]/40 rounded-xl w-fit group-hover:bg-[#DCE7FF]/20 transition-colors shadow-xs">
-                    {cap.icon}
-                  </div>
-                  <h3 className="text-sm font-bold text-[#081B8C] font-display group-hover:text-[#2F6DFF] transition-colors">
-                    {cap.title}
-                  </h3>
-                  <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed">
-                    {cap.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
+                <span>Learn More About Us</span>
+                <ChevronRight className="w-4 h-4 text-[#081B8C]" />
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 3: WHAT WE DO */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      {/* SECTION 2: SERVICES PREVIEW */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative bg-white border-y border-[#DCE7FF]/60">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Core Capabilities</h2>
-          <p className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-            Comprehensive Operational Services for High-Growth Enterprises
-          </p>
+          <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Core Capabilities</span>
+          <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+            Premium Operations Scaling & Support
+          </h2>
           <p className="text-gray-500 text-sm leading-relaxed">
-            We operate behind the scenes, integrating directly into your technology stack to manage high-volume, complex pipelines with perfect execution.
+            We integrate natively inside your systems to execute high-volume administrative workflows under strict SLA guarantees.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {whatWeDoCards.map((card) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {whatWeDoCards.slice(0, 3).map((card) => (
             <div
               key={card.id}
               onClick={() => onNavigateToService(card.id)}
@@ -684,10 +668,10 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 <div className="p-3 bg-[#F8FAFF] rounded-xl w-fit group-hover:bg-[#DCE7FF]/40 transition-colors">
                   {card.icon}
                 </div>
-                <h3 className="text-lg font-bold text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors">
+                <h3 className="text-lg font-bold text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors font-display">
                   {card.title}
                 </h3>
-                <p className="text-gray-500 text-sm leading-relaxed">
+                <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
                   {card.desc}
                 </p>
               </div>
@@ -698,10 +682,23 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
             </div>
           ))}
         </div>
+
+        <div className="text-center">
+          <button
+            onClick={() => {
+              setCurrentPage('services');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="cursor-pointer inline-flex items-center gap-2 bg-[#081B8C] hover:bg-[#2F6DFF] text-white px-8 py-3.5 rounded-full font-bold text-sm transition-all shadow-md hover:shadow-lg hover:shadow-blue-500/10"
+          >
+            <span>View All Services</span>
+            <ArrowRight className="w-4 h-4 text-white" />
+          </button>
+        </div>
       </section>
 
-      {/* SECTION 4: INDUSTRIES WE SERVE */}
-      <section className="bg-white border-y border-[#DCE7FF] py-24">
+      {/* SECTION 3: INDUSTRIES PREVIEW (summary only) */}
+      <section className="bg-white border-b border-[#DCE7FF] py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
             <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Market Footprint</h2>
@@ -714,7 +711,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {industries.map((ind, idx) => (
+            {industries.slice(0, 3).map((ind, idx) => (
               <div
                 key={idx}
                 onClick={() => {
@@ -738,98 +735,12 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 setCurrentPage('industries');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="inline-flex items-center gap-2 text-sm font-bold text-[#081B8C] hover:text-[#2F6DFF] group cursor-pointer"
+              className="cursor-pointer inline-flex items-center gap-2 text-sm font-bold text-[#081B8C] hover:text-[#2F6DFF] group"
             >
-              <span>Explore All 10 Industry Verticals</span>
+              <span>Explore All Industry Verticals</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-        </div>
-      </section>
-
-      {/* SECTION 5: OPERATIONAL CHALLENGES (Pain Point Solver Board) */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Operational Pain Points</h2>
-          <p className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-            Stop Letting Bottlenecks Halt Your Enterprise Growth
-          </p>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            Running high-volume transaction centers is highly volatile. Click below to see how our targeted operations teams convert systematic hurdles into structural wins.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Challenges selector sidebar */}
-          <div className="lg:col-span-4 flex flex-col gap-2">
-            {challenges.map((chal, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveChallenge(idx)}
-                className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                  activeChallenge === idx
-                    ? 'bg-white border-[#2F6DFF] shadow-md font-bold text-[#081B8C]'
-                    : 'bg-transparent border-[#DCE7FF]/40 hover:bg-white text-gray-600'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-mono font-bold ${activeChallenge === idx ? 'text-[#2F6DFF]' : 'text-gray-400'}`}>
-                    0{idx + 1}
-                  </span>
-                  <span className="text-sm font-semibold">{chal.title}</span>
-                </div>
-                <ChevronRight className={`w-4 h-4 transition-transform ${activeChallenge === idx ? 'text-[#2F6DFF] translate-x-1' : 'text-gray-300'}`} />
-              </button>
-            ))}
-          </div>
-
-          {/* Interactive display board */}
-          <div className="lg:col-span-8 bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden shadow-lg">
-            {/* Top graphic accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#A93DFF]/5 blur-2xl rounded-full" />
-
-            <div className="space-y-8 relative z-10">
-              <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100 text-xs font-bold px-3 py-1 rounded-md">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Critical Bottleneck Symptom</span>
-              </div>
-              <h3 className="text-2xl font-bold text-[#081B8C] font-display">
-                {challenges[activeChallenge].title}
-              </h3>
-              <p className="text-gray-600 text-base leading-relaxed italic bg-gray-50 p-5 rounded-xl border-l-4 border-red-400">
-                "{challenges[activeChallenge].symptom}"
-              </p>
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-gray-100 relative z-10 space-y-4">
-              <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-bold px-3 py-1 rounded-md">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>The Going Technologies Cure</span>
-              </div>
-              <p className="text-gray-600 text-base leading-relaxed">
-                {challenges[activeChallenge].cure}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 5.5: INTERACTIVE ROI SAVINGS CALCULATOR */}
-      <section className="bg-slate-900 py-24 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-[#2F6DFF]">
-              Strategic Pricing & Financial Impact
-            </h2>
-            <h2 className="text-3xl sm:text-4xl font-bold font-display text-white tracking-tight">
-              Calculate Your Potential Operational Savings
-            </h2>
-            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-              See how much time and operational cost your business could save by partnering with Going Technologies.
-            </p>
-          </div>
-
-          <ROICalculator setCurrentPage={setCurrentPage} />
         </div>
       </section>
 
@@ -925,86 +836,85 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
-      {/* FEATURE 2: INTERACTIVE CLIENT JOURNEY (ONBOARDING WORKFLOW) */}
-      <section className="bg-white border-y border-[#DCE7FF] py-24 overflow-hidden relative">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#2F6DFF]/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#A93DFF]/5 blur-[120px] rounded-full" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Strategic Alignment</span>
-            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-              Our 4-Step Operational Onboarding Journey
-            </h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Transition from manual backlogs to hyper-efficient, secure, carrier-trained global operations in just four simple phases.
-            </p>
-          </div>
-
-          <ClientJourney />
-        </div>
-      </section>
-
-      {/* FEATURE 4: OPERATIONS HEALTH CHECK (ASSESSMENT WIDGET) */}
-      <section className="bg-slate-50 border-b border-[#DCE7FF] py-24 relative overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#2F6DFF]/5 blur-[120px] rounded-full" />
+      {/* SECTION: BUSINESS TOOLS PREVIEW */}
+      <section className="bg-slate-50 border-y border-[#DCE7FF]/60 py-24 relative overflow-hidden">
+        <div className="absolute bottom-[-10%] right-[-10%] w-[300px] h-[300px] bg-[#2F6DFF]/5 blur-[100px] rounded-full pointer-events-none" />
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Interactive Diagnostic</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Interactive Diagnostics</span>
             <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-              Assess Your Operations Health Check
+              Optimize Your Back Office Efficiency
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Answer 5 simple questions to benchmark your back-office throughput, evaluate cost leaks, and unlock custom strategic operational recommendations.
+              Explore our free, professional tools built to measure your operational health and model potential salary scaling savings.
             </p>
           </div>
 
-          <OperationsHealthCheck setCurrentPage={setCurrentPage} />
-        </div>
-      </section>
-
-      {/* SECTION 9: LATEST INSIGHTS */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Corporate Intelligence</h2>
-          <p className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-            Latest Operational Thinking
-          </p>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            Gain executive insights on how artificial intelligence and secure global centers are reshaping legacy workflows across America.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {BLOG_POSTS.map((post) => (
-            <div
-              key={post.id}
-              onClick={() => {
-                setCurrentPage('blog');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="bg-white border border-[#DCE7FF] rounded-xl overflow-hidden hover:shadow-lg hover:border-[#2F6DFF] transition-all duration-200 cursor-pointer group flex flex-col justify-between"
-            >
-              <div className="p-6 space-y-4">
-                <span className="text-[10px] font-extrabold uppercase text-[#2F6DFF] tracking-wider">
-                  {post.category}
-                </span>
-                <h3 className="text-base font-bold text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors line-clamp-2">
-                  {post.title}
-                </h3>
-                <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
-                  {post.excerpt}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* ROI Card */}
+            <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="p-3 bg-[#F8FAFF] rounded-xl w-fit border border-[#DCE7FF]/40 text-[#2F6DFF]">
+                  <Calculator className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-[#081B8C] font-display">ROI Savings Calculator</h3>
+                <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                  Model salary indices, employee count, and transaction times to calculate exact monthly payroll cost reduction projections.
                 </p>
               </div>
-              <div className="p-6 pt-0 flex justify-between items-center text-[10px] text-gray-400 font-mono">
-                <span>{post.publishDate}</span>
-                <span className="text-[#081B8C] font-semibold flex items-center gap-0.5">
-                  Read Article <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                </span>
+              <div className="pt-6">
+                <button
+                  onClick={() => {
+                    setCurrentPage('business-tools');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="cursor-pointer inline-flex items-center gap-1 text-xs font-bold text-[#2F6DFF] hover:text-[#081B8C] group"
+                >
+                  <span>Launch Savings Calculator</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
               </div>
             </div>
-          ))}
+
+            {/* Health Check Card */}
+            <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="p-3 bg-[#F8FAFF] rounded-xl w-fit border border-[#DCE7FF]/40 text-[#A93DFF]">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-[#081B8C] font-display">Operations Health Check</h3>
+                <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                  Evaluate back-office throughput, error rates, and carrier compliance metrics in an interactive 5-question score audit.
+                </p>
+              </div>
+              <div className="pt-6">
+                <button
+                  onClick={() => {
+                    setCurrentPage('business-tools');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="cursor-pointer inline-flex items-center gap-1 text-xs font-bold text-[#2F6DFF] hover:text-[#081B8C] group"
+                >
+                  <span>Start Health Assessment</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center pt-4">
+            <button
+              onClick={() => {
+                setCurrentPage('business-tools');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="cursor-pointer inline-flex items-center gap-2 bg-[#081B8C] hover:bg-[#2F6DFF] text-white px-8 py-3.5 rounded-full font-bold text-sm transition-all shadow-md hover:shadow-lg hover:shadow-blue-500/10"
+            >
+              <span>Open Business Tools</span>
+              <ArrowRight className="w-4 h-4 text-white" />
+            </button>
+          </div>
         </div>
       </section>
 
