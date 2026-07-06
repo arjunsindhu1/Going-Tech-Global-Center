@@ -39,7 +39,7 @@ interface AdminProps {
   setCurrentPage: (page: PageType) => void;
 }
 
-type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'proposal_downloads';
+type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'proposal_downloads' | 'blogs';
 
 export default function Admin({ setCurrentPage }: AdminProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -68,6 +68,24 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   const [isDownloadsTableMissing, setIsDownloadsTableMissing] = useState(false);
   const [downloadSourceFilter, setDownloadSourceFilter] = useState('All');
   const [downloadDateFilter, setDownloadDateFilter] = useState('All');
+
+  // Blog Management CMS state
+  const [blogsList, setBlogsList] = useState<any[]>([]);
+  const [blogCategoriesList, setBlogCategoriesList] = useState<any[]>([]);
+  const [isBlogsTableMissing, setIsBlogsTableMissing] = useState(false);
+  const [isSavingBlog, setIsSavingBlog] = useState(false);
+  const [blogFormError, setBlogFormError] = useState<string | null>(null);
+
+  // Blog Add Modal Fields
+  const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
+  const [blogTitle, setBlogTitle] = useState('');
+  const [blogExcerpt, setBlogExcerpt] = useState('');
+  const [blogShortDesc, setBlogShortDesc] = useState('');
+  const [blogContent, setBlogContent] = useState('');
+  const [blogCategory, setBlogCategory] = useState('Insurance Operations');
+  const [blogAuthor, setBlogAuthor] = useState('Going Technologies Team');
+  const [blogReadTime, setBlogReadTime] = useState('5 Min Read');
+  const [blogMetaTitle, setBlogMetaTitle] = useState('');
   
   // Careers & Applications CMS state
   const [jobs, setJobs] = useState<any[]>([]);
@@ -223,6 +241,36 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         setIsDownloadsTableMissing(false);
       }
 
+      // 9. Blogs
+      console.log('Querying: supabase.from("blogs").select("*")');
+      const { data: blogsData, error: blogsError } = await supabase
+        .from('blogs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (blogsError) {
+        console.error('Error fetching blogs:', blogsError.message);
+        if (blogsError.message?.includes('does not exist') || blogsError.code === 'PGRST116') {
+          setIsBlogsTableMissing(true);
+        }
+      } else {
+        console.log(`Successfully fetched blogs. Count: ${blogsData?.length || 0}`);
+        if (blogsData) setBlogsList(blogsData);
+        setIsBlogsTableMissing(false);
+      }
+
+      // 10. Blog Categories
+      console.log('Querying: supabase.from("blog_categories").select("*")');
+      const { data: catsData, error: catsError } = await supabase
+        .from('blog_categories')
+        .select('*')
+        .order('name', { ascending: true });
+      if (catsError) {
+        console.error('Error fetching blog_categories:', catsError.message);
+      } else {
+        console.log(`Successfully fetched blog_categories. Count: ${catsData?.length || 0}`);
+        if (catsData) setBlogCategoriesList(catsData);
+      }
+
     } catch (err) {
       console.error('Error fetching admin dashboard data:', err);
     } finally {
@@ -344,6 +392,19 @@ export default function Admin({ setCurrentPage }: AdminProps) {
             setDownloads((prev) => prev.filter((item) => item.id !== payload.old.id));
           } else if (payload.eventType === 'UPDATE') {
             setDownloads((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'blogs' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setBlogsList((prev) => [payload.new, ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setBlogsList((prev) => prev.filter((item) => item.id !== payload.old.id));
+          } else if (payload.eventType === 'UPDATE') {
+            setBlogsList((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
           }
         }
       )
@@ -486,37 +547,13 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       if (table === 'jobs') setJobs(prev => prev.filter(x => x.id !== id));
       if (table === 'job_applications') setApplications(prev => prev.filter(x => x.id !== id));
       if (table === 'proposal_downloads') setDownloads(prev => prev.filter(x => x.id !== id));
+      if (table === 'blogs') setBlogsList(prev => prev.filter(x => x.id !== id));
 
       setDeleteModalOpen(false);
       setRecordToDelete(null);
 
-      // Refresh the data from Supabase to ensure UI is in perfect sync with database
-      console.log('Refreshing database state...');
-      if (table === 'contact_leads') {
-        const { data: fresh } = await supabase.from('contact_leads').select('*').order('created_at', { ascending: false });
-        if (fresh) setLeads(fresh);
-      } else if (table === 'consultation_requests') {
-        const { data: fresh } = await supabase.from('consultation_requests').select('*').order('created_at', { ascending: false });
-        if (fresh) setConsultations(fresh);
-      } else if (table === 'diagnostic_requests') {
-        const { data: fresh } = await supabase.from('diagnostic_requests').select('*').order('created_at', { ascending: false });
-        if (fresh) setDiagnostics(fresh);
-      } else if (table === 'callback_requests') {
-        const { data: fresh } = await supabase.from('callback_requests').select('*').order('created_at', { ascending: false });
-        if (fresh) setCallbacks(fresh);
-      } else if (table === 'newsletter_subscribers') {
-        const { data: fresh } = await supabase.from('newsletter_subscribers').select('*').order('created_at', { ascending: false });
-        if (fresh) setSubscribers(fresh);
-      } else if (table === 'jobs') {
-        const { data: fresh } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
-        if (fresh) setJobs(fresh);
-      } else if (table === 'job_applications') {
-        const { data: fresh } = await supabase.from('job_applications').select('*').order('created_at', { ascending: false });
-        if (fresh) setApplications(fresh);
-      } else if (table === 'proposal_downloads') {
-        const { data: fresh } = await supabase.from('proposal_downloads').select('*').order('created_at', { ascending: false });
-        if (fresh) setDownloads(fresh);
-      }
+      // Local state is now updated in real-time, avoiding consistency race conditions on full table select.
+      console.log('State updated successfully. Bypassing raw table SELECT refetches to ensure clean eventual consistency.');
 
     } catch (err: any) {
       console.error('Error deleting record:', err);
@@ -682,6 +719,62 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       setJobFormError(err.message || 'Failed to save job posting.');
     } finally {
       setIsSavingJob(false);
+    }
+  };
+
+  // Save new blog post CMS handler
+  const handleSaveBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blogTitle || !blogContent || !blogCategory) {
+      setBlogFormError('Title, Category, and Content are strictly required.');
+      return;
+    }
+
+    setIsSavingBlog(true);
+    setBlogFormError(null);
+
+    const generatedSlug = slugify(blogTitle);
+
+    const blogPayload = {
+      title: blogTitle,
+      slug: generatedSlug,
+      category: blogCategory,
+      author: blogAuthor || 'Going Technologies Team',
+      reading_time: blogReadTime || '5 Min Read',
+      short_description: blogExcerpt || blogShortDesc || blogContent.slice(0, 160) + '...',
+      content: blogContent,
+      meta_title: blogMetaTitle || blogTitle,
+      meta_description: blogExcerpt || blogShortDesc || blogContent.slice(0, 160) + '...',
+      featured_image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&h=150&q=80', // default nice team image
+      faq: []
+    };
+
+    try {
+      const { error } = await supabase
+        .from('blogs')
+        .insert([blogPayload]);
+
+      if (error) throw error;
+
+      setIsBlogModalOpen(false);
+      // Clear form
+      setBlogTitle('');
+      setBlogContent('');
+      setBlogCategory('Insurance Operations');
+      setBlogAuthor('Going Technologies Team');
+      setBlogReadTime('5 Min Read');
+      setBlogShortDesc('');
+      setBlogExcerpt('');
+      setBlogMetaTitle('');
+      
+      // Reload blog data
+      const { data: fresh } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
+      if (fresh) setBlogsList(fresh);
+    } catch (err: any) {
+      console.error('Error saving blog:', err);
+      setBlogFormError(err.message || 'Failed to save blog post.');
+    } finally {
+      setIsSavingBlog(false);
     }
   };
 
@@ -865,6 +958,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                   { id: 'jobs', label: 'Careers (Jobs)', icon: Briefcase, count: jobs.length },
                   { id: 'applications', label: 'Applications', icon: Layers, count: applications.length },
                   { id: 'proposal_downloads', label: 'Proposal Downloads', icon: Download, count: downloads.length },
+                  { id: 'blogs', label: 'Blog Articles', icon: FileText, count: blogsList.length },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -915,6 +1009,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                     {activeTab === 'jobs' && 'Career Job Postings CMS'}
                     {activeTab === 'applications' && 'Specialist Job Applications'}
                     {activeTab === 'proposal_downloads' && 'Proposal Downloads Analytics'}
+                    {activeTab === 'blogs' && 'Blog Intelligence Briefings CMS'}
                   </h1>
                   <p className="text-gray-400 text-xs">
                     Real-time monitoring console for Going Technologies Global Centers.
@@ -2250,6 +2345,337 @@ create index if not exists idx_proposal_downloads_created_at on public.proposal_
                         </>
                       );
                     })()}
+                  </div>
+                </div>
+              )}
+
+              {/* BLOG ARTICLES CMS PANEL */}
+              {activeTab === 'blogs' && (
+                <div className="space-y-8 text-left">
+                  {isBlogsTableMissing && (
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-6 space-y-4">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-amber-800 text-sm">Database Setup Error: "public.blogs" Table Missing</h4>
+                          <p className="text-gray-600 text-xs leading-relaxed">
+                            The blogs database table was not detected in your Supabase project schema cache. Please execute the following SQL migration script in your Supabase SQL Editor (under the SQL Editor tab) to provision it securely:
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-900 text-gray-100 rounded-xl p-4 font-mono text-[11px] leading-relaxed select-all overflow-x-auto whitespace-pre">
+{`-- Create complete blogs and blog_categories tables
+create table if not exists public.blog_categories (
+    id uuid default uuid_generate_v4() primary key,
+    name text not null unique,
+    slug text not null unique,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.blog_categories disable row level security;
+
+drop policy if exists "Allow public select on blog_categories" on public.blog_categories;
+create policy "Allow public select on blog_categories" on public.blog_categories for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on blog_categories" on public.blog_categories;
+create policy "Allow public insert on blog_categories" on public.blog_categories for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public delete on blog_categories" on public.blog_categories;
+create policy "Allow public delete on blog_categories" on public.blog_categories for delete to anon, authenticated, public using (true);
+
+create table if not exists public.blogs (
+    id uuid default uuid_generate_v4() primary key,
+    title text not null,
+    slug text not null unique,
+    category text not null,
+    featured_image text,
+    meta_title text,
+    meta_description text,
+    author text not null,
+    short_description text,
+    reading_time text,
+    content text not null,
+    faq jsonb default '[]'::jsonb,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.blogs disable row level security;
+
+drop policy if exists "Allow public select on blogs" on public.blogs;
+create policy "Allow public select on blogs" on public.blogs for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on blogs" on public.blogs;
+create policy "Allow public insert on blogs" on public.blogs for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on blogs" on public.blogs;
+create policy "Allow public update on blogs" on public.blogs for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on blogs" on public.blogs;
+create policy "Allow public delete on blogs" on public.blogs for delete to anon, authenticated, public using (true);`}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={fetchAllData}
+                          className="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Retry Schema Synchronization</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h2 className="text-lg font-bold text-[#081B8C] font-display">Going Technologies Strategic Insights</h2>
+                      <p className="text-xs text-gray-400 font-semibold">View, publish and remove articles on the public corporate Blog stream.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setBlogFormError(null);
+                        setIsBlogModalOpen(true);
+                      }}
+                      className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4.5 py-3 rounded-xl transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-500/15"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Create Intelligence Article</span>
+                    </button>
+                  </div>
+
+                  {/* Blogs Table Card */}
+                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                      <div className="relative w-full sm:max-w-xs">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search articles by title or category..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full text-xs pl-9 pr-4 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
+                        />
+                      </div>
+                      <div className="text-gray-400 text-xs font-semibold">
+                        Total Articles: <strong className="text-gray-700">{blogsList.length}</strong> (including custom publications)
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                            <th className="p-4">Title & Slug</th>
+                            <th className="p-4">Category</th>
+                            <th className="p-4">Author</th>
+                            <th className="p-4">Reading Time</th>
+                            <th className="p-4">Published Date</th>
+                            <th className="p-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {blogsList
+                            .filter(b => !searchQuery || b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.category.toLowerCase().includes(searchQuery.toLowerCase()))
+                            .map((item) => (
+                              <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-4 font-bold text-[#081B8C] max-w-[300px]">
+                                  <div className="font-bold text-sm text-gray-800 leading-snug line-clamp-2">{item.title}</div>
+                                  <div className="text-[10px] font-mono text-gray-400 mt-1">/{item.slug}</div>
+                                </td>
+                                <td className="p-4">
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#DCE7FF]/40 text-[#081B8C]">
+                                    {item.category}
+                                  </span>
+                                </td>
+                                <td className="p-4 font-semibold text-gray-600">
+                                  {item.author}
+                                </td>
+                                <td className="p-4 font-mono text-gray-500">
+                                  {item.reading_time || '5 Min Read'}
+                                </td>
+                                <td className="p-4 text-gray-500 font-medium">
+                                  {new Date(item.created_at || item.download_time || Date.now()).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </td>
+                                <td className="p-4 text-right">
+                                  <button
+                                    onClick={() => triggerDelete('blogs', item.id)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                    title="Delete Article"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          {blogsList.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="p-12 text-center text-gray-400 font-medium">
+                                No custom articles found in Supabase. Any added blog posts will be saved here in real-time.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CREATE NEW BLOG MODAL */}
+              {isBlogModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-8 relative space-y-5 border border-gray-100 shadow-2xl text-left">
+                    <button
+                      onClick={() => setIsBlogModalOpen(false)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-black cursor-pointer"
+                      disabled={isSavingBlog}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wide">
+                        Publish Strategic Briefing
+                      </span>
+                      <h3 className="text-xl font-bold text-[#081B8C] font-display">
+                        Create Intelligence Article
+                      </h3>
+                    </div>
+
+                    {blogFormError && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{blogFormError}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSaveBlog} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-gray-700 uppercase">Article Title *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Scaling Insurance Broker Operations Under SOC2 Guidelines"
+                          value={blogTitle}
+                          onChange={(e) => {
+                            setBlogTitle(e.target.value);
+                            setBlogMetaTitle(e.target.value);
+                          }}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                          disabled={isSavingBlog}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-700 uppercase">Category *</label>
+                          <select
+                            value={blogCategory}
+                            onChange={(e) => setBlogCategory(e.target.value)}
+                            className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            disabled={isSavingBlog}
+                          >
+                            <option value="Insurance Operations">Insurance Operations</option>
+                            <option value="Digital Transformation">Digital Transformation</option>
+                            <option value="Business Process Outsourcing">Business Process Outsourcing</option>
+                            <option value="AI & Automation">AI & Automation</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-700 uppercase">Author Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Going Technologies Team"
+                            value={blogAuthor}
+                            onChange={(e) => setBlogAuthor(e.target.value)}
+                            className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            disabled={isSavingBlog}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-700 uppercase">Reading Time</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 5 Min Read"
+                            value={blogReadTime}
+                            onChange={(e) => setBlogReadTime(e.target.value)}
+                            className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            disabled={isSavingBlog}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-700 uppercase">SEO Meta Title</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Secure Offshore Scaling Guide"
+                            value={blogMetaTitle}
+                            onChange={(e) => setBlogMetaTitle(e.target.value)}
+                            className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            disabled={isSavingBlog}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-gray-700 uppercase">Short Excerpt / Description</label>
+                        <textarea
+                          placeholder="Provide a brief summary for blog feeds and search engine result descriptions..."
+                          value={blogExcerpt}
+                          onChange={(e) => setBlogExcerpt(e.target.value)}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] min-h-[60px]"
+                          disabled={isSavingBlog}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-gray-700 uppercase">Article Content (Markdown or Text) *</label>
+                        <textarea
+                          required
+                          placeholder="Type or paste the full body of your corporate article..."
+                          value={blogContent}
+                          onChange={(e) => setBlogContent(e.target.value)}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF] min-h-[160px] font-mono"
+                          disabled={isSavingBlog}
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => setIsBlogModalOpen(false)}
+                          className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-5 py-3 rounded-xl transition-colors"
+                          disabled={isSavingBlog}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSavingBlog}
+                          className="cursor-pointer bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs px-5 py-3 rounded-xl transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-500/10"
+                        >
+                          {isSavingBlog ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Publishing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Publish Article</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}

@@ -476,3 +476,120 @@ begin
     alter publication supabase_realtime add table public.proposal_downloads;
   end if;
 end $$;
+
+-- ==========================================
+-- 10. assessment_results Table
+-- ==========================================
+create table if not exists public.assessment_results (
+    id uuid default uuid_generate_v4() primary key,
+    email text not null,
+    score integer not null,
+    performance_level text not null,
+    answers jsonb not null,
+    recommendations text[] not null default '{}'::text[],
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Force Disable RLS
+alter table public.assessment_results disable row level security;
+
+-- Backup policies
+drop policy if exists "Allow public select on assessment_results" on public.assessment_results;
+create policy "Allow public select on assessment_results" on public.assessment_results for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on assessment_results" on public.assessment_results;
+create policy "Allow public insert on assessment_results" on public.assessment_results for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on assessment_results" on public.assessment_results;
+create policy "Allow public update on assessment_results" on public.assessment_results for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on assessment_results" on public.assessment_results;
+create policy "Allow public delete on assessment_results" on public.assessment_results for delete to anon, authenticated, public using (true);
+
+-- ==========================================
+-- 11. blog_categories Table
+-- ==========================================
+create table if not exists public.blog_categories (
+    id uuid default uuid_generate_v4() primary key,
+    name text not null unique,
+    slug text not null unique,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.blog_categories disable row level security;
+
+-- Backup policies
+drop policy if exists "Allow public select on blog_categories" on public.blog_categories;
+create policy "Allow public select on blog_categories" on public.blog_categories for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on blog_categories" on public.blog_categories;
+create policy "Allow public insert on blog_categories" on public.blog_categories for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public delete on blog_categories" on public.blog_categories;
+create policy "Allow public delete on blog_categories" on public.blog_categories for delete to anon, authenticated, public using (true);
+
+-- ==========================================
+-- 12. blogs Table
+-- ==========================================
+create table if not exists public.blogs (
+    id uuid default uuid_generate_v4() primary key,
+    title text not null,
+    slug text not null unique,
+    category text not null,
+    featured_image text,
+    meta_title text,
+    meta_description text,
+    author text not null,
+    short_description text,
+    reading_time text,
+    content text not null,
+    faq jsonb default '[]'::jsonb,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.blogs disable row level security;
+
+-- Backup policies
+drop policy if exists "Allow public select on blogs" on public.blogs;
+create policy "Allow public select on blogs" on public.blogs for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on blogs" on public.blogs;
+create policy "Allow public insert on blogs" on public.blogs for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on blogs" on public.blogs;
+create policy "Allow public update on blogs" on public.blogs for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on blogs" on public.blogs;
+create policy "Allow public delete on blogs" on public.blogs for delete to anon, authenticated, public using (true);
+
+-- Enable Realtime for assessment_results, blogs, blog_categories
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'assessment_results'
+  ) then
+    alter publication supabase_realtime add table public.assessment_results;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'blog_categories'
+  ) then
+    alter publication supabase_realtime add table public.blog_categories;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'blogs'
+  ) then
+    alter publication supabase_realtime add table public.blogs;
+  end if;
+end $$;

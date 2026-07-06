@@ -242,6 +242,92 @@ export default function CaseStudies({ setCurrentPage }: CaseStudiesProps) {
             )}
           </AnimatePresence>
         </div>
+
+        {/* NEW SECTION: Industry-Specific Portfolios */}
+        <section className="mt-24 pt-16 border-t border-[#DCE7FF]/60 space-y-12">
+          <div className="text-center space-y-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Custom Alignments</span>
+            <h2 className="text-2xl sm:text-3xl font-bold font-display text-[#081B8C] tracking-tight">
+              Industry-Specific Portfolios & Blueprints
+            </h2>
+            <p className="text-gray-500 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
+              We engineer custom, carrier-aligned operational models tailored to the exact regulatory and process constraints of your industry segment.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                title: "Managing General Agents (MGAs)",
+                metric: "99.98% Accuracy",
+                metricLabel: "Policy Issuance SLA",
+                desc: "Overnight policy indexing, binder checks, compliance audits, and seamless surplus lines filing.",
+                icon: <ShieldCheck className="w-5 h-5 text-[#081B8C]" />,
+                color: "from-[#081B8C]/5 to-[#2F6DFF]/5",
+                badge: "Carrier-Grade"
+              },
+              {
+                title: "Retail Insurance Agencies",
+                metric: "82% Hours Saved",
+                metricLabel: "Back-Office Delegation",
+                desc: "Certificate of Insurance (COI) issuance, quote sheet updates, and multi-carrier renewal prep.",
+                icon: <Building className="w-5 h-5 text-[#2F6DFF]" />,
+                color: "from-[#2F6DFF]/5 to-[#4AB7FF]/5",
+                badge: "Producer-Focus"
+              },
+              {
+                title: "InsurTech Startups",
+                metric: "60% Budget Reclaimed",
+                metricLabel: "Operating Cost Saved",
+                desc: "High-velocity Human-in-the-Loop data cleansing, OCR verification queues, and API sync audits.",
+                icon: <TrendingUp className="w-5 h-5 text-[#A93DFF]" />,
+                color: "from-[#A93DFF]/5 to-[#2F6DFF]/5",
+                badge: "API-Driven"
+              },
+              {
+                title: "Wholesale Brokerages",
+                metric: "12-Min Dispatch",
+                metricLabel: "Urgent COI Issuance",
+                desc: "Clearing complex multi-layered surplus lines accounts and updating policy endorsements in real-time.",
+                icon: <Award className="w-5 h-5 text-[#4AB7FF]" />,
+                color: "from-[#4AB7FF]/5 to-[#081B8C]/5",
+                badge: "High-Volume"
+              }
+            ].map((port, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-[#DCE7FF] rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:border-[#2F6DFF] hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+              >
+                {/* Accent glow */}
+                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${port.color} opacity-40 blur-2xl rounded-full pointer-events-none`} />
+
+                <div className="space-y-4 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 bg-[#F8FAFF] rounded-xl w-fit group-hover:bg-[#DCE7FF]/40 transition-colors">
+                      {port.icon}
+                    </div>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#2F6DFF] bg-[#DCE7FF]/40 px-2 py-0.5 rounded-full">
+                      {port.badge}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <h4 className="text-sm font-bold text-[#081B8C] font-display">{port.title}</h4>
+                    <p className="text-[11px] text-gray-400 leading-relaxed">{port.desc}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-end relative z-10">
+                  <div>
+                    <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">{port.metricLabel}</span>
+                    <span className="text-base font-extrabold text-[#081B8C] font-mono tracking-tight">{port.metric}</span>
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#2F6DFF] opacity-30 group-hover:opacity-100 transition-all" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
     </div>

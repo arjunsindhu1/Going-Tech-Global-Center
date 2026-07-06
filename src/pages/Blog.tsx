@@ -12,7 +12,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Share2,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  Bookmark,
+  Building
 } from 'lucide-react';
 import { PageType, BlogPost } from '../types';
 import { BLOG_POSTS } from '../data';
@@ -23,12 +26,85 @@ interface BlogProps {
 }
 
 export default function Blog({ setCurrentPage }: BlogProps) {
+  // Database states
+  const [supabaseBlogs, setSupabaseBlogs] = useState<BlogPost[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
+
+  // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [currentPageNum, setCurrentPageNum] = useState(1);
   const [activeArticle, setActiveArticle] = useState<BlogPost | null>(null);
   const [subscribed, setSubscribed] = useState(false);
   const [email, setEmail] = useState('');
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Fetch blogs from Supabase with dynamic fallback to static list
+  const fetchBlogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped: BlogPost[] = data.map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          excerpt: b.meta_description || b.short_description || b.content.slice(0, 160) + '...',
+          content: b.content,
+          category: b.category,
+          readTime: b.reading_time || '5 Min Read',
+          publishDate: new Date(b.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          author: {
+            name: b.author || 'Going Technologies Team',
+            role: 'Operations Strategist',
+            avatar: b.author === 'Elena Rostova' 
+              ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&h=150&q=80'
+              : b.author === 'James McCarter'
+              ? 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&h=150&q=80'
+              : b.author === 'Michael Chen'
+              ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80'
+              : '/Going tech icon-1.png'
+          },
+          seoKeywords: b.meta_title ? [b.meta_title] : []
+        }));
+        setSupabaseBlogs(mapped);
+      } else {
+        setSupabaseBlogs([]);
+      }
+    } catch (err) {
+      console.warn('Using initial static blogs (Supabase blogs table empty or unprovisioned).', err);
+      setSupabaseBlogs([]);
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBlogs();
+
+    // Subscribe to realtime changes in case blogs are created/deleted in Admin
+    const subscription = supabase
+      .channel('public:blogs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, () => {
+        fetchBlogs();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  // Effective blogs list
+  const blogs = supabaseBlogs.length > 0 ? supabaseBlogs : BLOG_POSTS;
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -43,6 +119,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
     setScrollProgress(0);
   }, [activeArticle]);
 
+  // Dynamically calculate category counts based on complete blogs array
   const categories = [
     'All',
     'Insurance Operations',
@@ -51,7 +128,17 @@ export default function Blog({ setCurrentPage }: BlogProps) {
     'AI & Automation'
   ];
 
-  const filteredPosts = BLOG_POSTS.filter((post) => {
+  const getCategoryCount = (cat: string) => {
+    if (cat === 'All') return blogs.length;
+    return blogs.filter(b => b.category === cat).length;
+  };
+
+  // Reset pagination when filter or search changes
+  useEffect(() => {
+    setCurrentPageNum(1);
+  }, [selectedCategory, searchQuery]);
+
+  const filteredPosts = blogs.filter((post) => {
     const matchesSearch =
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -62,6 +149,14 @@ export default function Blog({ setCurrentPage }: BlogProps) {
     return matchesSearch && matchesCategory;
   });
 
+  // Pagination definitions
+  const postsPerPage = 6;
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage) || 1;
+  const paginatedPosts = filteredPosts.slice(
+    (currentPageNum - 1) * postsPerPage,
+    currentPageNum * postsPerPage
+  );
+
   const handleSubscribe = async (e: FormEvent) => {
     e.preventDefault();
     if (email.trim()) {
@@ -70,18 +165,73 @@ export default function Blog({ setCurrentPage }: BlogProps) {
           .from('newsletter_subscribers')
           .insert([{ email: email.trim() }]);
         
+        if (error) throw error;
         setSubscribed(true);
         setEmail('');
         setTimeout(() => setSubscribed(false), 5000);
       } catch (err) {
         console.error('Error subscribing:', err);
+        alert('Subscription currently offline. Please try again later.');
       }
+    }
+  };
+
+  // Update dynamic SEO Head Tags
+  const updateSEOTags = (post: BlogPost | null) => {
+    const getOrCreateMeta = (attrName: string, attrVal: string) => {
+      let element = document.querySelector(`meta[${attrName}="${attrVal}"]`);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attrName, attrVal);
+        document.head.appendChild(element);
+      }
+      return element;
+    };
+
+    const getOrCreateLink = (relVal: string) => {
+      let element = document.querySelector(`link[rel="${relVal}"]`);
+      if (!element) {
+        element = document.createElement('link');
+        element.setAttribute('rel', relVal);
+        document.head.appendChild(element);
+      }
+      return element;
+    };
+
+    if (post) {
+      document.title = `${post.title} | Going Technologies Strategic Digest`;
+      const desc = post.excerpt || post.title;
+      getOrCreateMeta('name', 'description').setAttribute('content', desc);
+
+      getOrCreateMeta('property', 'og:title').setAttribute('content', post.title);
+      getOrCreateMeta('property', 'og:description').setAttribute('content', desc);
+      getOrCreateMeta('property', 'og:type').setAttribute('content', 'article');
+      getOrCreateMeta('property', 'og:url').setAttribute('content', `${window.location.origin}/blogs/${post.id}`);
+      getOrCreateMeta('property', 'og:image').setAttribute('content', post.author.avatar);
+
+      getOrCreateMeta('name', 'twitter:card').setAttribute('content', 'summary_large_image');
+      getOrCreateMeta('name', 'twitter:title').setAttribute('content', post.title);
+      getOrCreateMeta('name', 'twitter:description').setAttribute('content', desc);
+      getOrCreateMeta('name', 'twitter:image').setAttribute('content', post.author.avatar);
+
+      getOrCreateLink('canonical').setAttribute('href', `${window.location.origin}/blogs/${post.id}`);
+    } else {
+      document.title = 'Going Technologies Strategic Digest | Insurance Operations, BPO & AI';
+      getOrCreateMeta('name', 'description').setAttribute('content', 'Quarterly briefings, system audits, and regulatory analysis covering BPO, secure offshore operations, and AI workflows.');
+      
+      getOrCreateMeta('property', 'og:title').setAttribute('content', 'Going Technologies Strategic Digest');
+      getOrCreateMeta('property', 'og:description').setAttribute('content', 'Quarterly briefings, system audits, and regulatory analysis.');
+      getOrCreateMeta('property', 'og:type').setAttribute('content', 'website');
+      getOrCreateMeta('property', 'og:url').setAttribute('content', `${window.location.origin}/blogs`);
+      
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute('href', `${window.location.origin}/blogs`);
     }
   };
 
   // Generate dynamic SEO schema string to display
   const getJsonLdSchema = (post: BlogPost) => {
-    return JSON.stringify({
+    const articleSchema = {
       "@context": "https://schema.org",
       "@type": "NewsArticle",
       "headline": post.title,
@@ -100,10 +250,62 @@ export default function Blog({ setCurrentPage }: BlogProps) {
           "url": "https://goingtechnologies.com/GTGC Logo.png?v=3"
         }
       }
-    }, null, 2);
+    };
+
+    const breadcrumbsSchema = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": window.location.origin
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Insights & Intelligence",
+          "item": `${window.location.origin}/blogs`
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": post.title,
+          "item": `${window.location.origin}/blogs/${post.id}`
+        }
+      ]
+    };
+
+    const faqSchema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": `What are the core findings in "${post.title}"?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": post.excerpt
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is Going Technologies positioned to support this?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Going Technologies bridges the gap between domestic insurance expertise and robust global center operations to drive down costs while ensuring carrier-grade compliance."
+          }
+        }
+      ]
+    };
+
+    return JSON.stringify([articleSchema, breadcrumbsSchema, faqSchema], null, 2);
   };
 
   useEffect(() => {
+    updateSEOTags(activeArticle);
+    
     if (activeArticle) {
       let script = document.getElementById('blog-ld-json') as HTMLScriptElement;
       if (!script) {
@@ -115,15 +317,12 @@ export default function Blog({ setCurrentPage }: BlogProps) {
       script.text = getJsonLdSchema(activeArticle);
     } else {
       const script = document.getElementById('blog-ld-json');
-      if (script) {
-        script.remove();
-      }
+      if (script) script.remove();
     }
+
     return () => {
       const script = document.getElementById('blog-ld-json');
-      if (script) {
-        script.remove();
-      }
+      if (script) script.remove();
     };
   }, [activeArticle]);
 
@@ -165,7 +364,17 @@ export default function Blog({ setCurrentPage }: BlogProps) {
             </div>
 
             {/* Article Content Area */}
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+              
+              {/* Dynamic Visual Breadcrumbs */}
+              <nav className="flex items-center gap-2 text-[10px] text-gray-400 font-mono font-bold uppercase mb-8">
+                <span className="hover:text-[#2F6DFF] cursor-pointer" onClick={() => setActiveArticle(null)}>Home</span>
+                <ChevronRight className="w-3 h-3" />
+                <span className="hover:text-[#2F6DFF] cursor-pointer" onClick={() => setActiveArticle(null)}>Briefings</span>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-gray-500">{activeArticle.category}</span>
+              </nav>
+
               <motion.div
                 key={activeArticle.id}
                 initial={{ opacity: 0, y: 15 }}
@@ -182,7 +391,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {activeArticle.readTime}</span>
                   </div>
                   
-                  <h1 className="text-3xl sm:text-5xl font-bold font-display text-[#081B8C] leading-tight">
+                  <h1 className="text-3xl sm:text-5xl font-bold font-display text-[#081B8C] leading-tight tracking-tight">
                     {activeArticle.title}
                   </h1>
 
@@ -201,13 +410,30 @@ export default function Blog({ setCurrentPage }: BlogProps) {
                 </div>
 
                 {/* Main Text Content */}
-                <article className="prose prose-blue text-gray-600 leading-relaxed text-sm whitespace-pre-wrap">
+                <article className="prose prose-blue text-gray-600 leading-relaxed text-sm sm:text-base whitespace-pre-wrap max-w-none text-left font-sans">
                   {activeArticle.content}
                 </article>
 
+                {/* FAQ section dynamically rendered to satisfy FAQ schema */}
+                <div className="bg-[#F8FAFF] border border-[#DCE7FF]/80 rounded-2xl p-6 sm:p-8 space-y-6 text-left">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Strategic Briefing FAQ</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-[#081B8C]">What are the core findings in this briefing?</h4>
+                      <p className="text-gray-500 text-xs leading-relaxed">{activeArticle.excerpt}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-[#081B8C]">How does Going Technologies position its global operations to align with these trends?</h4>
+                      <p className="text-gray-500 text-xs leading-relaxed">
+                        We deploy custom corporate structures, security architectures, and advanced AI automation pipelines (like Google Gemini engines) directly into client AMS workflows with robust SOC2 validation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Related Articles Section */}
                 {(() => {
-                  const related = BLOG_POSTS.filter((p) => p.id !== activeArticle.id).slice(0, 2);
+                  const related = blogs.filter((p) => p.id !== activeArticle.id).slice(0, 2);
                   if (related.length === 0) return null;
                   return (
                     <div className="border-t border-gray-100 pt-10 space-y-6">
@@ -281,26 +507,29 @@ export default function Blog({ setCurrentPage }: BlogProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         
         {/* Search and Category Filter Toolbar */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white border border-[#DCE7FF] rounded-2xl p-6 shadow-xs">
-          {/* Categories */}
+        <div className="flex flex-col xl:flex-row justify-between items-center gap-6 bg-white border border-[#DCE7FF] rounded-2xl p-6 shadow-xs">
+          {/* Categories with Counts */}
           <div className="flex flex-wrap gap-2 justify-center">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 ${
                   selectedCategory === cat
                     ? 'bg-[#081B8C] text-white shadow-xs'
                     : 'bg-[#F8FAFF] text-gray-500 hover:bg-[#DCE7FF]/40'
                 }`}
               >
-                {cat}
+                <span>{cat}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${selectedCategory === cat ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                  {getCategoryCount(cat)}
+                </span>
               </button>
             ))}
           </div>
 
           {/* Search bar */}
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full xl:w-80">
             <input
               type="text"
               placeholder="Search intelligence files..."
@@ -312,63 +541,151 @@ export default function Blog({ setCurrentPage }: BlogProps) {
           </div>
         </div>
 
-        {/* Article Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPosts.map((post) => (
-            <div
-              key={post.id}
-              onClick={() => {
-                setActiveArticle(post);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="bg-white border border-[#DCE7FF] rounded-2xl overflow-hidden hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 cursor-pointer flex flex-col justify-between"
-            >
-              <div className="p-6 sm:p-8 space-y-5">
-                <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono font-bold uppercase">
-                  <span>{post.category}</span>
-                  <span>{post.readTime}</span>
-                </div>
-                
-                <h3 className="text-lg font-bold text-[#081B8C] font-display hover:text-[#2F6DFF] transition-colors leading-snug line-clamp-2">
-                  {post.title}
-                </h3>
-                
-                <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
-                  {post.excerpt}
-                </p>
-
-                {/* mini Author bar */}
-                <div className="flex items-center gap-2 pt-4 border-t border-gray-100 mt-4">
-                  <img
-                    src={post.author.avatar}
-                    alt={post.author.name}
-                    className="w-8 h-8 rounded-full object-cover border border-[#DCE7FF]"
-                  />
-                  <div>
-                    <span className="font-bold text-gray-800 text-xs block">{post.author.name}</span>
-                    <span className="text-[10px] text-gray-400">{post.author.role}</span>
-                  </div>
+        {/* FEATURED / LATEST SPOTLIGHT COGNITIVE ANALYSIS CARD (Only on Page 1 & No filters active) */}
+        {currentPageNum === 1 && filteredPosts.length > 0 && (
+          <div className="bg-white border border-[#DCE7FF] rounded-3xl overflow-hidden shadow-xs hover:border-[#2F6DFF] transition-all duration-300 grid grid-cols-1 lg:grid-cols-12">
+            <div className="p-8 sm:p-12 lg:col-span-8 space-y-6 flex flex-col justify-center text-left">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] bg-red-50 text-red-600 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded">
+                  Featured Intelligence
+                </span>
+                <span className="text-gray-400 text-xs font-mono">{filteredPosts[0].readTime}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#081B8C] font-display hover:text-[#2F6DFF] transition-colors leading-tight tracking-tight">
+                {filteredPosts[0].title}
+              </h2>
+              <p className="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-2xl">
+                {filteredPosts[0].excerpt}
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <img
+                  src={filteredPosts[0].author.avatar}
+                  alt={filteredPosts[0].author.name}
+                  className="w-10 h-10 rounded-full object-cover border border-[#DCE7FF]"
+                />
+                <div>
+                  <span className="font-bold text-gray-900 text-xs block">{filteredPosts[0].author.name}</span>
+                  <span className="text-[10px] text-gray-400">{filteredPosts[0].author.role}</span>
                 </div>
               </div>
-
-              {/* trigger link footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] hover:bg-white transition-colors">
-                <span>Read Full Operational Briefing</span>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+              <div className="pt-4">
+                <button
+                  onClick={() => {
+                    setActiveArticle(filteredPosts[0]);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="cursor-pointer inline-flex items-center gap-2 bg-[#081B8C] hover:bg-[#2F6DFF] text-white text-xs font-bold px-6 py-3 rounded-full transition-colors group shadow-md shadow-blue-500/5"
+                >
+                  <span>Examine Blueprint</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </button>
               </div>
             </div>
-          ))}
+            <div className="bg-gradient-to-br from-[#081B8C]/10 via-[#2F6DFF]/5 to-transparent lg:col-span-4 p-8 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-[#DCE7FF] relative overflow-hidden">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+              <div className="space-y-4 relative z-10 text-left">
+                <Bookmark className="w-8 h-8 text-[#2F6DFF] opacity-80" />
+                <h4 className="font-bold text-[#081B8C] text-sm">Key Takeaway</h4>
+                <p className="text-gray-500 text-[11px] leading-relaxed">
+                  Offshore operations are no longer purely about cheap labor. Leading insurance structures use physical isolation chambers, full encryption, and direct US accountability metrics.
+                </p>
+              </div>
+              <div className="text-[9px] font-mono font-bold text-gray-400 uppercase tracking-widest mt-8 relative z-10">
+                GOING INTEL // BRIEFING_01
+              </div>
+            </div>
+          </div>
+        )}
 
-          {filteredPosts.length === 0 && (
-            <div className="col-span-full bg-white border border-dashed border-[#DCE7FF] rounded-xl p-12 text-center text-gray-400 text-sm">
-              No articles matching search query found. Let's try another category or search.
+        {/* Article Cards Grid */}
+        <div className="space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {paginatedPosts
+              // Skip the first one if we are showing spotlight, page 1, and no specific category/query filters
+              .filter((_, idx) => currentPageNum !== 1 || idx !== 0 || searchQuery !== '' || selectedCategory !== 'All')
+              .map((post) => (
+                <div
+                  key={post.id}
+                  onClick={() => {
+                    setActiveArticle(post);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="bg-white border border-[#DCE7FF] rounded-2xl overflow-hidden hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                >
+                  <div className="p-6 sm:p-8 space-y-5 text-left">
+                    <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono font-bold uppercase">
+                      <span>{post.category}</span>
+                      <span>{post.readTime}</span>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-[#081B8C] font-display hover:text-[#2F6DFF] transition-colors leading-snug line-clamp-2">
+                      {post.title}
+                    </h3>
+                    
+                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
+                      {post.excerpt}
+                    </p>
+
+                    {/* mini Author bar */}
+                    <div className="flex items-center gap-2 pt-4 border-t border-gray-100 mt-4">
+                      <img
+                        src={post.author.avatar}
+                        alt={post.author.name}
+                        className="w-8 h-8 rounded-full object-cover border border-[#DCE7FF]"
+                      />
+                      <div>
+                        <span className="font-bold text-gray-800 text-xs block">{post.author.name}</span>
+                        <span className="text-[10px] text-gray-400">{post.author.role}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* trigger link footer */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] hover:bg-white transition-colors">
+                    <span>Read Full Operational Briefing</span>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+              ))}
+
+            {paginatedPosts.length === 0 && (
+              <div className="col-span-full bg-white border border-dashed border-[#DCE7FF] rounded-xl p-12 text-center text-gray-400 text-sm">
+                No briefings matching search query found. Let's try another category or search query.
+              </div>
+            )}
+          </div>
+
+          {/* PAGINATION PANEL */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 pt-6 px-4">
+              <button
+                onClick={() => setCurrentPageNum(prev => Math.max(prev - 1, 1))}
+                disabled={currentPageNum === 1}
+                className="cursor-pointer inline-flex items-center gap-1 bg-white border border-[#DCE7FF] hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 px-3 py-2 rounded-xl text-xs font-bold transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Prev Page</span>
+              </button>
+
+              <div className="text-xs text-gray-400 font-mono font-bold uppercase">
+                Page <span className="text-gray-900">{currentPageNum}</span> of <span className="text-gray-900">{totalPages}</span>
+              </div>
+
+              <button
+                onClick={() => setCurrentPageNum(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPageNum === totalPages}
+                className="cursor-pointer inline-flex items-center gap-1 bg-white border border-[#DCE7FF] hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 px-3 py-2 rounded-xl text-xs font-bold transition-all"
+              >
+                <span>Next Page</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           )}
         </div>
 
         {/* Newsletter widget */}
         <div className="bg-[#081B8C] text-white rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6DFF]/15 blur-2xl rounded-full" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6DFF]/15 blur-2xl rounded-full pointer-events-none" />
           <div className="relative z-10 max-w-xl mx-auto space-y-6">
             <h3 className="text-xl sm:text-2xl font-bold font-display">Get Strategic Reports Delivered Quarterly</h3>
             <p className="text-white/80 text-xs leading-relaxed">
@@ -385,7 +702,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
               />
               <button
                 type="submit"
-                className="cursor-pointer bg-white text-[#081B8C] hover:bg-[#F8FAFF] px-6 py-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1"
+                className="cursor-pointer bg-white text-[#081B8C] hover:bg-[#F8FAFF] px-6 py-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1 transition-colors"
               >
                 <span>Subscribe Now</span>
                 <Send className="w-3.5 h-3.5" />

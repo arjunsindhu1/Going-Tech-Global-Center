@@ -26,6 +26,10 @@ import {
 } from 'lucide-react';
 import { PageType } from '../types';
 import { SERVICES_DATA, CASE_STUDIES, BLOG_POSTS } from '../data';
+import ROICalculator from '../components/ROICalculator';
+import ClientJourney from '../components/ClientJourney';
+import FeaturedIn from '../components/FeaturedIn';
+import OperationsHealthCheck from '../components/OperationsHealthCheck';
 
 function AnimatedCounter({ value, duration = 1500 }: { value: string; duration?: number }) {
   const numericStr = value.replace(/[^0-9.]/g, '');
@@ -577,6 +581,9 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
+      {/* FEATURED IN SECTION */}
+      <FeaturedIn />
+
       {/* SECTION 2: OPERATIONAL CAPABILITIES */}
       <section className="bg-white border-y border-[#DCE7FF] py-20 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -807,155 +814,22 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
-      {/* SECTION 5.5: INTERACTIVE OPERATIONS COMPARISON ENGINE */}
-      <section className="bg-slate-950 text-white py-24 relative overflow-hidden">
-        {/* Background ambient accents */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 blur-[120px] rounded-full pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+      {/* SECTION 5.5: INTERACTIVE ROI SAVINGS CALCULATOR */}
+      <section className="bg-slate-900 py-24 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-[#2F6DFF]">
-              GT Interactive Scale Model
+              Strategic Pricing & Financial Impact
             </h2>
-            <p className="text-3xl sm:text-4xl font-bold font-display text-white tracking-tight">
-              Compare Your Operations (Before vs. After)
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-white tracking-tight">
+              Calculate Your Potential Operational Savings
+            </h2>
             <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-              Adjust the slider below to model your current local back-office headcount and dynamically calculate the direct cost reductions and reclaimed capacity of Going Technologies' global centers.
+              See how much time and operational cost your business could save by partnering with Going Technologies.
             </p>
           </div>
 
-          {/* Interactive Calculator Slider */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 lg:p-12 space-y-8 shadow-2xl">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              <div className="lg:col-span-5 space-y-6">
-                <div className="space-y-2">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 font-mono block">
-                    Interactive Input Headcount
-                  </span>
-                  <div className="flex justify-between items-baseline">
-                    <h3 className="text-2xl font-bold font-display">Current Admin FTEs:</h3>
-                    <span className="text-4xl font-extrabold text-blue-500 font-mono">
-                      {employeeScale}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <input
-                    type="range"
-                    min="5"
-                    max="100"
-                    step="5"
-                    value={employeeScale}
-                    onChange={(e) => setEmployeeScale(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                  />
-                  <div className="flex justify-between text-[10px] font-mono text-slate-500">
-                    <span>5 FTEs</span>
-                    <span>50 FTEs</span>
-                    <span>100 FTEs</span>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Based on average US commercial line CSR, compliance auditor, and policy-check payroll structures ($55,000/year fully loaded).
-                </p>
-              </div>
-
-              <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* Cost savings card */}
-                <div className="bg-slate-950 border border-slate-800/80 p-6 rounded-2xl space-y-1">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
-                    Annual Back-Office Payroll Cost
-                  </span>
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] text-red-400 font-mono line-through">
-                      ${(employeeScale * 55000).toLocaleString()} / Yr (Before)
-                    </p>
-                    <p className="text-2xl font-extrabold text-emerald-400 font-mono">
-                      ${(employeeScale * 22000).toLocaleString()} / Yr
-                    </p>
-                    <span className="text-[10px] font-bold text-emerald-500 font-mono uppercase bg-emerald-500/10 px-2 py-0.5 rounded inline-block mt-1">
-                      Save ${(employeeScale * 33000).toLocaleString()} (60% Off)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Capacity reclaimed card */}
-                <div className="bg-slate-950 border border-slate-800/80 p-6 rounded-2xl space-y-1">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
-                    Reclaimed Underwriter Capacity
-                  </span>
-                  <div className="space-y-1">
-                    <p className="text-3xl font-extrabold text-blue-400 font-mono">
-                      {(employeeScale * 4.5).toLocaleString()} Hrs
-                    </p>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                      Every single business day, redirected directly to client satisfaction and active business premium generation.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Side-by-side Paradigm Comparison */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* The Old Way */}
-            <div className="bg-slate-900 border border-red-500/20 rounded-3xl p-8 space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 blur-2xl rounded-full" />
-              <div className="flex items-center gap-2 pb-4 border-b border-slate-800">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Standard Internal Back-Office Operations
-                </h4>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  { title: 'Submissions Backlog Rate', detail: 'Builds up over 24-48 hours. Leads to lost market quote speed.' },
-                  { title: 'Data Accuracy & Ingestions', detail: 'Averages 6-8% clerical error rates with manual copy-paste transfers.' },
-                  { title: 'Information Security & Compliance', detail: 'Local desktops, physical notebooks, paper records inside standard cubicles.' },
-                  { title: 'AMS Capacity Bottleneck', detail: 'Licensed producers locked into Applied Epic/Vertafore clerical fields 40% of their day.' }
-                ].map((item, idx) => (
-                  <div key={idx} className="space-y-1">
-                    <span className="text-xs font-bold text-red-400">{item.title}</span>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* The Going Technologies Way */}
-            <div className="bg-slate-900 border border-blue-500/30 rounded-3xl p-8 space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 blur-2xl rounded-full" />
-              <div className="flex items-center gap-2 pb-4 border-b border-slate-800">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-50 animate-pulse" />
-                <h4 className="text-xs font-bold uppercase tracking-widest text-blue-400">
-                  Going Technologies Global Center Model
-                </h4>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  { title: 'Submissions Backlog Rate', detail: 'Overnight clearing in under 12 hours. Hit broker targets instantly.' },
-                  { title: 'Data Accuracy & Ingestions', detail: 'Industry-leading 99.98% accuracy monitored under strict Six Sigma controls.' },
-                  { title: 'Information Security & Compliance', detail: 'SOC 2 Type II certified. Physical keycards, clean-room rules, full VDI lockdown.' },
-                  { title: 'AMS Capacity Bottleneck', detail: 'Dedicated support pod reclaims 4.5 hours daily for domestic producers to hunt new deals.' }
-                ].map((item, idx) => (
-                  <div key={idx} className="space-y-1">
-                    <span className="text-xs font-bold text-blue-400">{item.title}</span>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
+          <ROICalculator setCurrentPage={setCurrentPage} />
         </div>
       </section>
 
@@ -1051,185 +925,42 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
-      {/* SECTION 8: THE COST OF OPERATIONAL INEFFICIENCY */}
+      {/* FEATURE 2: INTERACTIVE CLIENT JOURNEY (ONBOARDING WORKFLOW) */}
       <section className="bg-white border-y border-[#DCE7FF] py-24 overflow-hidden relative">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#2F6DFF]/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#A93DFF]/5 blur-[120px] rounded-full" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Diagnostic Simulator</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Strategic Alignment</span>
             <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-              The Cost of Operational Inefficiency
+              Our 4-Step Operational Onboarding Journey
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Every day your domestic licensed agents spend manually entering data, verifying policy checksheets, or processing certificate backlogs is premium growth lost to administrative overhead.
+              Transition from manual backlogs to hyper-efficient, secure, carrier-trained global operations in just four simple phases.
             </p>
           </div>
 
-          {/* Interactive Calculator Slider Widget */}
-          <div className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-2xl p-6 sm:p-10 mb-16 shadow-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              <div className="lg:col-span-5 space-y-6">
-                <h4 className="text-lg font-bold text-[#081B8C] font-display">Operational Savings Estimator</h4>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Adjust the slider below to select your current domestic administrative team scale. See how much budget and capacity you can reclaim through Going Technologies' optimized global center squads.
-                </p>
+          <ClientJourney />
+        </div>
+      </section>
 
-                <div className="space-y-4 pt-2">
-                  <div className="flex justify-between items-center text-xs font-semibold text-gray-700">
-                    <span>Domestic Admins / CSRs:</span>
-                    <span className="text-[#2F6DFF] font-mono font-bold text-lg">{employeeScale} Team Members</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="150"
-                    step="5"
-                    value={employeeScale}
-                    onChange={(e) => setEmployeeScale(Number(e.target.value))}
-                    className="w-full accent-[#2F6DFF] cursor-pointer h-1.5 bg-[#DCE7FF] rounded-lg appearance-none"
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-400 font-mono font-bold">
-                    <span>5 STAFF</span>
-                    <span>75 STAFF</span>
-                    <span>150 STAFF</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="lg:col-span-7 bg-white border border-[#DCE7FF] rounded-xl p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6 relative overflow-hidden shadow-xs">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-2xl rounded-full" />
-                
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Estimated Annual Cost Savings</span>
-                  <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono tracking-tight">
-                    ${((employeeScale * 9500 * 12) - (employeeScale * 3800 * 12)).toLocaleString()}
-                  </div>
-                  <p className="text-[10px] text-gray-500">Based on standard $9,500 domestic payroll/burden vs. $3,800 optimized global seat.</p>
-                </div>
-
-                <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-gray-100 sm:pl-6 pt-4 sm:pt-0">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Reclaimed Underwriter Capacity</span>
-                  <div className="text-3xl sm:text-4xl font-black text-[#2F6DFF] font-mono tracking-tight">
-                    {(employeeScale * 4.5 * 240).toLocaleString()} Hrs
-                  </div>
-                  <p className="text-[10px] text-gray-500">Reclaimed daily (4.5 hrs/staff member) over a standard 240-day business calendar year.</p>
-                </div>
-              </div>
-
-            </div>
+      {/* FEATURE 4: OPERATIONS HEALTH CHECK (ASSESSMENT WIDGET) */}
+      <section className="bg-slate-50 border-b border-[#DCE7FF] py-24 relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#2F6DFF]/5 blur-[120px] rounded-full" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Interactive Diagnostic</span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              Assess Your Operations Health Check
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Answer 5 simple questions to benchmark your back-office throughput, evaluate cost leaks, and unlock custom strategic operational recommendations.
+            </p>
           </div>
 
-          {/* Interactive Comparison Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
-            
-            {/* LEFT CARD: Without Going Technologies */}
-            <div className="bg-red-50/10 border border-red-200/60 rounded-3xl p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden group hover:border-red-400/60 hover:shadow-md transition-all duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-400/5 blur-3xl rounded-full pointer-events-none" />
-              
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
-                    Without Going Technologies
-                  </span>
-                  <span className="text-[10px] text-red-400 font-mono">friction_pipeline.log</span>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#081B8C] font-display">Administrative Backlogs & Bottlenecks</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Local agencies and carrier branches fail to achieve double-digit growth because producers and underwriters are constrained by repetitive back-office tasks.
-                  </p>
-                </div>
-
-                {/* Animated list elements */}
-                <div className="space-y-4 border-t border-red-100/60 pt-6">
-                  {[
-                    { title: 'Backlogs Increase Daily', desc: 'Certificate requests, binder checking, and submission queues pile up during market surges, losing hot business.' },
-                    { title: 'Drastically Higher Operating Costs', desc: 'Recruiting, payroll tax, and localized real-estate overheads inflate administrative cost per transacted policy.' },
-                    { title: 'Slower Submissions Turnaround Time', desc: 'Brokers place risk with competitors who clear applications in hours, while manual data entries take 2-3 business days.' },
-                    { title: 'Administrative Underwriter Overload', desc: 'Producers spend 40% of their day on indexing and clerical processing instead of closing premium contracts.' }
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex gap-3 items-start">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mt-1.5 animate-pulse" />
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-800">{item.title}</h4>
-                        <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Stress metric graphic */}
-              <div className="mt-8 pt-6 border-t border-red-100/60 flex justify-between items-center text-xs">
-                <div>
-                  <span className="text-gray-400 text-[10px] block uppercase font-bold tracking-wider">Unresolved Backlogs</span>
-                  <span className="text-2xl font-extrabold text-red-600 font-mono tracking-tight animate-pulse">Accumulating Daily</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-gray-400 text-[10px] block uppercase font-bold tracking-wider">Operational Waste</span>
-                  <span className="text-2xl font-extrabold text-red-600 font-mono tracking-tight">~40% Loss</span>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT CARD: With Going Technologies */}
-            <div className="bg-emerald-50/10 border border-emerald-200/60 rounded-3xl p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden group hover:border-emerald-400/60 hover:shadow-md transition-all duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/5 blur-3xl rounded-full pointer-events-none" />
-
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
-                    With Going Technologies
-                  </span>
-                  <span className="text-[10px] text-emerald-500 font-mono font-bold">active_scale_pipeline // LIVE</span>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#081B8C] font-display">A Streamlined High-Velocity Engine</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Secure virtual desktops paired with dedicated, carrier-trained delivery teams clear back-office transaction backlogs overnight, scaling your enterprise effortlessly.
-                  </p>
-                </div>
-
-                {/* Optimized elements */}
-                <div className="space-y-4 border-t border-emerald-100/60 pt-6">
-                  {[
-                    { title: 'Zero Morning Backlogs', desc: 'Our overnight operational squads index files, audit policies, and clear transactional queues before your US office opens.' },
-                    { title: '60% Directly Reduced Processing Cost', desc: 'Convert fixed corporate administrative burdens into dynamic, cost-efficient, and fully-managed global seats.' },
-                    { title: 'Rapid Turnaround Processing Velocity', desc: 'Submission entries, quote mappings, and urgent certificates of insurance are dispatched in less than 12 minutes.' },
-                    { title: '100% Reclaimed Producer Focus', desc: 'Domestic underwriters and licensed producers spend all day building corporate accounts, driving major premium growth.' }
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex gap-3 items-start">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-800">{item.title}</h4>
-                        <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Success metrics */}
-              <div className="mt-8 pt-6 border-t border-emerald-100/60 flex justify-between items-center text-xs">
-                <div>
-                  <span className="text-gray-400 text-[10px] block uppercase font-bold tracking-wider">SLA Queue Backlog</span>
-                  <span className="text-2xl font-extrabold text-emerald-600 font-mono tracking-tight">0 Queue (Cleared)</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-gray-400 text-[10px] block uppercase font-bold tracking-wider">Premium Growth Rate</span>
-                  <span className="text-2xl font-extrabold text-emerald-600 font-mono tracking-tight">+38% Bound Avg</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
+          <OperationsHealthCheck setCurrentPage={setCurrentPage} />
         </div>
       </section>
 
