@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
+import { BLOG_POSTS } from '../data';
 
 interface AdminProps {
   setCurrentPage: (page: PageType) => void;
@@ -71,6 +72,19 @@ export default function Admin({ setCurrentPage }: AdminProps) {
 
   // Blog Management CMS state
   const [blogsList, setBlogsList] = useState<any[]>([]);
+  const [deletedStaticBlogs, setDeletedStaticBlogs] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('deleted_static_blogs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('deleted_static_blogs', JSON.stringify(deletedStaticBlogs));
+  }, [deletedStaticBlogs]);
+
   const [blogCategoriesList, setBlogCategoriesList] = useState<any[]>([]);
   const [isBlogsTableMissing, setIsBlogsTableMissing] = useState(false);
   const [isSavingBlog, setIsSavingBlog] = useState(false);
@@ -462,6 +476,14 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     if (!recordToDelete) return;
     const { table, id } = recordToDelete;
     setIsDeleting(true);
+
+    if (table === 'blogs' && BLOG_POSTS.some(b => b.id === id)) {
+      setDeletedStaticBlogs(prev => [...prev, id]);
+      setDeleteModalOpen(false);
+      setRecordToDelete(null);
+      setIsDeleting(false);
+      return;
+    }
 
     console.log(`%c=== DELETION INITIATED ===`, 'color: #EF4444; font-weight: bold;');
     console.log(`Record ID: ${id}`);
@@ -958,7 +980,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                   { id: 'jobs', label: 'Careers (Jobs)', icon: Briefcase, count: jobs.length },
                   { id: 'applications', label: 'Applications', icon: Layers, count: applications.length },
                   { id: 'proposal_downloads', label: 'Proposal Downloads', icon: Download, count: downloads.length },
-                  { id: 'blogs', label: 'Blog Articles', icon: FileText, count: blogsList.length },
+                  { id: 'blogs', label: 'Blog Articles', icon: FileText, count: blogsList.length + BLOG_POSTS.filter(b => !deletedStaticBlogs.includes(b.id)).filter(b => !blogsList.some(sb => sb.title.toLowerCase() === b.title.toLowerCase())).length },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -2446,84 +2468,104 @@ create policy "Allow public delete on blogs" on public.blogs for delete to anon,
                   </div>
 
                   {/* Blogs Table Card */}
-                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
-                      <div className="relative w-full sm:max-w-xs">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          placeholder="Search articles by title or category..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full text-xs pl-9 pr-4 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
-                        />
-                      </div>
-                      <div className="text-gray-400 text-xs font-semibold">
-                        Total Articles: <strong className="text-gray-700">{blogsList.length}</strong> (including custom publications)
-                      </div>
-                    </div>
+                  {(() => {
+                    const combinedAdminBlogs = [
+                      ...blogsList.map(b => ({
+                        ...b,
+                        author: 'Going Technologies Team',
+                        author_image: '/Going tech icon-1.png'
+                      })),
+                      ...BLOG_POSTS
+                        .filter(b => !deletedStaticBlogs.includes(b.id))
+                        .filter(b => !blogsList.some(sb => sb.title.toLowerCase() === b.title.toLowerCase()))
+                        .map(b => ({
+                          ...b,
+                          author: 'Going Technologies Team',
+                          author_image: '/Going tech icon-1.png',
+                          created_at: b.publishDate
+                        }))
+                    ];
+                    const filteredBlogs = combinedAdminBlogs.filter(b => !searchQuery || b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="p-4">Title & Slug</th>
-                            <th className="p-4">Category</th>
-                            <th className="p-4">Author</th>
-                            <th className="p-4">Reading Time</th>
-                            <th className="p-4">Published Date</th>
-                            <th className="p-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {blogsList
-                            .filter(b => !searchQuery || b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.category.toLowerCase().includes(searchQuery.toLowerCase()))
-                            .map((item) => (
-                              <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="p-4 font-bold text-[#081B8C] max-w-[300px]">
-                                  <div className="font-bold text-sm text-gray-800 leading-snug line-clamp-2">{item.title}</div>
-                                  <div className="text-[10px] font-mono text-gray-400 mt-1">/{item.slug}</div>
-                                </td>
-                                <td className="p-4">
-                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#DCE7FF]/40 text-[#081B8C]">
-                                    {item.category}
-                                  </span>
-                                </td>
-                                <td className="p-4 font-semibold text-gray-600">
-                                  {item.author}
-                                </td>
-                                <td className="p-4 font-mono text-gray-500">
-                                  {item.reading_time || '5 Min Read'}
-                                </td>
-                                <td className="p-4 text-gray-500 font-medium">
-                                  {new Date(item.created_at || item.download_time || Date.now()).toLocaleDateString(undefined, {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                </td>
-                                <td className="p-4 text-right">
-                                  <button
-                                    onClick={() => triggerDelete('blogs', item.id)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
-                                    title="Delete Article"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </td>
+                    return (
+                      <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                          <div className="relative w-full sm:max-w-xs">
+                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="Search articles by title or category..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="w-full text-xs pl-9 pr-4 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
+                            />
+                          </div>
+                          <div className="text-gray-400 text-xs font-semibold">
+                            Total Articles: <strong className="text-gray-700">{combinedAdminBlogs.length}</strong> (including pre-written insights)
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                                <th className="p-4">Title & Slug</th>
+                                <th className="p-4">Category</th>
+                                <th className="p-4">Author</th>
+                                <th className="p-4">Reading Time</th>
+                                <th className="p-4">Published Date</th>
+                                <th className="p-4 text-right">Actions</th>
                               </tr>
-                            ))}
-                          {blogsList.length === 0 && (
-                            <tr>
-                              <td colSpan={6} className="p-12 text-center text-gray-400 font-medium">
-                                No custom articles found in Supabase. Any added blog posts will be saved here in real-time.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                              {filteredBlogs.map((item) => (
+                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="p-4 font-bold text-[#081B8C] max-w-[300px]">
+                                    <div className="font-bold text-sm text-gray-800 leading-snug line-clamp-2">{item.title}</div>
+                                    <div className="text-[10px] font-mono text-gray-400 mt-1">/{item.slug || item.id}</div>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#DCE7FF]/40 text-[#081B8C]">
+                                      {item.category}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-semibold text-gray-600">
+                                    {item.author}
+                                  </td>
+                                  <td className="p-4 font-mono text-gray-500">
+                                    {item.reading_time || item.readTime || '5 Min Read'}
+                                  </td>
+                                  <td className="p-4 text-gray-500 font-medium">
+                                    {new Date(item.created_at || item.download_time || Date.now()).toLocaleDateString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <button
+                                      onClick={() => triggerDelete('blogs', item.id)}
+                                      className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
+                                      title="Delete Article"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                              {filteredBlogs.length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-12 text-center text-gray-400 font-medium">
+                                    No articles match your search filters.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

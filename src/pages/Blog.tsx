@@ -63,15 +63,9 @@ export default function Blog({ setCurrentPage }: BlogProps) {
             year: 'numeric'
           }),
           author: {
-            name: b.author || 'Going Technologies Team',
+            name: 'Going Technologies Team',
             role: 'Operations Strategist',
-            avatar: b.author === 'Elena Rostova' 
-              ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&h=150&q=80'
-              : b.author === 'James McCarter'
-              ? 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&h=150&q=80'
-              : b.author === 'Michael Chen'
-              ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80'
-              : '/Going tech icon-1.png'
+            avatar: '/Going tech icon-1.png'
           },
           seoKeywords: b.meta_title ? [b.meta_title] : []
         }));
@@ -103,8 +97,31 @@ export default function Blog({ setCurrentPage }: BlogProps) {
     };
   }, []);
 
-  // Effective blogs list
-  const blogs = supabaseBlogs.length > 0 ? supabaseBlogs : BLOG_POSTS;
+  // Effective blogs list - Combine custom database blogs with pre-written static insights
+  const getDeletedStaticBlogs = (): string[] => {
+    try {
+      const saved = localStorage.getItem('deleted_static_blogs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const deletedList = getDeletedStaticBlogs();
+
+  const blogs = [
+    ...supabaseBlogs,
+    ...BLOG_POSTS
+      .filter(b => !deletedList.includes(b.id))
+      .filter(b => !supabaseBlogs.some(sb => sb.title.toLowerCase() === b.title.toLowerCase()))
+  ].map(b => ({
+    ...b,
+    author: {
+      name: 'Going Technologies Team',
+      role: 'Operations Strategist',
+      avatar: '/Going tech icon-1.png'
+    }
+  }));
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
