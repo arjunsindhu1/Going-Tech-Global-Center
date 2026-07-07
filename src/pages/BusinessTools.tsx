@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calculator, Activity, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Calculator, Activity, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
 import { PageType } from '../types';
 import ROICalculator from '../components/ROICalculator';
 import OperationsHealthCheck from '../components/OperationsHealthCheck';
+import BusinessToolsModal from '../components/BusinessToolsModal';
 
 interface BusinessToolsProps {
   setCurrentPage: (page: PageType) => void;
@@ -11,6 +12,56 @@ interface BusinessToolsProps {
 
 export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
   const [activeTool, setActiveTool] = useState<'roi' | 'health'>('roi');
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    const submitted = localStorage.getItem('businessToolsLeadSubmitted') === 'true';
+    const submittedTime = localStorage.getItem('businessToolsLeadSubmittedTime');
+    if (submitted && submittedTime) {
+      const time = parseInt(submittedTime, 10);
+      if (!isNaN(time)) {
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+        if (Date.now() - time <= THIRTY_DAYS_MS) {
+          return true;
+        }
+      }
+    }
+    return sessionStorage.getItem('gt_business_tools_unlocked') === 'true';
+  });
+  const [isModalOpen, setIsModalOpen] = useState(!isUnlocked);
+
+  const handleTabChange = (tool: 'roi' | 'health') => {
+    setActiveTool(tool);
+    if (!isUnlocked) {
+      setIsModalOpen(true);
+    }
+  };
+
+  const getToolName = () => {
+    return activeTool === 'roi' ? 'ROI Savings Calculator' : 'Operations Health Check';
+  };
+
+  const renderLockedPlaceholder = (toolDesc: string) => {
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-16 px-6 bg-slate-50 border border-dashed border-[#DCE7FF] rounded-2xl space-y-6 relative overflow-hidden">
+        <div className="p-4 bg-amber-50 text-amber-600 rounded-full border border-amber-100 shadow-sm animate-bounce">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="space-y-2 max-w-md">
+          <h3 className="text-xl font-bold font-display text-[#081B8C]">Unlock Free Business Tools</h3>
+          <p className="text-gray-500 text-xs sm:text-sm">
+            {toolDesc} Please provide a few business details to unlock complete access.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="px-6 py-3.5 bg-[#081B8C] hover:bg-[#2F6DFF] text-white rounded-xl font-bold text-sm cursor-pointer shadow-lg transition-colors flex items-center gap-2"
+        >
+          <Lock className="w-4 h-4" />
+          <span>Unlock Tools Now</span>
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-[#F8FAFF] min-h-screen">
@@ -36,7 +87,7 @@ export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
       <section className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
         <div className="bg-white border border-[#DCE7FF] rounded-2xl p-2 shadow-xl flex gap-2">
           <button
-            onClick={() => setActiveTool('roi')}
+            onClick={() => handleTabChange('roi')}
             className={`flex-1 py-4 px-6 rounded-xl font-bold font-display text-sm flex items-center justify-center gap-3 transition-all cursor-pointer ${
               activeTool === 'roi'
                 ? 'bg-[#081B8C] text-white shadow-lg shadow-[#081B8C]/15'
@@ -48,7 +99,7 @@ export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
           </button>
           
           <button
-            onClick={() => setActiveTool('health')}
+            onClick={() => handleTabChange('health')}
             className={`flex-1 py-4 px-6 rounded-xl font-bold font-display text-sm flex items-center justify-center gap-3 transition-all cursor-pointer ${
               activeTool === 'health'
                 ? 'bg-[#081B8C] text-white shadow-lg shadow-[#081B8C]/15'
@@ -88,7 +139,11 @@ export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
                   </div>
                 </div>
 
-                <ROICalculator setCurrentPage={setCurrentPage} />
+                {isUnlocked ? (
+                  <ROICalculator setCurrentPage={setCurrentPage} />
+                ) : (
+                  renderLockedPlaceholder("This professional savings calculator computes precise, audited staffing cost models based on actual payroll parameters.")
+                )}
               </div>
             </motion.div>
           ) : (
@@ -115,7 +170,11 @@ export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
                   </div>
                 </div>
 
-                <OperationsHealthCheck setCurrentPage={setCurrentPage} />
+                {isUnlocked ? (
+                  <OperationsHealthCheck setCurrentPage={setCurrentPage} />
+                ) : (
+                  renderLockedPlaceholder("This interactive audit identifies systematic AMS processing leakages, compliance bottlenecks, and provides a customized operational score.")
+                )}
               </div>
             </motion.div>
           )}
@@ -144,6 +203,14 @@ export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
           </div>
         </div>
       </section>
+
+      {/* Premium Lead Gate Modal */}
+      <BusinessToolsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onUnlock={() => setIsUnlocked(true)}
+        toolName={getToolName()}
+      />
     </div>
   );
 }

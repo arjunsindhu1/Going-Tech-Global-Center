@@ -22,13 +22,15 @@ import { OFFICE_LOCATIONS } from '../data';
 import { supabase } from '../lib/supabase';
 import { logDetailedError, getActualReason } from '../utils/errorLogger';
 import { downloadProposal } from '../utils/proposalDownloader';
+import { broadcastChange } from '../utils/realtimeHelper';
 
 interface ContactProps {
   setCurrentPage: (page: PageType) => void;
   onDownloadSuccess?: () => void;
+  onWhatsAppClick?: () => void;
 }
 
-export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactProps) {
+export default function Contact({ setCurrentPage, onDownloadSuccess, onWhatsAppClick }: ContactProps) {
   // Lead Form multi-step state
   const [formStep, setFormStep] = useState(1);
   const [companyName, setCompanyName] = useState('');
@@ -81,16 +83,22 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
 
   // Proposal Download Lead Magnet states
   const [downloadEmail, setDownloadEmail] = useState('');
+  const [downloadAgencyName, setDownloadAgencyName] = useState('');
+  const [downloadSector, setDownloadSector] = useState('');
   const [downloadError, setDownloadError] = useState('');
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const handleDownloadProposal = async (e: FormEvent) => {
     e.preventDefault();
+    if (!downloadSector) {
+      setDownloadError('Please select a business sector.');
+      return;
+    }
     setDownloadError('');
     setDownloadLoading(true);
 
-    const res = await downloadProposal(downloadEmail, 'Contact Page', window.location.href);
+    const res = await downloadProposal(downloadAgencyName, downloadEmail, downloadSector, 'Contact Page', window.location.href);
     setDownloadLoading(false);
 
     if (res.error) {
@@ -103,6 +111,8 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
       setTimeout(() => {
         setDownloadSuccess(false);
         setDownloadEmail('');
+        setDownloadAgencyName('');
+        setDownloadSector('');
       }, 5000);
     }
   };
@@ -145,19 +155,24 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
     setIsSubmittingLead(true);
     setLeadError(null);
     try {
+      const payload = {
+        company_name: companyName,
+        company_type: companyType,
+        premium_volume: premiumVolume,
+        bottlenecks: selectedBottlenecks,
+        client_name: clientName,
+        client_email: clientEmail,
+        status: 'New'
+      };
+      
       const { error } = await supabase
         .from('contact_leads')
-        .insert([{
-          company_name: companyName,
-          company_type: companyType,
-          premium_volume: premiumVolume,
-          bottlenecks: selectedBottlenecks,
-          client_name: clientName,
-          client_email: clientEmail,
-          status: 'New'
-        }]);
+        .insert([payload]);
 
       if (error) throw error;
+
+      // Broadcast the insertion in real-time
+      broadcastChange('contact_leads', 'INSERT', payload);
 
       // Automatically prefill the booking form fields with matching values for the customer's convenience!
       setBookingName(clientName);
@@ -179,19 +194,25 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
     setIsSubmittingMeeting(true);
     setMeetingError(null);
     try {
+      const payload = {
+        name: bookingName || clientName || 'Anonymous',
+        email: bookingEmail || clientEmail || 'no-email@company.com',
+        phone: bookingPhone || clientPhone || '',
+        company: bookingCompany || companyName || '',
+        service: bookingService,
+        notes: bookingNotes,
+        date: `${selectedDay} at ${selectedTimeSlot}`
+      };
+
       const { error } = await supabase
         .from('consultation_requests')
-        .insert([{
-          name: bookingName || clientName || 'Anonymous',
-          email: bookingEmail || clientEmail || 'no-email@company.com',
-          phone: bookingPhone || clientPhone || '',
-          company: bookingCompany || companyName || '',
-          service: bookingService,
-          notes: bookingNotes,
-          date: `${selectedDay} at ${selectedTimeSlot}`
-        }]);
+        .insert([payload]);
 
       if (error) throw error;
+
+      // Broadcast the insertion in real-time
+      broadcastChange('consultation_requests', 'INSERT', payload);
+
       setMeetingScheduled(true);
     } catch (err: any) {
       console.error('Error scheduling consultation:', err);
@@ -207,15 +228,21 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
     setIsSubmittingCb(true);
     setCbError(null);
     try {
+      const payload = {
+        name: cbName.trim(),
+        phone: cbPhone.trim(),
+        preferred_time: cbTime
+      };
+
       const { error } = await supabase
         .from('callback_requests')
-        .insert([{
-          name: cbName.trim(),
-          phone: cbPhone.trim(),
-          preferred_time: cbTime
-        }]);
+        .insert([payload]);
 
       if (error) throw error;
+
+      // Broadcast the insertion in real-time
+      broadcastChange('callback_requests', 'INSERT', payload);
+
       setCbSubmitted(true);
     } catch (err: any) {
       console.error('Error requesting callback:', err);
@@ -231,17 +258,23 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
     setIsSubmittingDiag(true);
     setDiagError(null);
     try {
+      const payload = {
+        name: diagName.trim(),
+        email: diagEmail.trim(),
+        phone: diagPhone.trim(),
+        company: diagCompany.trim(),
+        notes: diagNotes.trim()
+      };
+
       const { error } = await supabase
         .from('diagnostic_requests')
-        .insert([{
-          name: diagName.trim(),
-          email: diagEmail.trim(),
-          phone: diagPhone.trim(),
-          company: diagCompany.trim(),
-          notes: diagNotes.trim()
-        }]);
+        .insert([payload]);
 
       if (error) throw error;
+
+      // Broadcast the insertion in real-time
+      broadcastChange('diagnostic_requests', 'INSERT', payload);
+
       setDiagSubmitted(true);
     } catch (err: any) {
       console.error('Error submitting diagnostic request:', err);
@@ -574,15 +607,14 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
               </div>
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-4 h-4 text-emerald-500 shrink-0" />
-                <a
-                  href="https://wa.me/919618424749?text=Hello%20Going%20Technologies%20Team%2C%0A%0AI%20would%20like%20to%20learn%20more%20about%20your%20operational%20support%20and%20business%20process%20outsourcing%20services.%0A%0APlease%20contact%20me."
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-emerald-600 hover:underline flex items-center gap-1 font-bold"
+                <button
+                  type="button"
+                  onClick={onWhatsAppClick}
+                  className="text-emerald-600 hover:underline flex items-center gap-1 font-bold bg-transparent border-none p-0 cursor-pointer text-left focus:outline-none"
                 >
                   <span>Chat directly via WhatsApp</span>
                   <ChevronRight className="w-3.5 h-3.5" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -1074,11 +1106,37 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
                 ) : (
                   <form
                     onSubmit={handleDownloadProposal}
-                    className="bg-white/60 backdrop-blur-md border border-white/80 rounded-2xl p-6 md:p-8 space-y-4 shadow-xs"
+                    className="bg-white/60 backdrop-blur-md border border-white/80 rounded-2xl p-6 md:p-8 space-y-4 shadow-xs text-left"
                   >
-                    <div className="space-y-2 text-left">
+                    {downloadError && (
+                      <div className="flex items-start gap-2 text-rose-600 text-[11px] leading-relaxed bg-rose-50/50 border border-rose-100 rounded-xl p-3">
+                        <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{downloadError}</span>
+                      </div>
+                    )}
+
+                    {/* Agency / Company Name */}
+                    <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
-                        Corporate Email Address
+                        Agency / Company Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Agency Name"
+                        value={downloadAgencyName}
+                        onChange={(e) => {
+                          setDownloadAgencyName(e.target.value);
+                          if (downloadError) setDownloadError('');
+                        }}
+                        className="w-full text-xs px-4 py-3 bg-gray-50/80 border border-[#DCE7FF] hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-900 placeholder-gray-400"
+                      />
+                    </div>
+
+                    {/* Business Email */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                        Corporate Email Address *
                       </label>
                       <div className="relative rounded-xl shadow-xs">
                         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -1096,15 +1154,35 @@ export default function Contact({ setCurrentPage, onDownloadSuccess }: ContactPr
                           className="w-full text-xs pl-10 pr-4 py-3.5 bg-gray-50/80 border border-[#DCE7FF] hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-900 placeholder-gray-400"
                         />
                       </div>
-                      {downloadError && (
-                        <div className="flex items-start gap-2 mt-2 text-rose-600 text-[11px] leading-relaxed bg-rose-50/50 border border-rose-100 rounded-xl p-3">
-                          <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-500" />
-                          <span>{downloadError}</span>
-                        </div>
-                      )}
                     </div>
 
-                    <div className="space-y-3">
+                    {/* Business Sector Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                        Business Sector *
+                      </label>
+                      <select
+                        required
+                        value={downloadSector}
+                        onChange={(e) => {
+                          setDownloadSector(e.target.value);
+                          if (downloadError) setDownloadError('');
+                        }}
+                        className="w-full text-xs px-4 py-3 bg-gray-50/80 border border-[#DCE7FF] hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-700 font-sans"
+                      >
+                        <option value="">Select a Sector</option>
+                        <option value="Property & Casualty Insurance">Property & Casualty Insurance</option>
+                        <option value="Health Insurance">Health Insurance</option>
+                        <option value="Life Insurance">Life Insurance</option>
+                        <option value="Medicare">Medicare</option>
+                        <option value="Insurance Brokerage">Insurance Brokerage</option>
+                        <option value="MGA">MGA</option>
+                        <option value="Insurance Carrier">Insurance Carrier</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
                       <button
                         type="submit"
                         disabled={downloadLoading}

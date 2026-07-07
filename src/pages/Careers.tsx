@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
+import { broadcastChange } from '../utils/realtimeHelper';
 
 interface CareersProps {
   setCurrentPage: (page: PageType) => void;
@@ -202,26 +203,31 @@ export default function Careers({ setCurrentPage }: CareersProps) {
     setErrorMessage(null);
 
     try {
+      const payload = {
+        job_id: selectedJob.id,
+        name: candidateName,
+        email: candidateEmail,
+        phone: candidatePhone,
+        resume: JSON.stringify({
+          name: candidateResumeName,
+          data: candidateResumeBase64
+        }),
+        linkedin_profile: candidateLinkedin,
+        experience_years: candidateExperience,
+        cover_letter: candidateCover,
+        status: 'New'
+      };
+
       const { error } = await supabase
         .from('job_applications')
-        .insert({
-          job_id: selectedJob.id,
-          name: candidateName,
-          email: candidateEmail,
-          phone: candidatePhone,
-          resume: JSON.stringify({
-            name: candidateResumeName,
-            data: candidateResumeBase64
-          }),
-          linkedin_profile: candidateLinkedin,
-          experience_years: candidateExperience,
-          cover_letter: candidateCover,
-          status: 'New'
-        });
+        .insert(payload);
 
       if (error) {
         throw new Error(error.message);
       }
+
+      // Broadcast application addition
+      broadcastChange('job_applications', 'INSERT', payload);
 
       setApplySubmitted(true);
       

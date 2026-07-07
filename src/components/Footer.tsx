@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { Mail, Phone, MapPin, Send, ShieldCheck, ArrowUpRight, CheckCircle, Loader2 } from 'lucide-react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
+import { broadcastChange } from '../utils/realtimeHelper';
 
 interface FooterProps {
   setCurrentPage: (page: PageType) => void;
@@ -19,14 +20,18 @@ export default function Footer({ setCurrentPage }: FooterProps) {
       setIsSubmitting(true);
       setErrorMsg(null);
       try {
+        const payload = { email: email.trim() };
         const { error } = await supabase
           .from('newsletter_subscribers')
-          .insert([{ email: email.trim() }]);
+          .insert([payload]);
         
         if (error && error.code !== '23505') { // Let 23505 unique violation slide as success gracefully
           throw error;
         }
         
+        // Broadcast addition
+        broadcastChange('newsletter_subscribers', 'INSERT', payload);
+
         setSubscribed(true);
         setEmail('');
         setTimeout(() => setSubscribed(false), 6000);

@@ -22,6 +22,7 @@ import Admin from './pages/Admin';
 import { supabase } from './lib/supabase';
 import { logDetailedError, getActualReason } from './utils/errorLogger';
 import { downloadProposal } from './utils/proposalDownloader';
+import WhatsAppModal from './components/WhatsAppModal';
 
 export default function App() {
   const [page, setPage] = useState<PageType>('home');
@@ -30,6 +31,7 @@ export default function App() {
   const [showExitIntent, setShowExitIntent] = useState(true);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
 
   // Slide-in modal form tab & fields
   const [panelTab, setPanelTab] = useState<'diagnostic' | 'callback'>('diagnostic');
@@ -50,12 +52,14 @@ export default function App() {
 
   // Lead Magnet Popup states
   const [popupEmail, setPopupEmail] = useState('');
+  const [popupAgencyName, setPopupAgencyName] = useState('');
+  const [popupSector, setPopupSector] = useState('');
   const [popupError, setPopupError] = useState('');
   const [popupLoading, setPopupLoading] = useState(false);
   const [popupSuccess, setPopupSuccess] = useState(false);
 
-  const handleDownloadProposal = async (emailToSubmit: string, source: string) => {
-    return await downloadProposal(emailToSubmit, source, window.location.href);
+  const handleDownloadProposal = async (agencyToSubmit: string, emailToSubmit: string, sectorToSubmit: string, source: string) => {
+    return await downloadProposal(agencyToSubmit, emailToSubmit, sectorToSubmit, source, window.location.href);
   };
 
 
@@ -218,6 +222,7 @@ export default function App() {
               setHasDownloaded(true);
               setShowExitIntent(false);
             }}
+            onWhatsAppClick={() => setIsWhatsAppOpen(true)}
           />
         );
       case 'careers':
@@ -264,10 +269,8 @@ export default function App() {
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
         
         {/* Floating WhatsApp Chat Button */}
-        <a
-          href="https://wa.me/919618424749?text=Hello%20Going%20Technologies%20Team%2C%0A%0AI%20would%20like%20to%20learn%20more%20about%20your%20operational%20support%20and%20business%20process%20outsourcing%20services.%0A%0APlease%20contact%20me."
-          target="_blank"
-          rel="noreferrer"
+        <button
+          onClick={() => setIsWhatsAppOpen(true)}
           className="pointer-events-auto cursor-pointer p-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center group relative border border-emerald-400/20 shadow-emerald-500/10"
           title="Chat with us on WhatsApp"
         >
@@ -277,7 +280,7 @@ export default function App() {
           </span>
           <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-500 animate-ping" />
           <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-500" />
-        </a>
+        </button>
 
         {/* Scroll To Top (If scrolled) */}
         {showScrollTop && (
@@ -340,6 +343,8 @@ export default function App() {
                       setShowExitIntent(false);
                       setPopupSuccess(false);
                       setPopupEmail('');
+                      setPopupAgencyName('');
+                      setPopupSector('');
                     }}
                     className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-6 py-2.5 rounded-xl transition-colors"
                   >
@@ -350,28 +355,60 @@ export default function App() {
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
+                    if (!popupSector) {
+                      setPopupError('Please select a business sector.');
+                      return;
+                    }
                     setPopupError('');
                     setPopupLoading(true);
-                    const res = await handleDownloadProposal(popupEmail, 'Popup');
+                    const res = await handleDownloadProposal(popupAgencyName, popupEmail, popupSector, 'Exit Popup');
                     setPopupLoading(false);
                     if (res.error) {
                       setPopupError(res.error);
                     } else {
                       setPopupSuccess(true);
                       setHasDownloaded(true);
-                      // Auto-close popup after 1.5 seconds
+                      // Auto-close popup after 2 seconds
                       setTimeout(() => {
                         setShowExitIntent(false);
                         setPopupSuccess(false);
                         setPopupEmail('');
-                      }, 1500);
+                        setPopupAgencyName('');
+                        setPopupSector('');
+                      }, 2000);
                     }
                   }}
                   className="space-y-4"
                 >
-                  <div className="space-y-1.5 text-left">
+                  {popupError && (
+                    <div className="flex items-start gap-1.5 text-rose-600 text-[11px] leading-relaxed bg-rose-50/50 border border-rose-100 rounded-xl p-2.5 text-left">
+                      <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-500" />
+                      <span>{popupError}</span>
+                    </div>
+                  )}
+
+                  {/* Agency / Company Name */}
+                  <div className="space-y-1 text-left">
                     <label className="text-xs font-bold text-gray-700 block">
-                      Corporate Email Address
+                      Agency / Company Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Agency Name"
+                      value={popupAgencyName}
+                      onChange={(e) => {
+                        setPopupAgencyName(e.target.value);
+                        if (popupError) setPopupError('');
+                      }}
+                      className="w-full text-xs px-4 py-3 bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-900 placeholder-gray-400"
+                    />
+                  </div>
+
+                  {/* Corporate Email */}
+                  <div className="space-y-1 text-left">
+                    <label className="text-xs font-bold text-gray-700 block">
+                      Corporate Email Address *
                     </label>
                     <div className="relative rounded-xl shadow-xs">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -389,15 +426,35 @@ export default function App() {
                         className="w-full text-xs pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-900 placeholder-gray-400"
                       />
                     </div>
-                    {popupError && (
-                      <div className="flex items-start gap-1.5 mt-2 text-rose-600 text-[11px] leading-relaxed bg-rose-50/50 border border-rose-100 rounded-xl p-2.5">
-                        <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-500" />
-                        <span>{popupError}</span>
-                      </div>
-                    )}
                   </div>
 
-                  <div className="space-y-2">
+                  {/* Sector Selection Dropdown */}
+                  <div className="space-y-1 text-left">
+                    <label className="text-xs font-bold text-gray-700 block">
+                      Business Sector *
+                    </label>
+                    <select
+                      required
+                      value={popupSector}
+                      onChange={(e) => {
+                        setPopupSector(e.target.value);
+                        if (popupError) setPopupError('');
+                      }}
+                      className="w-full text-xs px-4 py-3 bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-xl transition-all font-medium text-gray-700"
+                    >
+                      <option value="">Select a Sector</option>
+                      <option value="Property & Casualty Insurance">Property & Casualty Insurance</option>
+                      <option value="Health Insurance">Health Insurance</option>
+                      <option value="Life Insurance">Life Insurance</option>
+                      <option value="Medicare">Medicare</option>
+                      <option value="Insurance Brokerage">Insurance Brokerage</option>
+                      <option value="MGA">MGA</option>
+                      <option value="Insurance Carrier">Insurance Carrier</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
                     <button
                       type="submit"
                       disabled={popupLoading}
@@ -426,6 +483,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      <WhatsAppModal isOpen={isWhatsAppOpen} onClose={() => setIsWhatsAppOpen(false)} />
     </div>
   );
 }

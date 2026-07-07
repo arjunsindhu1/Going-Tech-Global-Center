@@ -593,3 +593,126 @@ begin
     alter publication supabase_realtime add table public.blogs;
   end if;
 end $$;
+
+
+-- ==========================================
+-- 13. business_tool_leads Table
+-- ==========================================
+create table if not exists public.business_tool_leads (
+    id uuid default uuid_generate_v4() primary key,
+    agency_name text not null,
+    company_email text not null,
+    sector text not null,
+    tool_name text not null,
+    status text default 'New Lead' not null,
+    source text default 'Business Tools' not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Force Disable RLS for foolproof client operations
+alter table public.business_tool_leads disable row level security;
+
+-- Backup policies in case RLS is re-enabled:
+drop policy if exists "Allow public select on business_tool_leads" on public.business_tool_leads;
+create policy "Allow public select on business_tool_leads" on public.business_tool_leads for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on business_tool_leads" on public.business_tool_leads;
+create policy "Allow public insert on business_tool_leads" on public.business_tool_leads for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on business_tool_leads" on public.business_tool_leads;
+create policy "Allow public update on business_tool_leads" on public.business_tool_leads for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on business_tool_leads" on public.business_tool_leads;
+create policy "Allow public delete on business_tool_leads" on public.business_tool_leads for delete to anon, authenticated, public using (true);
+
+
+-- ==========================================
+-- 14. business_proposal_leads Table
+-- ==========================================
+create table if not exists public.business_proposal_leads (
+    id uuid default uuid_generate_v4() primary key,
+    agency_name text not null,
+    company_email text not null,
+    sector text not null,
+    proposal_name text not null,
+    status text default 'Downloaded' not null,
+    source text default 'Website Proposal' not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Force Disable RLS for foolproof client operations
+alter table public.business_proposal_leads disable row level security;
+
+-- Backup policies in case RLS is re-enabled:
+drop policy if exists "Allow public select on business_proposal_leads" on public.business_proposal_leads;
+create policy "Allow public select on business_proposal_leads" on public.business_proposal_leads for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on business_proposal_leads" on public.business_proposal_leads;
+create policy "Allow public insert on business_proposal_leads" on public.business_proposal_leads for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on business_proposal_leads" on public.business_proposal_leads;
+create policy "Allow public update on business_proposal_leads" on public.business_proposal_leads for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on business_proposal_leads" on public.business_proposal_leads;
+create policy "Allow public delete on business_proposal_leads" on public.business_proposal_leads for delete to anon, authenticated, public using (true);
+
+
+-- ==========================================
+-- 15. whatsapp_contact_leads Table
+-- ==========================================
+create table if not exists public.whatsapp_contact_leads (
+    id uuid default uuid_generate_v4() primary key,
+    full_name text not null,
+    email text not null,
+    status text default 'New Lead' not null,
+    source text default 'WhatsApp' not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Force Disable RLS for foolproof client operations
+alter table public.whatsapp_contact_leads disable row level security;
+
+-- Backup policies in case RLS is re-enabled:
+drop policy if exists "Allow public select on whatsapp_contact_leads" on public.whatsapp_contact_leads;
+create policy "Allow public select on whatsapp_contact_leads" on public.whatsapp_contact_leads for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow public insert on whatsapp_contact_leads" on public.whatsapp_contact_leads;
+create policy "Allow public insert on whatsapp_contact_leads" on public.whatsapp_contact_leads for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow public update on whatsapp_contact_leads" on public.whatsapp_contact_leads;
+create policy "Allow public update on whatsapp_contact_leads" on public.whatsapp_contact_leads for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow public delete on whatsapp_contact_leads" on public.whatsapp_contact_leads;
+create policy "Allow public delete on whatsapp_contact_leads" on public.whatsapp_contact_leads for delete to anon, authenticated, public using (true);
+
+
+-- Enable Realtime for business_tool_leads, business_proposal_leads, whatsapp_contact_leads
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'business_tool_leads'
+  ) then
+    alter publication supabase_realtime add table public.business_tool_leads;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'business_proposal_leads'
+  ) then
+    alter publication supabase_realtime add table public.business_proposal_leads;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'whatsapp_contact_leads'
+  ) then
+    alter publication supabase_realtime add table public.whatsapp_contact_leads;
+  end if;
+end $$;

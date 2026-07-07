@@ -20,6 +20,7 @@ import {
 import { PageType, BlogPost } from '../types';
 import { BLOG_POSTS } from '../data';
 import { supabase } from '../lib/supabase';
+import { broadcastChange } from '../utils/realtimeHelper';
 
 interface BlogProps {
   setCurrentPage: (page: PageType) => void;
@@ -178,11 +179,16 @@ export default function Blog({ setCurrentPage }: BlogProps) {
     e.preventDefault();
     if (email.trim()) {
       try {
+        const payload = { email: email.trim() };
         const { error } = await supabase
           .from('newsletter_subscribers')
-          .insert([{ email: email.trim() }]);
+          .insert([payload]);
         
         if (error) throw error;
+
+        // Broadcast subscription
+        broadcastChange('newsletter_subscribers', 'INSERT', payload);
+
         setSubscribed(true);
         setEmail('');
         setTimeout(() => setSubscribed(false), 5000);

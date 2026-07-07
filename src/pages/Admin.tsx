@@ -34,13 +34,15 @@ import {
 } from 'lucide-react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
+import { getLocalLeads, saveLocalLead, deleteLocalLead, updateLocalLead } from '../utils/localLeadsFallback';
+import { broadcastChange } from '../utils/realtimeHelper';
 import { BLOG_POSTS } from '../data';
 
 interface AdminProps {
   setCurrentPage: (page: PageType) => void;
 }
 
-type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'proposal_downloads' | 'blogs';
+type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'blogs' | 'whatsapp_leads' | 'business_tool_leads' | 'business_proposal_leads';
 
 export default function Admin({ setCurrentPage }: AdminProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -59,16 +61,33 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
+  // New Lead Category Specific Filters & Sorting & Pagination
+  const [whatsappStatusFilter, setWhatsappStatusFilter] = useState('All');
+  const [whatsappSortField, setWhatsappSortField] = useState('created_at');
+  const [whatsappSortOrder, setWhatsappSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [whatsappPage, setWhatsappPage] = useState(1);
+
+  const [toolsStatusFilter, setToolsStatusFilter] = useState('All');
+  const [toolsSortField, setToolsSortField] = useState('created_at');
+  const [toolsSortOrder, setToolsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [toolsPage, setToolsPage] = useState(1);
+
+  const [proposalStatusFilter, setProposalStatusFilter] = useState('All');
+  const [proposalSortField, setProposalSortField] = useState('created_at');
+  const [proposalSortOrder, setProposalSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [proposalPage, setProposalPage] = useState(1);
+
+  const itemsPerPage = 10;
+
   // Database records state
   const [leads, setLeads] = useState<any[]>([]);
+  const [whatsappLeads, setWhatsappLeads] = useState<any[]>([]);
+  const [businessToolLeads, setBusinessToolLeads] = useState<any[]>([]);
+  const [businessProposalLeads, setBusinessProposalLeads] = useState<any[]>([]);
   const [consultations, setConsultations] = useState<any[]>([]);
   const [diagnostics, setDiagnostics] = useState<any[]>([]);
   const [callbacks, setCallbacks] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
-  const [downloads, setDownloads] = useState<any[]>([]);
-  const [isDownloadsTableMissing, setIsDownloadsTableMissing] = useState(false);
-  const [downloadSourceFilter, setDownloadSourceFilter] = useState('All');
-  const [downloadDateFilter, setDownloadDateFilter] = useState('All');
 
   // Blog Management CMS state
   const [blogsList, setBlogsList] = useState<any[]>([]);
@@ -238,21 +257,124 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         if (appsData) setApplications(appsData);
       }
 
-      // 8. Proposal Downloads
-      console.log('Querying: supabase.from("proposal_downloads").select("*")');
-      const { data: downloadsData, error: downloadsError } = await supabase
-        .from('proposal_downloads')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (downloadsError) {
-        console.error('Error fetching proposal_downloads:', downloadsError.message);
-        if (downloadsError.message?.includes('does not exist') || downloadsError.code === 'PGRST116') {
-          setIsDownloadsTableMissing(true);
+      // 8. Background Migration of Legacy Proposal Downloads to Business Proposal Leads (One-time, non-blocking)
+      try {
+        console.log('Checking for legacy proposal_downloads to migrate...');
+        const { data: legacyDownloads, error: legacyError } = await supabase
+          .from('proposal_downloads')
+          .select('*');
+        
+        if (!legacyError && legacyDownloads && legacyDownloads.length > 0) {
+          console.log(`Found ${legacyDownloads.length} legacy downloads. Starting migration...`);
+          
+          // Get the current list of business_proposal_leads to avoid duplicates
+          const { data: existingLeads } = await supabase
+            .from('business_proposal_leads')
+            .select('agency_name, company_email, created_at');
+          
+          const currentLeads = existingLeads || [];
+          const migratedToInsert: any[] = [];
+          
+          for (const old of legacyDownloads) {
+            const email = (old.email || '').trim().toLowerCase();
+            const domain = (old.company_domain || '').trim();
+            const derivedAgency = domain 
+              ? domain.split('.')[0].toUpperCase() 
+              : (old.email ? old.email.split('@')[0].toUpperCase() : 'UNKNOWN AGENCY');
+            const createdAt = old.created_at || old.download_time;
+            const createdDateStr = createdAt ? new Date(createdAt).toISOString().split('T')[0] : '';
+            
+            // Check if duplicate exists in existingLeads
+            const isDuplicateInCurrent = currentLeads.some(lead => {
+              const leadEmail = (lead.company_email || '').trim().toLowerCase();
+              const leadAgency = (lead.agency_name || '').trim().toLowerCase();
+              const leadDateStr = lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : '';
+              
+              return leadEmail === email && 
+                     (leadAgency === derivedAgency.toLowerCase() || leadDateStr === createdDateStr);
+            });
+            
+            // Check if already in the batch to insert
+            const isDuplicateInBatch = migratedToInsert.some(item => {
+              const batchEmail = (item.company_email || '').trim().toLowerCase();
+              const batchAgency = (item.agency_name || '').trim().toLowerCase();
+              const batchDateStr = item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : '';
+              
+              return batchEmail === email && 
+                     (batchAgency === derivedAgency.toLowerCase() || batchDateStr === createdDateStr);
+            });
+            
+            if (!isDuplicateInCurrent && !isDuplicateInBatch) {
+              migratedToInsert.push({
+                agency_name: derivedAgency,
+                company_email: email,
+                sector: 'Technology',
+                proposal_name: old.downloaded_file || 'Going Technologies business proposal (A4).pdf',
+                status: 'Downloaded',
+                source: old.source || 'Legacy Download',
+                created_at: createdAt || new Date().toISOString()
+              });
+            }
+          }
+          
+          if (migratedToInsert.length > 0) {
+            console.log(`Inserting ${migratedToInsert.length} non-duplicate migrated rows into business_proposal_leads...`);
+            const { error: insertError } = await supabase
+              .from('business_proposal_leads')
+              .insert(migratedToInsert);
+            
+            if (insertError) {
+              console.warn('Migration insert warning (RLS or database constraint):', insertError.message);
+              // Save to local storage fallback so these records are not lost to the admin
+              migratedToInsert.forEach(item => {
+                const localItem = {
+                  ...item,
+                  id: item.id || `mig-${Math.random().toString(36).substr(2, 9)}`,
+                  business_email: item.company_email,
+                  business_sector: item.sector
+                };
+                saveLocalLead('business_proposal_leads', localItem);
+              });
+              // Attempt to clean up legacy proposal_downloads to prevent repeated failing migration attempts
+              const idsToDelete = legacyDownloads.map(x => x.id);
+              if (idsToDelete.length > 0) {
+                try {
+                  await supabase.from('proposal_downloads').delete().in('id', idsToDelete);
+                } catch (delErr) {
+                  console.warn('Could not delete old proposal_downloads after fallback:', delErr);
+                }
+              }
+            } else {
+              console.log('Migration successfully completed!');
+              // Clean up or delete migrated rows from proposal_downloads to prevent repeated checks
+              const idsToDelete = legacyDownloads.map(x => x.id);
+              if (idsToDelete.length > 0) {
+                try {
+                  await supabase.from('proposal_downloads').delete().in('id', idsToDelete);
+                } catch (delErr) {
+                  console.warn('Could not delete old proposal_downloads:', delErr);
+                }
+              }
+            }
+          } else {
+            console.log('All legacy downloads were already migrated (duplicates skipped). Cleaning up old records.');
+            const idsToDelete = legacyDownloads.map(x => x.id);
+            if (idsToDelete.length > 0) {
+              try {
+                await supabase.from('proposal_downloads').delete().in('id', idsToDelete);
+              } catch (delErr) {
+                console.warn('Could not delete old proposal_downloads:', delErr);
+              }
+            }
+          }
+        } else if (legacyError) {
+          // Table probably doesn't exist anymore or was dropped, which is fine
+          console.log('Legacy proposal_downloads table not found or inaccessible. Skipping migration.');
+        } else {
+          console.log('No legacy downloads to migrate.');
         }
-      } else {
-        console.log(`Successfully fetched proposal_downloads. Count: ${downloadsData?.length || 0}`);
-        if (downloadsData) setDownloads(downloadsData);
-        setIsDownloadsTableMissing(false);
+      } catch (migrationErr) {
+        console.warn('Exception during legacy proposal_downloads migration:', migrationErr);
       }
 
       // 9. Blogs
@@ -285,6 +407,117 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         if (catsData) setBlogCategoriesList(catsData);
       }
 
+      // 11. WhatsApp Contact Leads
+      console.log('Querying: supabase.from("whatsapp_contact_leads").select("*")');
+      try {
+        const { data: waData, error: waError } = await supabase
+          .from('whatsapp_contact_leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (waError) {
+          const isMissingTable = waError.code === 'PGRST205' || waError.message?.includes('schema cache') || waError.message?.includes('does not exist');
+          if (isMissingTable) {
+            console.warn('whatsapp_contact_leads table missing in Supabase. Using localStorage fallback.');
+          } else {
+            console.warn('Error fetching whatsapp_contact_leads from database:', waError.message);
+          }
+          setWhatsappLeads(getLocalLeads('whatsapp_contact_leads'));
+        } else {
+          console.log(`Successfully fetched whatsapp_contact_leads. Count: ${waData?.length || 0}`);
+          const localLeads = getLocalLeads('whatsapp_contact_leads');
+          const merged = [...(waData || [])];
+          localLeads.forEach(loc => {
+            if (!merged.some(m => m.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          setWhatsappLeads(merged);
+        }
+      } catch (err) {
+        console.warn('Exception fetching whatsapp_contact_leads:', err);
+        setWhatsappLeads(getLocalLeads('whatsapp_contact_leads'));
+      }
+
+      // 12. Business Tool Leads
+      console.log('Querying: supabase.from("business_tool_leads").select("*")');
+      try {
+        const { data: toolLeadsData, error: toolLeadsError } = await supabase
+          .from('business_tool_leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (toolLeadsError) {
+          const isMissingTable = toolLeadsError.code === 'PGRST205' || toolLeadsError.message?.includes('schema cache') || toolLeadsError.message?.includes('does not exist');
+          if (isMissingTable) {
+            console.warn('business_tool_leads table missing in Supabase. Using localStorage fallback.');
+          } else {
+            console.warn('Error fetching business_tool_leads from database:', toolLeadsError.message);
+          }
+          setBusinessToolLeads(getLocalLeads('business_tool_leads'));
+        } else {
+          console.log(`Successfully fetched business_tool_leads. Count: ${toolLeadsData?.length || 0}`);
+          const localLeads = getLocalLeads('business_tool_leads');
+          const mappedDbLeads = (toolLeadsData || []).map((lead: any) => ({
+            ...lead,
+            business_email: lead.business_email || lead.company_email,
+            business_sector: lead.business_sector || lead.sector
+          }));
+          const merged = [...mappedDbLeads];
+          localLeads.forEach(loc => {
+            if (!merged.some(m => m.id === loc.id)) {
+              merged.push({
+                ...loc,
+                business_email: loc.business_email || loc.company_email,
+                business_sector: loc.business_sector || loc.sector
+              });
+            }
+          });
+          setBusinessToolLeads(merged);
+        }
+      } catch (err) {
+        console.warn('Exception fetching business_tool_leads:', err);
+        setBusinessToolLeads(getLocalLeads('business_tool_leads'));
+      }
+
+      // 13. Business Proposal Leads
+      console.log('Querying: supabase.from("business_proposal_leads").select("*")');
+      try {
+        const { data: propLeadsData, error: propLeadsError } = await supabase
+          .from('business_proposal_leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (propLeadsError) {
+          const isMissingTable = propLeadsError.code === 'PGRST205' || propLeadsError.message?.includes('schema cache') || propLeadsError.message?.includes('does not exist');
+          if (isMissingTable) {
+            console.warn('business_proposal_leads table missing in Supabase. Using localStorage fallback.');
+          } else {
+            console.warn('Error fetching business_proposal_leads from database:', propLeadsError.message);
+          }
+          setBusinessProposalLeads(getLocalLeads('business_proposal_leads'));
+        } else {
+          console.log(`Successfully fetched business_proposal_leads. Count: ${propLeadsData?.length || 0}`);
+          const localLeads = getLocalLeads('business_proposal_leads');
+          const mappedDbLeads = (propLeadsData || []).map((lead: any) => ({
+            ...lead,
+            business_email: lead.business_email || lead.company_email,
+            business_sector: lead.business_sector || lead.sector
+          }));
+          const merged = [...mappedDbLeads];
+          localLeads.forEach(loc => {
+            if (!merged.some(m => m.id === loc.id)) {
+              merged.push({
+                ...loc,
+                business_email: loc.business_email || loc.company_email,
+                business_sector: loc.business_sector || loc.sector
+              });
+            }
+          });
+          setBusinessProposalLeads(merged);
+        }
+      } catch (err) {
+        console.warn('Exception fetching business_proposal_leads:', err);
+        setBusinessProposalLeads(getLocalLeads('business_proposal_leads'));
+      }
+
     } catch (err) {
       console.error('Error fetching admin dashboard data:', err);
     } finally {
@@ -303,126 +536,172 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    const handleRealtimeEvent = (table: string, eventType: string, record: any) => {
+      if (!record) return;
+      console.log(`[Realtime Sync] ${eventType} event on table "${table}":`, record);
+      
+      const enrichedRecord = { ...record };
+      if (table === 'business_tool_leads' || table === 'business_proposal_leads') {
+        enrichedRecord.business_email = record.business_email || record.company_email;
+        enrichedRecord.business_sector = record.business_sector || record.sector;
+      }
+      
+      const updateState = (setter: React.Dispatch<React.SetStateAction<any[]>>) => {
+        if (eventType === 'INSERT') {
+          setter((prev) => {
+            if (prev.some((x) => x.id === enrichedRecord.id || (x.email && x.email === enrichedRecord.email && table === 'newsletter_subscribers'))) return prev;
+            return [enrichedRecord, ...prev];
+          });
+        } else if (eventType === 'DELETE') {
+          setter((prev) => prev.filter((item) => item.id !== enrichedRecord.id));
+        } else if (eventType === 'UPDATE') {
+          setter((prev) => prev.map((item) => (item.id === enrichedRecord.id ? { ...item, ...enrichedRecord } : item)));
+        }
+      };
+
+      switch (table) {
+        case 'contact_leads':
+          updateState(setLeads);
+          break;
+        case 'consultation_requests':
+          updateState(setConsultations);
+          break;
+        case 'diagnostic_requests':
+          updateState(setDiagnostics);
+          break;
+        case 'callback_requests':
+          updateState(setCallbacks);
+          break;
+        case 'newsletter_subscribers':
+          updateState(setSubscribers);
+          break;
+        case 'jobs':
+          updateState(setJobs);
+          break;
+        case 'job_applications':
+          updateState(setApplications);
+          break;
+        case 'blogs':
+          updateState(setBlogsList);
+          break;
+        case 'whatsapp_contact_leads':
+          updateState(setWhatsappLeads);
+          break;
+        case 'business_tool_leads':
+          updateState(setBusinessToolLeads);
+          break;
+        case 'business_proposal_leads':
+          updateState(setBusinessProposalLeads);
+          break;
+        default:
+          break;
+      }
+    };
+
     const channel = supabase
       .channel('schema-db-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'contact_leads' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setLeads((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setLeads((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setLeads((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('contact_leads', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'consultation_requests' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setConsultations((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setConsultations((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setConsultations((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('consultation_requests', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'diagnostic_requests' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setDiagnostics((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setDiagnostics((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setDiagnostics((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('diagnostic_requests', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'callback_requests' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCallbacks((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setCallbacks((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setCallbacks((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('callback_requests', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'newsletter_subscribers' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setSubscribers((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setSubscribers((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setSubscribers((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('newsletter_subscribers', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'jobs' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setJobs((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setJobs((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setJobs((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('jobs', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'job_applications' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setApplications((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setApplications((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setApplications((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'proposal_downloads' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setDownloads((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setDownloads((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setDownloads((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
-          }
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('job_applications', payload.eventType, record);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'blogs' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setBlogsList((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setBlogsList((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setBlogsList((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('blogs', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'whatsapp_contact_leads' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('whatsapp_contact_leads', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'business_tool_leads' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('business_tool_leads', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'business_proposal_leads' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('business_proposal_leads', payload.eventType, record);
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'db_change' },
+        (payload) => {
+          console.log('[Realtime Broadcast Event Received]:', payload);
+          if (payload && payload.payload) {
+            const { table, eventType, record } = payload.payload;
+            handleRealtimeEvent(table, eventType, record);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[Realtime Channel Subscribed]: Status is "${status}"`);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -450,19 +729,60 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     localStorage.removeItem('gt_admin_auth');
   };
 
-  // Mark Lead/Request Status in Supabase
-  const updateLeadStatus = async (id: string, newStatus: string) => {
+  // Mark Lead/Request Status in Supabase (generic across tables)
+  const updateStatusInTable = async (table: string, id: string, newStatus: string) => {
+    // Always mirror to localStorage fallback first for the custom tables
+    if (['whatsapp_contact_leads', 'business_tool_leads', 'business_proposal_leads'].includes(table)) {
+      updateLocalLead(table, id, { status: newStatus });
+    }
+
     try {
       const { error } = await supabase
-        .from('contact_leads')
+        .from(table)
         .update({ status: newStatus })
         .eq('id', id);
 
-      if (error) throw error;
-      setLeads(leads.map(l => l.id === id ? { ...l, status: newStatus } : l));
-    } catch (err) {
-      console.error('Error updating status:', err);
+      if (error) {
+        const isMissingTable = error.code === 'PGRST205' || error.message?.includes('schema cache') || error.message?.includes('does not exist');
+        if (!isMissingTable) {
+          throw error;
+        }
+      }
+    } catch (err: any) {
+      console.warn('Error updating status in remote database, proceeding with local state update:', err.message || err);
     }
+
+    // Always update local React state and broadcast changes
+    let updatedRecord: any = null;
+    const updateState = (setter: React.Dispatch<React.SetStateAction<any[]>>) => {
+      setter(prev => prev.map(item => {
+        if (item.id === id) {
+          updatedRecord = { ...item, status: newStatus };
+          return updatedRecord;
+        }
+        return item;
+      }));
+    };
+
+    if (table === 'contact_leads') updateState(setLeads);
+    else if (table === 'whatsapp_contact_leads') updateState(setWhatsappLeads);
+    else if (table === 'business_tool_leads') updateState(setBusinessToolLeads);
+    else if (table === 'business_proposal_leads') updateState(setBusinessProposalLeads);
+    else if (table === 'consultation_requests') updateState(setConsultations);
+    else if (table === 'diagnostic_requests') updateState(setDiagnostics);
+    else if (table === 'callback_requests') updateState(setCallbacks);
+    else if (table === 'newsletter_subscribers') updateState(setSubscribers);
+    else if (table === 'jobs') updateState(setJobs);
+    else if (table === 'job_applications') updateState(setApplications);
+    else if (table === 'blogs') updateState(setBlogsList);
+
+    if (updatedRecord) {
+      broadcastChange(table, 'UPDATE', updatedRecord);
+    }
+  };
+
+  const updateLeadStatus = async (id: string, newStatus: string) => {
+    await updateStatusInTable('contact_leads', id, newStatus);
   };
 
   // Trigger delete confirmation modal
@@ -488,6 +808,25 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     console.log(`%c=== DELETION INITIATED ===`, 'color: #EF4444; font-weight: bold;');
     console.log(`Record ID: ${id}`);
     console.log(`Delete Query: await supabase.from("${table}").delete().eq("id", "${id}");`);
+
+    // Intercept deletions for custom leads tables to handle missing tables gracefully
+    if (['whatsapp_contact_leads', 'business_tool_leads', 'business_proposal_leads'].includes(table)) {
+      deleteLocalLead(table, id);
+      try {
+        await supabase.from(table).delete().eq('id', id);
+      } catch (dbErr) {
+        console.warn('Database delete bypass for local fallback table:', dbErr);
+      }
+      
+      if (table === 'whatsapp_contact_leads') setWhatsappLeads(prev => prev.filter(x => x.id !== id));
+      if (table === 'business_tool_leads') setBusinessToolLeads(prev => prev.filter(x => x.id !== id));
+      if (table === 'business_proposal_leads') setBusinessProposalLeads(prev => prev.filter(x => x.id !== id));
+
+      setDeleteModalOpen(false);
+      setRecordToDelete(null);
+      setIsDeleting(false);
+      return;
+    }
 
     try {
       // Step 6 & 2: Delete from table, waiting for the promise, and log the results
@@ -562,14 +901,19 @@ export default function Admin({ setCurrentPage }: AdminProps) {
 
       // Step 4: Immediately remove the row from local state. Do NOT wait for realtime sync.
       if (table === 'contact_leads') setLeads(prev => prev.filter(x => x.id !== id));
+      if (table === 'whatsapp_contact_leads') setWhatsappLeads(prev => prev.filter(x => x.id !== id));
+      if (table === 'business_tool_leads') setBusinessToolLeads(prev => prev.filter(x => x.id !== id));
+      if (table === 'business_proposal_leads') setBusinessProposalLeads(prev => prev.filter(x => x.id !== id));
       if (table === 'consultation_requests') setConsultations(prev => prev.filter(x => x.id !== id));
       if (table === 'diagnostic_requests') setDiagnostics(prev => prev.filter(x => x.id !== id));
       if (table === 'callback_requests') setCallbacks(prev => prev.filter(x => x.id !== id));
       if (table === 'newsletter_subscribers') setSubscribers(prev => prev.filter(x => x.id !== id));
       if (table === 'jobs') setJobs(prev => prev.filter(x => x.id !== id));
       if (table === 'job_applications') setApplications(prev => prev.filter(x => x.id !== id));
-      if (table === 'proposal_downloads') setDownloads(prev => prev.filter(x => x.id !== id));
       if (table === 'blogs') setBlogsList(prev => prev.filter(x => x.id !== id));
+
+      // Broadcast delete to other connected admin dashboards
+      broadcastChange(table, 'DELETE', { id });
 
       setDeleteModalOpen(false);
       setRecordToDelete(null);
@@ -601,17 +945,33 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     if (!editingRecord) return;
     const { table, data } = editingRecord;
     setIsSavingRecord(true);
+
+    if (['whatsapp_contact_leads', 'business_tool_leads', 'business_proposal_leads'].includes(table)) {
+      saveLocalLead(table, data);
+    }
+
     try {
       const { error } = await supabase
         .from(table)
         .update(data)
         .eq('id', data.id);
 
-      if (error) throw error;
+      if (error) {
+        const isMissingTable = error.code === 'PGRST205' || error.message?.includes('schema cache') || error.message?.includes('does not exist');
+        if (!isMissingTable) {
+          throw error;
+        }
+      }
 
       // Update local state
       if (table === 'contact_leads') {
         setLeads(leads.map(x => x.id === data.id ? data : x));
+      } else if (table === 'whatsapp_contact_leads') {
+        setWhatsappLeads(whatsappLeads.map(x => x.id === data.id ? data : x));
+      } else if (table === 'business_tool_leads') {
+        setBusinessToolLeads(businessToolLeads.map(x => x.id === data.id ? data : x));
+      } else if (table === 'business_proposal_leads') {
+        setBusinessProposalLeads(businessProposalLeads.map(x => x.id === data.id ? data : x));
       } else if (table === 'consultation_requests') {
         setConsultations(consultations.map(x => x.id === data.id ? data : x));
       } else if (table === 'diagnostic_requests') {
@@ -624,10 +984,30 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         setApplications(applications.map(x => x.id === data.id ? data : x));
       }
 
+      // Broadcast manual updates in real-time
+      broadcastChange(table, 'UPDATE', data);
+
       setEditingRecord(null);
     } catch (err: any) {
-      console.error('Error saving edited record:', err);
-      alert(err.message || 'Failed to save record changes. Please check permissions.');
+      console.warn('Error saving edited record in database, falling back to local state:', err);
+      
+      // Still update local React state if it's one of the custom tables
+      if (['whatsapp_contact_leads', 'business_tool_leads', 'business_proposal_leads'].includes(table)) {
+        if (table === 'whatsapp_contact_leads') {
+          setWhatsappLeads(whatsappLeads.map(x => x.id === data.id ? data : x));
+        } else if (table === 'business_tool_leads') {
+          setBusinessToolLeads(businessToolLeads.map(x => x.id === data.id ? data : x));
+        } else if (table === 'business_proposal_leads') {
+          setBusinessProposalLeads(businessProposalLeads.map(x => x.id === data.id ? data : x));
+        }
+
+        // Broadcast manual updates in real-time even on database fallback
+        broadcastChange(table, 'UPDATE', data);
+
+        setEditingRecord(null);
+      } else {
+        alert(err.message || 'Failed to save record changes. Please check permissions.');
+      }
     } finally {
       setIsSavingRecord(false);
     }
@@ -727,13 +1107,27 @@ export default function Admin({ setCurrentPage }: AdminProps) {
           .update(jobPayload)
           .eq('id', editingJob.id);
         if (error) throw error;
-        setJobs(jobs.map(j => j.id === editingJob.id ? { ...j, ...jobPayload } : j));
+        
+        const updatedRecord = { ...editingJob, ...jobPayload };
+        setJobs(jobs.map(j => j.id === editingJob.id ? updatedRecord : j));
+        
+        // Broadcast update
+        broadcastChange('jobs', 'UPDATE', updatedRecord);
       } else {
-        // Insert new job
-        const { error } = await supabase
+        // Insert new job and select the returned record to get the database id
+        const { data, error } = await supabase
           .from('jobs')
-          .insert(jobPayload);
+          .insert(jobPayload)
+          .select()
+          .single();
         if (error) throw error;
+        
+        if (data) {
+          setJobs(prev => [data, ...prev]);
+          
+          // Broadcast insertion
+          broadcastChange('jobs', 'INSERT', data);
+        }
       }
       setIsJobModalOpen(false);
     } catch (err: any) {
@@ -772,11 +1166,17 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     };
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('blogs')
-        .insert([blogPayload]);
+        .insert([blogPayload])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      if (data) {
+        broadcastChange('blogs', 'INSERT', data);
+      }
 
       setIsBlogModalOpen(false);
       // Clear form
@@ -973,13 +1373,15 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                 {[
                   { id: 'overview', label: 'Console Overview', icon: LayoutDashboard },
                   { id: 'leads', label: 'Contact Leads', icon: Users, count: leads.length },
+                  { id: 'whatsapp_leads', label: 'WhatsApp Leads', icon: Users, count: whatsappLeads.length },
+                  { id: 'business_tool_leads', label: 'Business Tool Leads', icon: Briefcase, count: businessToolLeads.length },
+                  { id: 'business_proposal_leads', label: 'Business Proposal Leads', icon: FileText, count: businessProposalLeads.length },
                   { id: 'consultations', label: 'Consultations', icon: Calendar, count: consultations.length },
                   { id: 'diagnostics', label: 'Diagnostics', icon: Sparkles, count: diagnostics.length },
                   { id: 'callbacks', label: 'Callbacks', icon: PhoneCall, count: callbacks.length },
                   { id: 'subscribers', label: 'Subscribers', icon: Mail, count: subscribers.length },
                   { id: 'jobs', label: 'Careers (Jobs)', icon: Briefcase, count: jobs.length },
                   { id: 'applications', label: 'Applications', icon: Layers, count: applications.length },
-                  { id: 'proposal_downloads', label: 'Proposal Downloads', icon: Download, count: downloads.length },
                   { id: 'blogs', label: 'Blog Articles', icon: FileText, count: blogsList.length + BLOG_POSTS.filter(b => !deletedStaticBlogs.includes(b.id)).filter(b => !blogsList.some(sb => sb.title.toLowerCase() === b.title.toLowerCase())).length },
                 ].map((item) => {
                   const Icon = item.icon;
@@ -1024,13 +1426,15 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                   <h1 className="text-2xl font-bold text-[#081B8C] font-display">
                     {activeTab === 'overview' && 'Executive Operations Dashboard'}
                     {activeTab === 'leads' && 'Contact Inbound Leads'}
+                    {activeTab === 'whatsapp_leads' && 'WhatsApp Conversational Leads'}
+                    {activeTab === 'business_tool_leads' && 'Business Tool Lead Captures'}
+                    {activeTab === 'business_proposal_leads' && 'Proposal Download Lead Captures'}
                     {activeTab === 'consultations' && 'Corporate Consultations'}
                     {activeTab === 'diagnostics' && 'Inbound Process Diagnostics'}
                     {activeTab === 'callbacks' && 'Hotline Callbacks'}
                     {activeTab === 'subscribers' && 'Newsletter Subscribers'}
                     {activeTab === 'jobs' && 'Career Job Postings CMS'}
                     {activeTab === 'applications' && 'Specialist Job Applications'}
-                    {activeTab === 'proposal_downloads' && 'Proposal Downloads Analytics'}
                     {activeTab === 'blogs' && 'Blog Intelligence Briefings CMS'}
                   </h1>
                   <p className="text-gray-400 text-xs">
@@ -1062,15 +1466,18 @@ export default function Admin({ setCurrentPage }: AdminProps) {
               {activeTab === 'overview' && (
                 <div className="space-y-8">
                   {/* METRIC CARD GRID */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {[
                       { label: 'Total Leads', val: leads.length, color: 'border-blue-500', bg: 'bg-blue-500/5', text: 'text-blue-600', icon: Users },
+                      { label: 'WhatsApp Leads', val: whatsappLeads.length, color: 'border-teal-500', bg: 'bg-teal-500/5', text: 'text-teal-600', icon: Users },
+                      { label: 'Business Tool Leads', val: businessToolLeads.length, color: 'border-cyan-500', bg: 'bg-cyan-500/5', text: 'text-cyan-600', icon: Briefcase },
+                      { label: 'Business Proposal Leads', val: businessProposalLeads.length, color: 'border-violet-500', bg: 'bg-violet-500/5', text: 'text-violet-600', icon: FileText },
                       { label: 'Consultations', val: consultations.length, color: 'border-emerald-500', bg: 'bg-emerald-500/5', text: 'text-emerald-600', icon: Calendar },
                       { label: 'Diagnostics', val: diagnostics.length, color: 'border-purple-500', bg: 'bg-purple-500/5', text: 'text-purple-600', icon: Sparkles },
                       { label: 'Callbacks', val: callbacks.length, color: 'border-amber-500', bg: 'bg-amber-500/5', text: 'text-amber-600', icon: PhoneCall },
                       { label: 'Subscribers', val: subscribers.length, color: 'border-rose-500', bg: 'bg-rose-500/5', text: 'text-rose-600', icon: Mail },
                       { label: 'Job Openings', val: jobs.length, color: 'border-indigo-500', bg: 'bg-indigo-500/5', text: 'text-indigo-600', icon: Briefcase },
-                      { label: 'Applications', val: applications.length, color: 'border-teal-500', bg: 'bg-teal-500/5', text: 'text-teal-600', icon: Layers },
+                      { label: 'Applications', val: applications.length, color: 'border-slate-500', bg: 'bg-slate-500/5', text: 'text-slate-600', icon: Layers },
                     ].map((stat, idx) => {
                       const Icon = stat.icon;
                       return (
@@ -1950,423 +2357,602 @@ alter publication supabase_realtime add table public.jobs;`}
                 </div>
               )}
 
-              {/* PROPOSAL DOWNLOADS ANALYTICS & MONITORING TAB */}
-              {activeTab === 'proposal_downloads' && (
-                <div className="space-y-8">
-                  {isDownloadsTableMissing && (
-                    <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-6 space-y-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-amber-800 text-sm">Database Setup Error: "public.proposal_downloads" Table Missing</h4>
-                          <p className="text-gray-600 text-xs leading-relaxed">
-                            The proposal downloads database table was not detected in your Supabase project schema. Please execute the following SQL migration script in your Supabase SQL Editor to provision it securely:
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-gray-900 text-gray-100 rounded-xl p-4 font-mono text-[11px] leading-relaxed select-all overflow-x-auto whitespace-pre">
-{`-- Create complete proposal_downloads table
-create table if not exists public.proposal_downloads (
-    id uuid default uuid_generate_v4() primary key,
-    email text not null,
-    company_domain text,
-    source text not null, -- Popup, Contact Page
-    page_url text,
-    downloaded_file text not null,
-    download_time timestamp with time zone default timezone('utc'::text, now()) not null,
-    ip_address text,
-    country text,
-    city text,
-    browser text,
-    device text,
-    user_agent text,
-    download_count integer default 1 not null,
-    last_downloaded_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- Force Disable RLS for foolproof client/server-side operations
-alter table public.proposal_downloads disable row level security;
-
--- Setup Policies in case RLS is re-enabled:
-drop policy if exists "Allow public select on proposal_downloads" on public.proposal_downloads;
-create policy "Allow public select on proposal_downloads" on public.proposal_downloads for select to anon, authenticated, public using (true);
-
-drop policy if exists "Allow public insert on proposal_downloads" on public.proposal_downloads;
-create policy "Allow public insert on proposal_downloads" on public.proposal_downloads for insert to anon, authenticated, public with check (true);
-
-drop policy if exists "Allow public update on proposal_downloads" on public.proposal_downloads;
-create policy "Allow public update on proposal_downloads" on public.proposal_downloads for update to anon, authenticated, public using (true) with check (true);
-
-drop policy if exists "Allow public delete on proposal_downloads" on public.proposal_downloads;
-create policy "Allow public delete on proposal_downloads" on public.proposal_downloads for delete to anon, authenticated, public using (true);
-
--- Indexes for performance
-create index if not exists idx_proposal_downloads_email on public.proposal_downloads(email);
-create index if not exists idx_proposal_downloads_domain on public.proposal_downloads(company_domain);
-create index if not exists idx_proposal_downloads_created_at on public.proposal_downloads(created_at);`}
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <button
-                          onClick={fetchAllData}
-                          className="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          <span>Retry Synchronization</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* KPI STATS CARDS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Total Downloads */}
-                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-                      <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                        <Download className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Downloads</span>
-                        <span className="text-xl font-bold text-[#081B8C] font-display">{downloads.length}</span>
-                      </div>
+              {/* WHATSAPP LEADS TAB */}
+              {activeTab === 'whatsapp_leads' && (
+                <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 text-left">
+                  {/* Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search WhatsApp leads..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setWhatsappPage(1);
+                        }}
+                        className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                      />
                     </div>
 
-                    {/* Today's Downloads */}
-                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-                      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                        <Clock className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Today's Leads</span>
-                        <span className="text-xl font-bold text-[#081B8C] font-display">
-                          {downloads.filter(d => {
-                            const date = new Date(d.created_at || d.download_time);
-                            const today = new Date();
-                            return date.toDateString() === today.toDateString();
-                          }).length}
-                        </span>
-                      </div>
-                    </div>
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+                      <select
+                        value={whatsappStatusFilter}
+                        onChange={(e) => {
+                          setWhatsappStatusFilter(e.target.value);
+                          setWhatsappPage(1);
+                        }}
+                        className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF] font-semibold text-gray-600"
+                      >
+                        <option value="All">All Statuses</option>
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Qualified">Qualified</option>
+                        <option value="Converted">Converted</option>
+                        <option value="Closed">Closed</option>
+                      </select>
 
-                    {/* Unique Companies */}
-                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                        <Users className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Unique Companies</span>
-                        <span className="text-xl font-bold text-[#081B8C] font-display">
-                          {new Set(downloads.map(d => d.company_domain).filter(Boolean)).size}
-                        </span>
-                      </div>
-                    </div>
+                      <select
+                        value={`${whatsappSortField}-${whatsappSortOrder}`}
+                        onChange={(e) => {
+                          const [field, order] = e.target.value.split('-');
+                          setWhatsappSortField(field);
+                          setWhatsappSortOrder(order as 'asc' | 'desc');
+                          setWhatsappPage(1);
+                        }}
+                        className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF] font-semibold text-gray-600"
+                      >
+                        <option value="created_at-desc">Newest First</option>
+                        <option value="created_at-asc">Oldest First</option>
+                      </select>
 
-                    {/* Conversion Rate or Active Sessions */}
-                    <div className="bg-white border border-[#DCE7FF]/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-                      <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                        <Sparkles className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Conversions</span>
-                        <span className="text-xs font-semibold text-gray-600">
-                          Popup: <strong className="text-[#081B8C]">{downloads.filter(d => d.source === 'Popup').length}</strong> | Contact: <strong className="text-[#081B8C]">{downloads.filter(d => d.source === 'Contact Page').length}</strong>
-                        </span>
-                      </div>
+                      <button
+                        onClick={() => exportToCSV(whatsappLeads, 'gt_whatsapp_leads')}
+                        className="cursor-pointer bg-[#F8FAFF] border border-[#DCE7FF] hover:border-gray-300 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Export CSV</span>
+                      </button>
                     </div>
                   </div>
 
-                  {/* VISUAL ANALYTICS SECTION */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Top Company Domains */}
-                    <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 shadow-xs space-y-4">
-                      <h3 className="text-sm font-bold text-[#081B8C] font-display">Top Downloading Company Domains</h3>
-                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                        {Array.from(
-                          downloads.reduce((acc, d) => {
-                            if (d.company_domain) {
-                              acc.set(d.company_domain, (acc.get(d.company_domain) || 0) + (d.download_count || 1));
-                            }
-                            return acc;
-                          }, new Map<string, number>()).entries()
-                        )
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 5)
-                          .map(([domain, count], idx) => (
-                            <div key={domain} className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-xl text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-5 h-5 flex items-center justify-center bg-blue-100 text-[#081B8C] rounded-md font-bold text-[10px]">
-                                  {idx + 1}
-                                </span>
-                                <span className="font-semibold text-gray-700">{domain}</span>
-                              </div>
-                              <span className="text-gray-400 text-[11px] font-bold">
-                                {count} {count === 1 ? 'download' : 'downloads'}
-                              </span>
-                            </div>
-                          ))}
-                        {downloads.length === 0 && (
-                          <p className="text-gray-400 text-xs text-center py-8">No records available yet.</p>
-                        )}
-                      </div>
-                    </div>
+                  {/* Table */}
+                  <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8FAFF] text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#DCE7FF]/40">
+                          <th className="p-4">Full Name</th>
+                          <th className="p-4">Business Email</th>
+                          <th className="p-4">Captured At</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#DCE7FF]/20 text-xs">
+                        {(() => {
+                           const filtered = whatsappLeads
+                            .filter(l => whatsappStatusFilter === 'All' || l.status === whatsappStatusFilter)
+                            .filter(l => 
+                              !searchQuery ||
+                              l.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              l.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                            );
+                          
+                          const sorted = [...filtered].sort((a, b) => {
+                            const valA = a[whatsappSortField] || '';
+                            const valB = b[whatsappSortField] || '';
+                            if (valA < valB) return whatsappSortOrder === 'asc' ? -1 : 1;
+                            if (valA > valB) return whatsappSortOrder === 'asc' ? 1 : -1;
+                            return 0;
+                          });
 
-                    {/* Telemetry Geolocation Distribution */}
-                    <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 shadow-xs space-y-4">
-                      <h3 className="text-sm font-bold text-[#081B8C] font-display">Global Geolocation Telemetry</h3>
-                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                        {Array.from(
-                          downloads.reduce((acc, d) => {
-                            const loc = d.country && d.country !== 'Unknown' ? `${d.city || 'Unknown'}, ${d.country}` : 'Unknown Geolocation';
-                            acc.set(loc, (acc.get(loc) || 0) + 1);
-                            return acc;
-                          }, new Map<string, number>()).entries()
-                        )
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 5)
-                          .map(([loc, count], idx) => (
-                            <div key={loc} className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-xl text-xs">
-                              <span className="font-semibold text-gray-700">{loc}</span>
-                              <span className="text-[#2F6DFF] text-[11px] font-bold">
-                                {count} {count === 1 ? 'lead' : 'leads'}
-                              </span>
-                            </div>
-                          ))}
-                        {downloads.length === 0 && (
-                          <p className="text-gray-400 text-xs text-center py-8">No records available yet.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                          const totalPages = Math.ceil(sorted.length / itemsPerPage) || 1;
+                          const paginated = sorted.slice((whatsappPage - 1) * itemsPerPage, whatsappPage * itemsPerPage);
 
-                  {/* DATATABLE LIST */}
-                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-                    {(() => {
-                      const filteredDownloads = downloads.filter(d => {
-                        if (searchQuery) {
-                          const matched = d.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                          (d.company_domain && d.company_domain.toLowerCase().includes(searchQuery.toLowerCase()));
-                          if (!matched) return false;
-                        }
-                        if (downloadSourceFilter !== 'All') {
-                          if (d.source !== downloadSourceFilter) return false;
-                        }
-                        if (downloadDateFilter !== 'All') {
-                          const recordTime = new Date(d.last_downloaded_at || d.created_at).getTime();
-                          const now = Date.now();
-                          if (downloadDateFilter === 'Today') {
-                            const oneDayMs = 24 * 60 * 60 * 1000;
-                            if (now - recordTime > oneDayMs) return false;
-                          } else if (downloadDateFilter === '7days') {
-                            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-                            if (now - recordTime > sevenDaysMs) return false;
-                          } else if (downloadDateFilter === '30days') {
-                            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-                            if (now - recordTime > thirtyDaysMs) return false;
-                          }
-                        }
-                        return true;
-                      });
-
-                      return (
-                        <>
-                          <div className="flex flex-col xl:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
-                            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                              <div className="relative w-full sm:max-w-xs">
-                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                  type="text"
-                                  placeholder="Search by email or domain..."
-                                  value={searchQuery}
-                                  onChange={(e) => setSearchQuery(e.target.value)}
-                                  className="w-full text-xs pl-9 pr-4 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
-                                />
-                              </div>
-
-                              {/* Filter by Date */}
-                              <select
-                                value={downloadDateFilter}
-                                onChange={(e) => setDownloadDateFilter(e.target.value)}
-                                className="text-xs px-3 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
-                              >
-                                <option value="All">All Dates</option>
-                                <option value="Today">Today</option>
-                                <option value="7days">Last 7 Days</option>
-                                <option value="30days">Last 30 Days</option>
-                              </select>
-
-                              {/* Filter by Source */}
-                              <select
-                                value={downloadSourceFilter}
-                                onChange={(e) => setDownloadSourceFilter(e.target.value)}
-                                className="text-xs px-3 py-2.5 bg-gray-50 border border-[#DCE7FF] focus:border-[#2F6DFF] focus:bg-white focus:outline-hidden rounded-lg transition-all"
-                              >
-                                <option value="All">All Sources</option>
-                                <option value="Exit Popup">Exit Popup</option>
-                                <option value="Contact Page">Contact Page</option>
-                                <option value="Download Section">Download Section</option>
-                                <option value="Future Download Widgets">Future Download Widgets</option>
-                              </select>
-
-                              {/* Export CSV Button */}
-                              <button
-                                onClick={() => {
-                                  const headers = ['Email', 'Domain', 'Source', 'File', 'Downloads', 'Last Download', 'IP Address', 'Country', 'City', 'Browser', 'Device', 'Page URL'];
-                                  const rows = filteredDownloads.map(d => [
-                                    d.email,
-                                    d.company_domain || '',
-                                    d.source,
-                                    d.downloaded_file || '',
-                                    d.download_count || 1,
-                                    d.last_downloaded_at || d.created_at || '',
-                                    d.ip_address || '',
-                                    d.country || '',
-                                    d.city || '',
-                                    d.browser || '',
-                                    d.device || '',
-                                    d.page_url || ''
-                                  ]);
-                                  const csvContent = "data:text/csv;charset=utf-8," 
-                                    + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
-                                  const encodedUri = encodeURI(csvContent);
-                                  const link = document.createElement("a");
-                                  link.setAttribute("href", encodedUri);
-                                  link.setAttribute("download", "going_technologies_proposal_downloads.csv");
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                }}
-                                className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs px-3.5 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Export CSV</span>
-                              </button>
-
-                              {/* Export Excel Button */}
-                              <button
-                                onClick={() => {
-                                  const headers = ['Email', 'Domain', 'Source', 'File', 'Downloads', 'Last Download', 'IP Address', 'Country', 'City', 'Browser', 'Device', 'Page URL'];
-                                  const rows = filteredDownloads.map(d => [
-                                    d.email,
-                                    d.company_domain || '',
-                                    d.source,
-                                    d.downloaded_file || '',
-                                    d.download_count || 1,
-                                    d.last_downloaded_at || d.created_at || '',
-                                    d.ip_address || '',
-                                    d.country || '',
-                                    d.city || '',
-                                    d.browser || '',
-                                    d.device || '',
-                                    d.page_url || ''
-                                  ]);
-                                  
-                                  let html = '<table><thead><tr>';
-                                  headers.forEach(h => {
-                                    html += `<th style="background-color: #081B8C; color: #ffffff; font-weight: bold;">${h}</th>`;
-                                  });
-                                  html += '</tr></thead><tbody>';
-                                  rows.forEach(r => {
-                                    html += '<tr>';
-                                    r.forEach(cell => {
-                                      html += `<td>${String(cell).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
-                                    });
-                                    html += '</tr>';
-                                  });
-                                  html += '</tbody></table>';
-
-                                  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-                                  const url = URL.createObjectURL(blob);
-                                  const link = document.createElement('a');
-                                  link.href = url;
-                                  link.setAttribute('download', 'going_technologies_proposal_downloads.xls');
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                }}
-                                className="cursor-pointer bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xs px-3.5 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Export Excel</span>
-                              </button>
-                            </div>
-
-                            <div className="text-gray-400 text-xs font-semibold whitespace-nowrap">
-                              Showing <strong className="text-gray-700">{filteredDownloads.length}</strong> of <strong className="text-gray-700">{downloads.length}</strong> registered leads
-                            </div>
-                          </div>
-
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead>
-                                <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
-                                  <th className="p-4">Corporate Email</th>
-                                  <th className="p-4">Domain</th>
-                                  <th className="p-4">Source</th>
-                                  <th className="p-4">Downloads</th>
-                                  <th className="p-4">Last Download</th>
-                                  <th className="p-4">Telemetry</th>
-                                  <th className="p-4 text-right">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-50">
-                                {filteredDownloads.map((item) => (
-                                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="p-4 font-bold text-[#081B8C] max-w-[200px] truncate" title={item.email}>
-                                      {item.email}
-                                    </td>
-                                    <td className="p-4 font-semibold text-gray-600 font-mono text-[11px]">
-                                      {item.company_domain || 'N/A'}
-                                    </td>
-                                    <td className="p-4">
-                                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                        item.source === 'Exit Popup'
-                                          ? 'bg-purple-50 text-purple-700 border border-purple-100'
-                                          : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-                                      }`}>
-                                        {item.source}
-                                      </span>
-                                    </td>
-                                    <td className="p-4 font-bold text-center font-mono">
-                                      {item.download_count || 1}
-                                    </td>
-                                    <td className="p-4 text-gray-500 font-medium">
-                                      {new Date(item.last_downloaded_at || item.created_at).toLocaleDateString(undefined, {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </td>
-                                    <td className="p-4 space-y-0.5 text-gray-400 text-[10px]">
-                                      <p>🌍 {item.city || 'Unknown'}, {item.country || 'Unknown'}</p>
-                                      <p>💻 {item.device || 'Desktop'} ({item.browser || 'Browser'})</p>
-                                    </td>
-                                    <td className="p-4 text-right">
+                          return (
+                            <>
+                              {paginated.map((lead) => (
+                                <tr key={lead.id} className="hover:bg-[#FAFBFD]/60 transition-colors">
+                                  <td className="p-4 font-bold text-[#081B8C] text-sm">
+                                    {lead.full_name}
+                                  </td>
+                                  <td className="p-4 text-gray-700 font-medium">
+                                    {lead.email}
+                                  </td>
+                                  <td className="p-4 font-mono text-gray-400">
+                                    {formatDate(lead.created_at)}
+                                  </td>
+                                  <td className="p-4">
+                                    <select
+                                      value={lead.status || 'New'}
+                                      onChange={(e) => updateStatusInTable('whatsapp_contact_leads', lead.id, e.target.value)}
+                                      className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                        lead.status === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        lead.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        lead.status === 'Contacted' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                        lead.status === 'Qualified' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                        lead.status === 'Converted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        'bg-gray-50 text-gray-500 border-gray-200'
+                                      }`}
+                                    >
+                                      <option value="New">New</option>
+                                      <option value="In Progress">In Progress</option>
+                                      <option value="Contacted">Contacted</option>
+                                      <option value="Qualified">Qualified</option>
+                                      <option value="Converted">Converted</option>
+                                      <option value="Closed">Closed</option>
+                                    </select>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex items-center justify-end gap-1.5">
                                       <button
-                                        onClick={() => triggerDelete('proposal_downloads', item.id)}
-                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center"
-                                        title="Delete Record"
+                                        onClick={() => setEditingRecord({ table: 'whatsapp_contact_leads', data: { ...lead } })}
+                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                                        title="Edit Lead Details"
                                       >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Edit className="w-4 h-4" />
                                       </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                                {filteredDownloads.length === 0 && (
-                                  <tr>
-                                    <td colSpan={7} className="p-8 text-center text-gray-400 font-medium">
-                                      No proposal downloads matching current filters.
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-                        </>
-                      );
-                    })()}
+                                      <button
+                                        onClick={() => triggerDelete('whatsapp_contact_leads', lead.id)}
+                                        className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                        title="Delete Lead"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                              {sorted.length === 0 && (
+                                <tr>
+                                  <td colSpan={5} className="p-8 text-center text-gray-400 font-medium">
+                                    No WhatsApp leads matching current filters.
+                                  </td>
+                                </tr>
+                              )}
+                              {sorted.length > 0 && (
+                                <tr>
+                                  <td colSpan={5} className="p-4 bg-[#F8FAFF] border-t border-[#DCE7FF]/40">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs text-gray-400 font-medium">
+                                        Showing {((whatsappPage - 1) * itemsPerPage) + 1} - {Math.min(whatsappPage * itemsPerPage, sorted.length)} of {sorted.length} records
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          disabled={whatsappPage === 1}
+                                          onClick={() => setWhatsappPage(prev => Math.max(prev - 1, 1))}
+                                          className="px-3 py-1.5 bg-white border border-[#DCE7FF] rounded-lg text-xs font-bold text-gray-600 hover:border-gray-300 disabled:opacity-40 transition-all cursor-pointer"
+                                        >
+                                          &larr; Prev
+                                        </button>
+                                        <span className="text-xs font-bold text-gray-700">
+                                          {whatsappPage} / {totalPages}
+                                        </span>
+                                        <button
+                                          disabled={whatsappPage === totalPages}
+                                          onClick={() => setWhatsappPage(prev => Math.min(prev + 1, totalPages))}
+                                          className="px-3 py-1.5 bg-white border border-[#DCE7FF] rounded-lg text-xs font-bold text-gray-600 hover:border-gray-300 disabled:opacity-40 transition-all cursor-pointer"
+                                        >
+                                          Next &rarr;
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* BUSINESS TOOL LEADS TAB */}
+              {activeTab === 'business_tool_leads' && (
+                <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 text-left">
+                  {/* Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search Business Tool leads..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setToolsPage(1);
+                        }}
+                        className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+                      <select
+                        value={toolsStatusFilter}
+                        onChange={(e) => {
+                          setToolsStatusFilter(e.target.value);
+                          setToolsPage(1);
+                        }}
+                        className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF] font-semibold text-gray-600"
+                      >
+                        <option value="All">All Statuses</option>
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Qualified">Qualified</option>
+                        <option value="Converted">Converted</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+
+                      <select
+                        value={`${toolsSortField}-${toolsSortOrder}`}
+                        onChange={(e) => {
+                          const [field, order] = e.target.value.split('-');
+                          setToolsSortField(field);
+                          setToolsSortOrder(order as 'asc' | 'desc');
+                          setToolsPage(1);
+                        }}
+                        className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF] font-semibold text-gray-600"
+                      >
+                        <option value="created_at-desc">Newest First</option>
+                        <option value="created_at-asc">Oldest First</option>
+                        <option value="agency_name-asc">Agency Name (A-Z)</option>
+                        <option value="business_email-asc">Business Email (A-Z)</option>
+                      </select>
+
+                      <button
+                        onClick={() => exportToCSV(businessToolLeads, 'gt_business_tool_leads')}
+                        className="cursor-pointer bg-[#F8FAFF] border border-[#DCE7FF] hover:border-gray-300 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Export CSV</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8FAFF] text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#DCE7FF]/40">
+                          <th className="p-4">Agency / Company Name</th>
+                          <th className="p-4">Business Email</th>
+                          <th className="p-4">Business Sector</th>
+                          <th className="p-4">Unlock Date</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#DCE7FF]/20 text-xs">
+                        {(() => {
+                          const filtered = businessToolLeads
+                            .filter(l => toolsStatusFilter === 'All' || l.status === toolsStatusFilter)
+                            .filter(l => 
+                              !searchQuery ||
+                              l.agency_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              l.business_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              l.business_sector?.toLowerCase().includes(searchQuery.toLowerCase())
+                            );
+                          
+                          const sorted = [...filtered].sort((a, b) => {
+                            const valA = a[toolsSortField] || '';
+                            const valB = b[toolsSortField] || '';
+                            if (valA < valB) return toolsSortOrder === 'asc' ? -1 : 1;
+                            if (valA > valB) return toolsSortOrder === 'asc' ? 1 : -1;
+                            return 0;
+                          });
+
+                          const totalPages = Math.ceil(sorted.length / itemsPerPage) || 1;
+                          const paginated = sorted.slice((toolsPage - 1) * itemsPerPage, toolsPage * itemsPerPage);
+
+                          return (
+                            <>
+                              {paginated.map((lead) => (
+                                <tr key={lead.id} className="hover:bg-[#FAFBFD]/60 transition-colors">
+                                  <td className="p-4 font-bold text-gray-800">
+                                    {lead.agency_name}
+                                  </td>
+                                  <td className="p-4 font-mono font-bold text-[#081B8C]">
+                                    {lead.business_email}
+                                  </td>
+                                  <td className="p-4 font-semibold text-gray-600">
+                                    <span className="px-2 py-1 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-[10px]">
+                                      {lead.business_sector}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-mono text-gray-400">
+                                    {formatDate(lead.created_at)}
+                                  </td>
+                                  <td className="p-4">
+                                    <select
+                                      value={lead.status || 'New'}
+                                      onChange={(e) => updateStatusInTable('business_tool_leads', lead.id, e.target.value)}
+                                      className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                        lead.status === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        lead.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        lead.status === 'Contacted' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                        lead.status === 'Qualified' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                        lead.status === 'Converted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        'bg-gray-50 text-gray-500 border-gray-200'
+                                      }`}
+                                    >
+                                      <option value="New">New</option>
+                                      <option value="In Progress">In Progress</option>
+                                      <option value="Contacted">Contacted</option>
+                                      <option value="Qualified">Qualified</option>
+                                      <option value="Converted">Converted</option>
+                                      <option value="Closed">Closed</option>
+                                    </select>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <button
+                                        onClick={() => setEditingRecord({ table: 'business_tool_leads', data: { ...lead } })}
+                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                                        title="Edit Lead Details"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => triggerDelete('business_tool_leads', lead.id)}
+                                        className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                        title="Delete Lead"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                              {sorted.length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-8 text-center text-gray-400 font-medium">
+                                    No Business Tool lead records matching current filters.
+                                  </td>
+                                </tr>
+                              )}
+                              {sorted.length > 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-4 bg-[#F8FAFF] border-t border-[#DCE7FF]/40">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs text-gray-400 font-medium">
+                                        Showing {((toolsPage - 1) * itemsPerPage) + 1} - {Math.min(toolsPage * itemsPerPage, sorted.length)} of {sorted.length} records
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          disabled={toolsPage === 1}
+                                          onClick={() => setToolsPage(prev => Math.max(prev - 1, 1))}
+                                          className="px-3 py-1.5 bg-white border border-[#DCE7FF] rounded-lg text-xs font-bold text-gray-600 hover:border-gray-300 disabled:opacity-40 transition-all cursor-pointer"
+                                        >
+                                          &larr; Prev
+                                        </button>
+                                        <span className="text-xs font-bold text-gray-700">
+                                          {toolsPage} / {totalPages}
+                                        </span>
+                                        <button
+                                          disabled={toolsPage === totalPages}
+                                          onClick={() => setToolsPage(prev => Math.min(prev + 1, totalPages))}
+                                          className="px-3 py-1.5 bg-white border border-[#DCE7FF] rounded-lg text-xs font-bold text-gray-600 hover:border-gray-300 disabled:opacity-40 transition-all cursor-pointer"
+                                        >
+                                          Next &rarr;
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* BUSINESS PROPOSAL LEADS TAB */}
+              {activeTab === 'business_proposal_leads' && (
+                <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 text-left">
+                  {/* Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search Proposal download leads..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setProposalPage(1);
+                        }}
+                        className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+                      <select
+                        value={proposalStatusFilter}
+                        onChange={(e) => {
+                          setProposalStatusFilter(e.target.value);
+                          setProposalPage(1);
+                        }}
+                        className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF] font-semibold text-gray-600"
+                      >
+                        <option value="All">All Statuses</option>
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Qualified">Qualified</option>
+                        <option value="Converted">Converted</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+
+                      <select
+                        value={`${proposalSortField}-${proposalSortOrder}`}
+                        onChange={(e) => {
+                          const [field, order] = e.target.value.split('-');
+                          setProposalSortField(field);
+                          setProposalSortOrder(order as 'asc' | 'desc');
+                          setProposalPage(1);
+                        }}
+                        className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF] font-semibold text-gray-600"
+                      >
+                        <option value="created_at-desc">Newest First</option>
+                        <option value="created_at-asc">Oldest First</option>
+                        <option value="agency_name-asc">Agency Name (A-Z)</option>
+                        <option value="business_email-asc">Business Email (A-Z)</option>
+                      </select>
+
+                      <button
+                        onClick={() => exportToCSV(businessProposalLeads, 'gt_business_proposal_leads')}
+                        className="cursor-pointer bg-[#F8FAFF] border border-[#DCE7FF] hover:border-gray-300 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Export CSV</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8FAFF] text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#DCE7FF]/40">
+                          <th className="p-4">Agency / Company Name</th>
+                          <th className="p-4">Business Email</th>
+                          <th className="p-4">Business Sector</th>
+                          <th className="p-4">Download Date</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#DCE7FF]/20 text-xs">
+                        {(() => {
+                          const filtered = businessProposalLeads
+                            .filter(l => proposalStatusFilter === 'All' || l.status === proposalStatusFilter)
+                            .filter(l => 
+                              !searchQuery ||
+                              l.agency_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              l.business_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              l.business_sector?.toLowerCase().includes(searchQuery.toLowerCase())
+                            );
+                          
+                          const sorted = [...filtered].sort((a, b) => {
+                            const valA = a[proposalSortField] || '';
+                            const valB = b[proposalSortField] || '';
+                            if (valA < valB) return proposalSortOrder === 'asc' ? -1 : 1;
+                            if (valA > valB) return proposalSortOrder === 'asc' ? 1 : -1;
+                            return 0;
+                          });
+
+                          const totalPages = Math.ceil(sorted.length / itemsPerPage) || 1;
+                          const paginated = sorted.slice((proposalPage - 1) * itemsPerPage, proposalPage * itemsPerPage);
+
+                          return (
+                            <>
+                              {paginated.map((lead) => (
+                                <tr key={lead.id} className="hover:bg-[#FAFBFD]/60 transition-colors">
+                                  <td className="p-4 font-bold text-gray-800">
+                                    {lead.agency_name}
+                                  </td>
+                                  <td className="p-4 font-mono font-bold text-[#081B8C]">
+                                    {lead.business_email}
+                                  </td>
+                                  <td className="p-4 font-semibold text-gray-600">
+                                    <span className="px-2 py-1 bg-violet-50 border border-violet-100 rounded-lg text-violet-800 text-[10px]">
+                                      {lead.business_sector}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-mono text-gray-400">
+                                    {formatDate(lead.created_at)}
+                                  </td>
+                                  <td className="p-4">
+                                    <select
+                                      value={lead.status || 'New'}
+                                      onChange={(e) => updateStatusInTable('business_proposal_leads', lead.id, e.target.value)}
+                                      className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                        lead.status === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        lead.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        lead.status === 'Contacted' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                        lead.status === 'Qualified' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                        lead.status === 'Converted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        'bg-gray-50 text-gray-500 border-gray-200'
+                                      }`}
+                                    >
+                                      <option value="New">New</option>
+                                      <option value="In Progress">In Progress</option>
+                                      <option value="Contacted">Contacted</option>
+                                      <option value="Qualified">Qualified</option>
+                                      <option value="Converted">Converted</option>
+                                      <option value="Closed">Closed</option>
+                                    </select>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <button
+                                        onClick={() => setEditingRecord({ table: 'business_proposal_leads', data: { ...lead } })}
+                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                                        title="Edit Lead Details"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => triggerDelete('business_proposal_leads', lead.id)}
+                                        className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                        title="Delete Lead"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                              {sorted.length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-8 text-center text-gray-400 font-medium">
+                                    No Business Proposal lead records matching current filters.
+                                  </td>
+                                </tr>
+                              )}
+                              {sorted.length > 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-4 bg-[#F8FAFF] border-t border-[#DCE7FF]/40">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs text-gray-400 font-medium">
+                                        Showing {((proposalPage - 1) * itemsPerPage) + 1} - {Math.min(proposalPage * itemsPerPage, sorted.length)} of {sorted.length} records
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          disabled={proposalPage === 1}
+                                          onClick={() => setProposalPage(prev => Math.max(prev - 1, 1))}
+                                          className="px-3 py-1.5 bg-white border border-[#DCE7FF] rounded-lg text-xs font-bold text-gray-600 hover:border-gray-300 disabled:opacity-40 transition-all cursor-pointer"
+                                        >
+                                          &larr; Prev
+                                        </button>
+                                        <span className="text-xs font-bold text-gray-700">
+                                          {proposalPage} / {totalPages}
+                                        </span>
+                                        <button
+                                          disabled={proposalPage === totalPages}
+                                          onClick={() => setProposalPage(prev => Math.min(prev + 1, totalPages))}
+                                          className="px-3 py-1.5 bg-white border border-[#DCE7FF] rounded-lg text-xs font-bold text-gray-600 hover:border-gray-300 disabled:opacity-40 transition-all cursor-pointer"
+                                        >
+                                          Next &rarr;
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -3087,6 +3673,124 @@ create policy "Allow public delete on blogs" on public.blogs for delete to anon,
                             className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
                           />
                         </div>
+                      )}
+
+                      {editingRecord.table === 'whatsapp_contact_leads' && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Full Name</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingRecord.data.full_name || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, full_name: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Business Email</label>
+                            <input
+                              type="email"
+                              required
+                              value={editingRecord.data.email || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, email: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Lead Status</label>
+                            <select
+                              value={editingRecord.data.status || 'New'}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, status: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            >
+                              <option value="New">New</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Contacted">Contacted</option>
+                              <option value="Qualified">Qualified</option>
+                              <option value="Converted">Converted</option>
+                              <option value="Closed">Closed</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {(editingRecord.table === 'business_tool_leads' || editingRecord.table === 'business_proposal_leads') && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Agency / Company Name</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingRecord.data.agency_name || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, agency_name: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Business Email</label>
+                            <input
+                              type="email"
+                              required
+                              value={editingRecord.data.business_email || ''}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, business_email: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Business Sector</label>
+                            <select
+                              value={editingRecord.data.business_sector || 'Property & Casualty Insurance'}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, business_sector: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            >
+                              <option value="Property & Casualty Insurance">Property & Casualty Insurance</option>
+                              <option value="Health Insurance">Health Insurance</option>
+                              <option value="Life Insurance">Life Insurance</option>
+                              <option value="Medicare">Medicare</option>
+                              <option value="Insurance Brokerage">Insurance Brokerage</option>
+                              <option value="MGA">MGA</option>
+                              <option value="Insurance Carrier">Insurance Carrier</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-700 uppercase">Lead Status</label>
+                            <select
+                              value={editingRecord.data.status || 'New'}
+                              onChange={(e) => setEditingRecord({
+                                ...editingRecord,
+                                data: { ...editingRecord.data, status: e.target.value }
+                              })}
+                              className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                            >
+                              <option value="New">New</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Contacted">Contacted</option>
+                              <option value="Qualified">Qualified</option>
+                              <option value="Converted">Converted</option>
+                              <option value="Closed">Closed</option>
+                            </select>
+                          </div>
+                        </>
                       )}
 
                       {editingRecord.table === 'callback_requests' && (
