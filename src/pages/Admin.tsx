@@ -715,7 +715,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     setLoginError('');
 
     // Verification against explicit corporate credentials
-    if (email === 'admin@goingtechnologies.com' && password === 'Admin@goingtechnologies123') {
+    if (email === 'admin@goingtechnologies.com' && password === 'Going@123') {
       setIsAuthenticated(true);
       localStorage.setItem('gt_admin_auth', 'true');
     } else {
