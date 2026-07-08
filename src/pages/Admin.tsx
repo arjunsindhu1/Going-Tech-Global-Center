@@ -215,6 +215,12 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   const [editingRecord, setEditingRecord] = useState<{ table: string; data: any } | null>(null);
   const [isSavingRecord, setIsSavingRecord] = useState(false);
 
+  // Custom Client Actions Modal states
+  const [clientActionModal, setClientActionModal] = useState<{
+    actionType: 'archive' | 'restore' | 'delete';
+    account: any;
+  } | null>(null);
+
   // Fetch all tables from Supabase
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -1262,13 +1268,39 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     }
   };
 
-  // Archive Client Account
-  const handleArchiveClient = async (account: any) => {
-    const confirmed = window.confirm(
-      "Archive this client?\n\nThe client will no longer be able to access the portal and will be moved to Archived Clients.\nAll data will be preserved and can be restored later."
-    );
-    if (!confirmed) return;
+  // Archive Client Account (Triggers Custom Modal)
+  const handleArchiveClient = (account: any) => {
+    setClientActionModal({
+      actionType: 'archive',
+      account
+    });
+  };
 
+  // Restore Archived Client Account (Triggers Custom Modal)
+  const handleRestoreClient = (account: any) => {
+    setClientActionModal({
+      actionType: 'restore',
+      account
+    });
+  };
+
+  // Permanently purge client account (Triggers Custom Modal)
+  const handlePermanentDeleteClient = (account: any) => {
+    if (adminRole !== 'super') {
+      setAdminAlert({
+        message: 'Access Denied: Only Super Admins can permanently delete client records. Normal Admins have view-only access.',
+        type: 'info'
+      });
+      return;
+    }
+    setClientActionModal({
+      actionType: 'delete',
+      account
+    });
+  };
+
+  // Execute Archiving after confirmation
+  const executeArchiveClient = async (account: any) => {
     setIsLoading(true);
     try {
       // Set client status to Archived in database
@@ -1305,19 +1337,18 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       // Refresh master listings to ensure all related data is synchronized
       fetchAllData();
     } catch (err: any) {
-      alert(`Archiving failed: ${err.message}`);
+      setAdminAlert({
+        message: `Archiving failed: ${err.message}`,
+        type: 'info'
+      });
     } finally {
       setIsLoading(false);
+      setClientActionModal(null);
     }
   };
 
-  // Restore Archived Client Account
-  const handleRestoreClient = async (account: any) => {
-    const confirmed = window.confirm(
-      "Restore this client?\n\nThe client will regain portal access, and all credentials, documents, and notifications will be fully restored."
-    );
-    if (!confirmed) return;
-
+  // Execute Restoring after confirmation
+  const executeRestoreClient = async (account: any) => {
     setIsLoading(true);
     try {
       // Set client status back to Active in database
@@ -1350,24 +1381,18 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       // Refresh master listings to ensure all related data is synchronized
       fetchAllData();
     } catch (err: any) {
-      alert(`Restoration failed: ${err.message}`);
+      setAdminAlert({
+        message: `Restoration failed: ${err.message}`,
+        type: 'info'
+      });
     } finally {
       setIsLoading(false);
+      setClientActionModal(null);
     }
   };
 
-  // Permanently purge client account, auth user, and all related database records cascadingly
-  const handlePermanentDeleteClient = async (account: any) => {
-    if (adminRole !== 'super') {
-      alert('Access Denied: Only Super Admins can permanently delete client records. Normal Admins have view-only access.');
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Are you sure you want to permanently delete this client? This action is IRREVERSIBLE and will permanently delete their Supabase Auth account and purge all documents, credentials, activity logs, and notifications."
-    );
-    if (!confirmed) return;
-
+  // Execute Permanent Deletion after confirmation
+  const executePermanentDeleteClient = async (account: any) => {
     setIsLoading(true);
     try {
       console.log(`Starting permanent purge of client ID: ${account.id}`);
@@ -1445,9 +1470,13 @@ export default function Admin({ setCurrentPage }: AdminProps) {
       fetchAllData();
 
     } catch (err: any) {
-      alert(`Purge failed: ${err.message}`);
+      setAdminAlert({
+        message: `Purge failed: ${err.message}`,
+        type: 'info'
+      });
     } finally {
       setIsLoading(false);
+      setClientActionModal(null);
     }
   };
 
@@ -6209,6 +6238,93 @@ create policy "Allow public delete on blogs" on public.blogs for delete to anon,
                           </div>
                         )
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CUSTOM CLIENT ACTIONS CONFIRMATION MODAL */}
+              {clientActionModal && (
+                <div className="fixed inset-0 z-50 bg-[#040A21]/60 backdrop-blur-md flex items-center justify-center p-4">
+                  <div className="bg-white border border-[#DCE7FF]/70 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
+                    <div className="flex gap-4 items-start">
+                      <div className={`p-3 rounded-2xl shrink-0 ${
+                        clientActionModal.actionType === 'archive' 
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200' 
+                          : clientActionModal.actionType === 'restore'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                          : 'bg-red-50 text-red-600 border border-red-200'
+                      }`}>
+                        {clientActionModal.actionType === 'archive' && <Archive className="w-6 h-6" />}
+                        {clientActionModal.actionType === 'restore' && <RefreshCw className="w-6 h-6 animate-spin-slow" />}
+                        {clientActionModal.actionType === 'delete' && <Trash2 className="w-6 h-6" />}
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="text-base font-bold text-[#081B8C] font-display">
+                          {clientActionModal.actionType === 'archive' && 'Archive Client Workspace'}
+                          {clientActionModal.actionType === 'restore' && 'Restore Client Workspace'}
+                          {clientActionModal.actionType === 'delete' && 'Permanently Delete Client'}
+                        </h3>
+                        <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                          {clientActionModal.account.company || clientActionModal.account.company_name || 'Going Technologies Partner'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-slate-600 font-semibold leading-relaxed bg-[#F8FAFF] p-4 rounded-2xl border border-[#DCE7FF]/30">
+                      {clientActionModal.actionType === 'archive' && (
+                        <span>
+                          Are you sure you want to archive <strong>{clientActionModal.account.name || clientActionModal.account.client_name}</strong>?<br /><br />
+                          The client will no longer be able to log in to the portal and will be moved to the Archived Clients directory. All of their workspace data (credentials, documents, notifications, activity logs) will be safely preserved and can be restored in full later.
+                        </span>
+                      )}
+                      {clientActionModal.actionType === 'restore' && (
+                        <span>
+                          Are you sure you want to restore <strong>{clientActionModal.account.name || clientActionModal.account.client_name}</strong> to active status?<br /><br />
+                          The client will instantly regain portal login access. All of their secure credentials, uploaded vault documents, and notifications will be fully accessible.
+                        </span>
+                      )}
+                      {clientActionModal.actionType === 'delete' && (
+                        <span className="text-red-700 block">
+                          <strong>WARNING: IRREVERSIBLE ACTION</strong><br /><br />
+                          Are you sure you want to permanently delete <strong>{clientActionModal.account.name || clientActionModal.account.client_name}</strong>?<br /><br />
+                          This will completely delete their Supabase Auth credentials, purge all of their secure document vaults from cloud storage, and permanently drop all credentials, timelines, activity logs, and notification records from the database. This action cannot be undone.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                      <button
+                        onClick={() => setClientActionModal(null)}
+                        disabled={isLoading}
+                        className="px-4 py-2.5 rounded-xl border border-[#DCE7FF] hover:bg-slate-50 text-xs font-extrabold text-gray-500 cursor-pointer transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (clientActionModal.actionType === 'archive') executeArchiveClient(clientActionModal.account);
+                          else if (clientActionModal.actionType === 'restore') executeRestoreClient(clientActionModal.account);
+                          else if (clientActionModal.actionType === 'delete') executePermanentDeleteClient(clientActionModal.account);
+                        }}
+                        disabled={isLoading}
+                        className={`px-5 py-2.5 rounded-xl text-white text-xs font-extrabold cursor-pointer transition-all inline-flex items-center gap-1.5 shadow-sm hover:scale-[1.02] ${
+                          clientActionModal.actionType === 'archive'
+                            ? 'bg-amber-600 hover:bg-amber-700'
+                            : clientActionModal.actionType === 'restore'
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : 'bg-red-600 hover:bg-red-700'
+                        }`}
+                      >
+                        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>
+                          {clientActionModal.actionType === 'archive' && 'Archive Client'}
+                          {clientActionModal.actionType === 'restore' && 'Restore Client'}
+                          {clientActionModal.actionType === 'delete' && 'Permanently Delete'}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>
