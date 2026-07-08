@@ -43,7 +43,7 @@ stream
 BT
 /F1 18 Tf
 72 750 Td
-(GOING TECHNOLOGIES BUSINESS PROPOSAL) Tj
+(GOING TECHNOLOGIES INSURANCE OPERATIONS PROPOSAL) Tj
 /F1 12 Tf
 0 -30 Td
 (Customized Operations & Staffing Model) Tj
@@ -114,7 +114,7 @@ export async function downloadProposal(
     return { error: 'Please use your company email address to download this proposal.' };
   }
 
-  const proposalFileName = 'Going Technologies business proposal  (A4).pdf';
+  const proposalFileName = 'Going Technologies Insurance operations proposal.pdf';
   const emailClean = trimmedEmail.toLowerCase();
   
   const leadData = {
@@ -162,7 +162,7 @@ export async function downloadProposal(
 
     // Try to retrieve the real template from storage bucket
     console.log('[DEBUG] Trying to fetch proposal from Supabase Storage...');
-    const storageFileName = 'Going Technologies business proposal  (A4).pdf';
+    const storageFileName = 'Going Technologies Insurance operations proposal.pdf';
     const { data: publicUrlData } = supabase.storage
       .from('goingtechnologies')
       .getPublicUrl(storageFileName);

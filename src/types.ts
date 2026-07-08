@@ -10,7 +10,9 @@ export type PageType =
   | 'careers'
   | 'privacy'
   | 'terms'
-  | 'admin';
+  | 'admin'
+  | 'workspace'
+  | 'client-portal';
 
 export interface ServiceDetail {
   id: string;

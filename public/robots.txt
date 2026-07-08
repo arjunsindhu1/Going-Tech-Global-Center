@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /workspace
+Disallow: /client-portal
+Disallow: /#workspace
+Disallow: /#client-portal
+Disallow: /admin
+Disallow: /#admin
+
+Sitemap: https://goingtechnologies.com/sitemap.xml

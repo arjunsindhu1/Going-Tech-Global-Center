@@ -30,7 +30,15 @@ import {
   FileText,
   AlertCircle,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Key,
+  Bell,
+  Folder,
+  Shield,
+  Check,
+  Loader2,
+  Upload,
+  Archive
 } from 'lucide-react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
@@ -42,7 +50,7 @@ interface AdminProps {
   setCurrentPage: (page: PageType) => void;
 }
 
-type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'blogs' | 'whatsapp_leads' | 'business_tool_leads' | 'business_proposal_leads';
+type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'blogs' | 'whatsapp_leads' | 'business_tool_leads' | 'business_proposal_leads' | 'client_portal_access' | 'client_accounts' | 'client_credentials' | 'client_documents' | 'client_notifications' | 'auth_logs' | 'archived_clients';
 
 export default function Admin({ setCurrentPage }: AdminProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -123,7 +131,57 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   // Careers & Applications CMS state
   const [jobs, setJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
+  const [clientAccounts, setClientAccounts] = useState<any[]>([]);
+  
+  // High-Security Client Workspace Admin states
+  const [allClientCredentials, setAllClientCredentials] = useState<any[]>([]);
+  const [allClientDocuments, setAllClientDocuments] = useState<any[]>([]);
+  const [allClientNotifications, setAllClientNotifications] = useState<any[]>([]);
+  const [credentialsSearchQuery, setCredentialsSearchQuery] = useState('');
+  const [expandedClientIds, setExpandedClientIds] = useState<string[]>([]);
+  const [documentsSearchQuery, setDocumentsSearchQuery] = useState('');
+  const [notificationsSearchQuery, setNotificationsSearchQuery] = useState('');
+
+  const [selectedClientWorkspace, setSelectedClientWorkspace] = useState<any | null>(null);
+  const [workspaceCredentials, setWorkspaceCredentials] = useState<any[]>([]);
+  const [workspaceDocuments, setWorkspaceDocuments] = useState<any[]>([]);
+  const [workspaceActivity, setWorkspaceActivity] = useState<any[]>([]);
+  const [workspaceTab, setWorkspaceTab] = useState<'credentials' | 'documents' | 'activity'>('credentials');
+  const [isUploadingToClient, setIsUploadingToClient] = useState(false);
+  const [authLogs, setAuthLogs] = useState<any[]>([]);
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  const [selectedAccountForReset, setSelectedAccountForReset] = useState<any | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [copiedLinkType, setCopiedLinkType] = useState<string | null>(null);
+  const [authLogsSearchQuery, setAuthLogsSearchQuery] = useState('');
+  const [authLogTypeFilter, setAuthLogTypeFilter] = useState('All');
+  const [adminAlert, setAdminAlert] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // RBAC State and Preview States
+  const [adminRole, setAdminRole] = useState<'super' | 'normal'>(() => {
+    return (localStorage.getItem('gt_admin_role') as 'super' | 'normal') || 'super';
+  });
+  const [previewingDoc, setPreviewingDoc] = useState<any | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleToggleRole = () => {
+    const newRole = adminRole === 'super' ? 'normal' : 'super';
+    setAdminRole(newRole);
+    localStorage.setItem('gt_admin_role', newRole);
+    setAdminAlert({
+      message: `Switched administrative scope to: ${newRole === 'super' ? 'Super Admin (Full CRUD permissions)' : 'Normal Admin (Read-Only/View permissions)'}`,
+      type: 'info'
+    });
+  };
+
+  useEffect(() => {
+    if (!adminAlert) return;
+    const timer = setTimeout(() => {
+      setAdminAlert(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [adminAlert]);
 
   // Job Posting modal / form management states
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
@@ -309,7 +367,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                 agency_name: derivedAgency,
                 company_email: email,
                 sector: 'Technology',
-                proposal_name: old.downloaded_file || 'Going Technologies business proposal (A4).pdf',
+                proposal_name: old.downloaded_file || 'Going Technologies Insurance operations proposal.pdf',
                 status: 'Downloaded',
                 source: old.source || 'Legacy Download',
                 created_at: createdAt || new Date().toISOString()
@@ -518,6 +576,89 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         setBusinessProposalLeads(getLocalLeads('business_proposal_leads'));
       }
 
+      // 14. Client Accounts (Real-Time Client Profiles sync)
+      console.log('Querying: supabase.from("client_profiles").select("*")');
+      try {
+        const { data: accountsData, error: accountsError } = await supabase
+          .from('client_profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (accountsError) {
+          console.warn('Error fetching client_profiles from database:', accountsError.message);
+          setClientAccounts([]);
+        } else {
+          console.log(`Successfully fetched client_profiles. Count: ${accountsData?.length || 0}`);
+          setClientAccounts(accountsData || []);
+        }
+      } catch (err) {
+        console.warn('Exception fetching client_profiles:', err);
+        setClientAccounts([]);
+      }
+
+      // 14.b Global Client Credentials (for view-only Admin page)
+      try {
+        const { data: credsData } = await supabase
+          .from('client_credentials')
+          .select('*')
+          .order('created_at', { ascending: false });
+        setAllClientCredentials(credsData || []);
+      } catch (err) {
+        console.warn('Exception fetching all client_credentials:', err);
+      }
+
+      // 14.c Global Client Documents (for view-only Admin page)
+      try {
+        const { data: docsData } = await supabase
+          .from('client_documents')
+          .select('*')
+          .order('created_at', { ascending: false });
+        setAllClientDocuments(docsData || []);
+      } catch (err) {
+        console.warn('Exception fetching all client_documents:', err);
+      }
+
+      // 14.d Global Client Notifications (for Activity notifications log)
+      try {
+        const { data: notifData } = await supabase
+          .from('client_notifications')
+          .select('*')
+          .order('created_at', { ascending: false });
+        setAllClientNotifications(notifData || []);
+      } catch (err) {
+        console.warn('Exception fetching all client_notifications:', err);
+      }
+
+      // 15. Authentication Audit Logs
+      console.log('Querying: supabase.from("auth_logs").select("*")');
+      try {
+        const { data: logsData, error: logsError } = await supabase
+          .from('auth_logs')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (logsError) {
+          const isMissingTable = logsError.code === 'PGRST205' || logsError.message?.includes('schema cache') || logsError.message?.includes('does not exist');
+          if (isMissingTable) {
+            console.warn('auth_logs table missing in Supabase. Using localStorage fallback.');
+          } else {
+            console.warn('Error fetching auth_logs from database:', logsError.message);
+          }
+          setAuthLogs(getLocalLeads('auth_logs'));
+        } else {
+          console.log(`Successfully fetched auth_logs. Count: ${logsData?.length || 0}`);
+          const localLogs = getLocalLeads('auth_logs');
+          const merged = [...(logsData || [])];
+          localLogs.forEach(loc => {
+            if (!merged.some(m => m.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          setAuthLogs(merged);
+        }
+      } catch (err) {
+        console.warn('Exception fetching auth_logs:', err);
+        setAuthLogs(getLocalLeads('auth_logs'));
+      }
+
     } catch (err) {
       console.error('Error fetching admin dashboard data:', err);
     } finally {
@@ -592,6 +733,29 @@ export default function Admin({ setCurrentPage }: AdminProps) {
           break;
         case 'business_proposal_leads':
           updateState(setBusinessProposalLeads);
+          break;
+        case 'client_credentials':
+          updateState(setAllClientCredentials);
+          if (selectedClientWorkspace && enrichedRecord.client_id === selectedClientWorkspace.id) {
+            updateState(setWorkspaceCredentials);
+          }
+          break;
+        case 'client_documents':
+          updateState(setAllClientDocuments);
+          if (selectedClientWorkspace && enrichedRecord.client_id === selectedClientWorkspace.id) {
+            updateState(setWorkspaceDocuments);
+          }
+          break;
+        case 'client_activity_logs':
+          if (selectedClientWorkspace && enrichedRecord.client_id === selectedClientWorkspace.id) {
+            updateState(setWorkspaceActivity);
+          }
+          break;
+        case 'client_notifications':
+          updateState(setAllClientNotifications);
+          break;
+        case 'client_profiles':
+          updateState(setClientAccounts);
           break;
         default:
           break;
@@ -689,6 +853,46 @@ export default function Admin({ setCurrentPage }: AdminProps) {
         }
       )
       .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_credentials' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('client_credentials', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_documents' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('client_documents', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_notifications' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('client_notifications', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_profiles' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('client_profiles', payload.eventType, record);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_activity_logs' },
+        (payload) => {
+          const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+          handleRealtimeEvent('client_activity_logs', payload.eventType, record);
+        }
+      )
+      .on(
         'broadcast',
         { event: 'db_change' },
         (payload) => {
@@ -727,6 +931,575 @@ export default function Admin({ setCurrentPage }: AdminProps) {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('gt_admin_auth');
+  };
+
+  // Log admin audit actions
+  const logAdminAuditEvent = async (userEmail: string, eventType: string) => {
+    const logId = `log-${Math.random().toString(36).substr(2, 9)}`;
+    const payload = {
+      id: logId,
+      business_email: userEmail,
+      event_type: eventType,
+      created_at: new Date().toISOString()
+    };
+    setAuthLogs(prev => [payload, ...prev]);
+    try {
+      const { error } = await supabase.from('auth_logs').insert([payload]);
+      if (error) throw error;
+      broadcastChange('auth_logs', 'INSERT', payload);
+    } catch (err) {
+      saveLocalLead('auth_logs', payload);
+    }
+  };
+
+  // Toggle Client Account status (Active <-> Disabled)
+  // Toggle Client Account status (Active <-> Suspended) on the real profiles table
+  const handleToggleAccountStatus = async (account: any) => {
+    const currentStatus = account.status || account.account_status || 'active';
+    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    console.log(`Toggling profile status for ${account.email || account.business_email} to ${newStatus}`);
+    
+    // Update local React state immediately
+    setClientAccounts(prev => prev.map(acc => acc.id === account.id ? { ...acc, status: newStatus, account_status: newStatus } : acc));
+
+    // Persist changes
+    try {
+      const { error } = await supabase
+        .from('client_profiles')
+        .update({ status: newStatus })
+        .eq('id', account.id);
+      
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error toggling profile status:', err);
+    }
+
+    // Log the event
+    await logAdminAuditEvent(account.email || account.business_email, `Account ${newStatus === 'active' ? 'Re-activated' : 'Suspended'} by Admin`);
+    setAdminAlert({
+      message: `Account status for ${account.email || account.business_email} successfully updated to ${newStatus}.`,
+      type: 'success'
+    });
+  };
+
+  // High-Security Symmetric Decrypt Algorithm
+  const GT_DECRYPTION_KEY = 'GT-Enterprise-Security-2026';
+  const decryptClientPassword = (hex: string): string => {
+    try {
+      if (!hex || hex.length % 4 !== 0) return hex;
+      const chars: string[] = [];
+      for (let i = 0; i < hex.length; i += 4) {
+        chars.push(String.fromCharCode(parseInt(hex.substring(i, i + 4), 16)));
+      }
+      return chars.join('').split('').map((char, i) => 
+        String.fromCharCode(char.charCodeAt(0) ^ GT_DECRYPTION_KEY.charCodeAt(i % GT_DECRYPTION_KEY.length))
+      ).join('');
+    } catch (err) {
+      return hex;
+    }
+  };
+
+  const toggleClientCredentialsExpand = (clientId: string) => {
+    setExpandedClientIds(prev =>
+      prev.includes(clientId) ? prev.filter(id => id !== clientId) : [...prev, clientId]
+    );
+  };
+
+  // Select Client Workspace Handler
+  const selectClientForWorkspace = async (client: any) => {
+    setSelectedClientWorkspace(client);
+    setWorkspaceTab('credentials');
+    
+    try {
+      // 1. Fetch credentials
+      const { data: creds } = await supabase
+        .from('client_credentials')
+        .select('*')
+        .eq('client_id', client.id);
+      setWorkspaceCredentials(creds || []);
+
+      // 2. Fetch documents
+      const { data: docs } = await supabase
+        .from('client_documents')
+        .select('*')
+        .eq('client_id', client.id);
+      setWorkspaceDocuments(docs || []);
+
+      // 3. Fetch activity logs
+      const { data: logs } = await supabase
+        .from('client_activity_logs')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('created_at', { ascending: false });
+      setWorkspaceActivity(logs || []);
+    } catch (err) {
+      console.error('Error fetching client workspace datasets:', err);
+    }
+  };
+
+  // Upload Manual Guideline to Client Private Folder
+  const handleAdminUploadToClient = async (file: File) => {
+    if (!selectedClientWorkspace) return;
+    setIsUploadingToClient(true);
+
+    try {
+      const storagePath = `${selectedClientWorkspace.id}/${Date.now()}_${file.name}`;
+      
+      // Upload physical file to private bucket
+      const { error: storageErr } = await supabase.storage
+        .from('client-documents')
+        .upload(storagePath, file);
+
+      if (storageErr) throw storageErr;
+
+      // Insert record in client_documents
+      const { error: dbErr } = await supabase
+        .from('client_documents')
+        .insert([{
+          client_id: selectedClientWorkspace.id,
+          title: file.name.split('.')[0],
+          file_name: file.name,
+          file_size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+          uploaded_by: 'Admin',
+          file_path: storagePath
+        }]);
+
+      if (dbErr) throw dbErr;
+
+      // Log activity
+      await supabase.from('client_activity_logs').insert([{
+        client_id: selectedClientWorkspace.id,
+        email: 'admin@goingtechnologies.com',
+        event_type: 'Admin Upload',
+        description: `Admin uploaded guideline file: ${file.name}`
+      }]);
+
+      // Add Notification for client
+      await supabase.from('client_notifications').insert([{
+        client_id: selectedClientWorkspace.id,
+        title: 'New Admin Document',
+        message: `Going Technologies admin has uploaded a secure operational file: ${file.name}`,
+        type: 'Document'
+      }]);
+
+      // Re-fetch
+      const { data: docs } = await supabase
+        .from('client_documents')
+        .select('*')
+        .eq('client_id', selectedClientWorkspace.id);
+      setWorkspaceDocuments(docs || []);
+
+      setAdminAlert({
+        message: `Successfully uploaded ${file.name} to client folder.`,
+        type: 'success'
+      });
+    } catch (err: any) {
+      setAdminAlert({
+        message: `Failed to upload document: ${err.message}`,
+        type: 'error' as any
+      });
+    } finally {
+      setIsUploadingToClient(false);
+    }
+  };
+
+  // Download client document securely from private storage bucket
+  const handleAdminDownloadFile = async (doc: any) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .download(doc.file_path);
+
+      if (error) throw error;
+      if (!data) throw new Error('Retrieved object buffer stream is empty.');
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.file_name;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('[Download error]', err);
+    }
+  };
+
+  // Document Preview Handler
+  const handleAdminPreviewFile = async (doc: any) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .download(doc.file_path);
+
+      if (error) throw error;
+      if (!data) throw new Error('File buffer is empty.');
+
+      const url = URL.createObjectURL(data);
+      setPreviewUrl(url);
+      setPreviewingDoc(doc);
+    } catch (err: any) {
+      alert(`Could not preview file: ${err.message}`);
+    }
+  };
+
+  // Delete client document
+  const handleAdminDeleteDocument = async (doc: any) => {
+    if (adminRole !== 'super') {
+      alert('Access Denied: Only Super Admins can permanently delete documents. Normal Admins have view-only access.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete this document?`)) return;
+
+    try {
+      // 1. Delete DB row
+      const { error: dbErr } = await supabase
+        .from('client_documents')
+        .delete()
+        .eq('id', doc.id);
+
+      if (dbErr) throw dbErr;
+
+      // 2. Delete storage object
+      await supabase.storage
+        .from('client-documents')
+        .remove([doc.file_path]);
+
+      // Update state
+      setAllClientDocuments(prev => prev.filter(d => d.id !== doc.id));
+      if (selectedClientWorkspace) {
+        const { data: docs } = await supabase
+          .from('client_documents')
+          .select('*')
+          .eq('client_id', selectedClientWorkspace.id);
+        setWorkspaceDocuments(docs || []);
+      }
+
+      setAdminAlert({
+        message: 'Document successfully purged.',
+        type: 'success'
+      });
+    } catch (err: any) {
+      setAdminAlert({
+        message: `Purge failed: ${err.message}`,
+        type: 'error' as any
+      });
+    }
+  };
+
+  // Delete Client Credential
+  const handleAdminDeleteCredential = async (cred: any) => {
+    if (adminRole !== 'super') {
+      alert('Access Denied: Only Super Admins can permanently delete credentials. Normal Admins have view-only access.');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to permanently delete this credential? This action cannot be undone.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('client_credentials')
+        .delete()
+        .eq('id', cred.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setAllClientCredentials(prev => prev.filter(c => c.id !== cred.id));
+      if (selectedClientWorkspace) {
+        setWorkspaceCredentials(prev => prev.filter(c => c.id !== cred.id));
+      }
+
+      setAdminAlert({
+        message: 'Credential successfully deleted.',
+        type: 'success'
+      });
+    } catch (err: any) {
+      alert(`Deletion failed: ${err.message}`);
+    }
+  };
+
+  // Notification Management - Clear individual notification
+  const handleClearNotification = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('client_notifications')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setAllClientNotifications(prev => prev.filter(n => n.id !== id));
+      setAdminAlert({
+        message: 'Notification removed successfully.',
+        type: 'success'
+      });
+    } catch (err: any) {
+      alert(`Failed to remove notification: ${err.message}`);
+    }
+  };
+
+  // Notification Management - Clear all notifications
+  const handleClearAllNotifications = async () => {
+    if (!confirm('Are you sure you want to clear all operational notifications? This cannot be undone.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('client_notifications')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Deletes all records safely
+
+      if (error) throw error;
+
+      setAllClientNotifications([]);
+      setAdminAlert({
+        message: 'All notifications cleared successfully.',
+        type: 'success'
+      });
+    } catch (err: any) {
+      alert(`Failed to clear notifications: ${err.message}`);
+    }
+  };
+
+  // Archive Client Account
+  const handleArchiveClient = async (account: any) => {
+    const confirmed = window.confirm(
+      "Archive this client?\n\nThe client will no longer be able to access the portal and will be moved to Archived Clients.\nAll data will be preserved and can be restored later."
+    );
+    if (!confirmed) return;
+
+    setIsLoading(true);
+    try {
+      // Set client status to Archived in database
+      const { error } = await supabase
+        .from('client_profiles')
+        .update({ status: 'Archived', updated_at: new Date().toISOString() })
+        .eq('id', account.id);
+
+      if (error) throw error;
+
+      // Log activity
+      await supabase.from('client_activity_logs').insert([{
+        client_id: account.id,
+        email: account.email || account.business_email || '',
+        event_type: 'Client Archived',
+        description: `Client representative ${account.name || account.client_name} has been archived by operational admin.`
+      }]);
+
+      setAdminAlert({
+        message: `Client ${account.name || account.client_name} has been archived successfully.`,
+        type: 'success'
+      });
+
+      // Update local state immediately for instant feedback
+      setClientAccounts(prev => prev.map(x => x.id === account.id ? { ...x, status: 'Archived', updated_at: new Date().toISOString() } : x));
+      
+      if (selectedClientWorkspace && selectedClientWorkspace.id === account.id) {
+        setSelectedClientWorkspace(null);
+      }
+
+      // Broadcast changes for realtime sync
+      broadcastChange('client_profiles', 'UPDATE', { id: account.id, status: 'Archived' });
+
+      // Refresh master listings to ensure all related data is synchronized
+      fetchAllData();
+    } catch (err: any) {
+      alert(`Archiving failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Restore Archived Client Account
+  const handleRestoreClient = async (account: any) => {
+    const confirmed = window.confirm(
+      "Restore this client?\n\nThe client will regain portal access, and all credentials, documents, and notifications will be fully restored."
+    );
+    if (!confirmed) return;
+
+    setIsLoading(true);
+    try {
+      // Set client status back to Active in database
+      const { error } = await supabase
+        .from('client_profiles')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', account.id);
+
+      if (error) throw error;
+
+      // Log activity
+      await supabase.from('client_activity_logs').insert([{
+        client_id: account.id,
+        email: account.email || account.business_email || '',
+        event_type: 'Client Restored',
+        description: `Client representative ${account.name || account.client_name} has been restored to active status by operational admin.`
+      }]);
+
+      setAdminAlert({
+        message: `Client ${account.name || account.client_name} has been restored successfully.`,
+        type: 'success'
+      });
+
+      // Update local state immediately for instant feedback
+      setClientAccounts(prev => prev.map(x => x.id === account.id ? { ...x, status: 'active', updated_at: new Date().toISOString() } : x));
+
+      // Broadcast changes for realtime sync
+      broadcastChange('client_profiles', 'UPDATE', { id: account.id, status: 'active' });
+
+      // Refresh master listings to ensure all related data is synchronized
+      fetchAllData();
+    } catch (err: any) {
+      alert(`Restoration failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Permanently purge client account, auth user, and all related database records cascadingly
+  const handlePermanentDeleteClient = async (account: any) => {
+    if (adminRole !== 'super') {
+      alert('Access Denied: Only Super Admins can permanently delete client records. Normal Admins have view-only access.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to permanently delete this client? This action is IRREVERSIBLE and will permanently delete their Supabase Auth account and purge all documents, credentials, activity logs, and notifications."
+    );
+    if (!confirmed) return;
+
+    setIsLoading(true);
+    try {
+      console.log(`Starting permanent purge of client ID: ${account.id}`);
+
+      // 1. Delete the Auth user via backend endpoint
+      console.log(`Calling backend API to delete Auth user ID: ${account.id}`);
+      const response = await fetch(`/api/admin/delete-user/${account.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      const deleteResult = await response.json();
+      if (!response.ok) {
+        throw new Error(deleteResult.error || 'Failed to delete Auth user on backend.');
+      }
+      if (deleteResult.warning) {
+        console.warn('Backend warning:', deleteResult.warning);
+      }
+
+      // 2. Delete uploaded files from storage for this client
+      const { data: files, error: filesErr } = await supabase
+        .from('client_documents')
+        .select('file_path')
+        .eq('client_id', account.id);
+
+      if (!filesErr && files && files.length > 0) {
+        const paths = files.map(f => f.file_path);
+        console.log(`Removing ${paths.length} files from Supabase Storage...`, paths);
+        const { error: storageErr } = await supabase.storage
+          .from('client-documents')
+          .remove(paths);
+        if (storageErr) {
+          console.warn('Could not remove some files from storage:', storageErr.message);
+        }
+      }
+
+      // 3. Transactional-like clean-up of public tables
+      const tablesToDelete = [
+        'client_credentials',
+        'client_documents',
+        'client_notifications',
+        'client_activity_logs',
+        'client_profiles'
+      ];
+
+      for (const tbl of tablesToDelete) {
+        console.log(`Deleting entries from table: ${tbl}`);
+        const { error: tblErr } = await supabase
+          .from(tbl)
+          .delete()
+          .eq(tbl === 'client_profiles' ? 'id' : 'client_id', account.id);
+        
+        if (tblErr) {
+          console.warn(`Non-blocking delete issue on table "${tbl}":`, tblErr.message);
+        }
+      }
+
+      setAdminAlert({
+        message: `Client ${account.email || account.business_email || 'Representative'} has been permanently purged from the system.`,
+        type: 'success'
+      });
+
+      // Update local state immediately
+      setClientAccounts(prev => prev.filter(x => x.id !== account.id));
+      
+      if (selectedClientWorkspace && selectedClientWorkspace.id === account.id) {
+        setSelectedClientWorkspace(null);
+      }
+
+      // Broadcast changes for realtime sync
+      broadcastChange('client_profiles', 'DELETE', { id: account.id });
+
+      // Refresh master listings automatically to ensure synchronization
+      fetchAllData();
+
+    } catch (err: any) {
+      alert(`Purge failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset Client Account Password
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAccountForReset || !newPasswordInput.trim()) return;
+
+    const account = selectedAccountForReset;
+    const newPwd = newPasswordInput.trim();
+    console.log(`Resetting password for ${account.business_email}`);
+
+    // Update local React state
+    setClientAccounts(prev => prev.map(acc => acc.id === account.id ? { ...acc, password: newPwd } : acc));
+
+    // Persist changes
+    try {
+      const { error } = await supabase
+        .from('client_accounts')
+        .update({ password: newPwd })
+        .eq('id', account.id);
+      
+      if (error) throw error;
+      broadcastChange('client_accounts', 'UPDATE', { id: account.id, password: newPwd });
+    } catch (err) {
+      updateLocalLead('client_accounts', account.id, { password: newPwd });
+    }
+
+    // Log the event
+    await logAdminAuditEvent(account.business_email, 'Password reset by Admin');
+
+    setAdminAlert({
+      message: `Password for ${account.business_email} successfully updated.`,
+      type: 'success'
+    });
+
+    // Clean up
+    setSelectedAccountForReset(null);
+    setNewPasswordInput('');
+  };
+
+  // Trigger simulated resend verification OTP
+  const handleResendVerification = async (account: any) => {
+    console.log(`Simulating resend verification for ${account.business_email}`);
+    
+    // Log audit event
+    await logAdminAuditEvent(account.business_email, 'Verification resent by Admin');
+
+    setAdminAlert({
+      message: `Simulated registration verification email successfully resent to: ${account.business_email}`,
+      type: 'info'
+    });
   };
 
   // Mark Lead/Request Status in Supabase (generic across tables)
@@ -1383,6 +2156,13 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                   { id: 'jobs', label: 'Careers (Jobs)', icon: Briefcase, count: jobs.length },
                   { id: 'applications', label: 'Applications', icon: Layers, count: applications.length },
                   { id: 'blogs', label: 'Blog Articles', icon: FileText, count: blogsList.length + BLOG_POSTS.filter(b => !deletedStaticBlogs.includes(b.id)).filter(b => !blogsList.some(sb => sb.title.toLowerCase() === b.title.toLowerCase())).length },
+                  { id: 'client_portal_access', label: 'Client Portal Links', icon: Key },
+                  { id: 'client_accounts', label: 'Client Accounts', icon: Shield, count: clientAccounts.filter(acc => (acc.status || '').toLowerCase() !== 'archived').length },
+                  { id: 'archived_clients', label: 'Archived Clients', icon: Archive, count: clientAccounts.filter(acc => (acc.status || '').toLowerCase() === 'archived').length },
+                  { id: 'client_credentials', label: 'Client Credentials', icon: Key, count: allClientCredentials.filter(cred => { const client = clientAccounts.find(c => c.id === cred.client_id); return !client || (client.status || '').toLowerCase() !== 'archived'; }).length },
+                  { id: 'client_documents', label: 'Client Documents', icon: Folder, count: allClientDocuments.filter(doc => { const client = clientAccounts.find(c => c.id === doc.client_id); return !client || (client.status || '').toLowerCase() !== 'archived'; }).length },
+                  { id: 'client_notifications', label: 'Client Notifications', icon: Bell, count: allClientNotifications.filter(notif => { const client = clientAccounts.find(c => c.id === notif.client_id); return !client || (client.status || '').toLowerCase() !== 'archived'; }).length },
+                  { id: 'auth_logs', label: 'Auth Audit Logs', icon: Clock, count: authLogs.length },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -1436,13 +2216,36 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                     {activeTab === 'jobs' && 'Career Job Postings CMS'}
                     {activeTab === 'applications' && 'Specialist Job Applications'}
                     {activeTab === 'blogs' && 'Blog Intelligence Briefings CMS'}
+                    {activeTab === 'client_portal_access' && 'Client Portal Access Link Generator'}
+                    {activeTab === 'client_accounts' && 'Client Portal Account Management'}
+                    {activeTab === 'archived_clients' && 'Archived Clients'}
+                    {activeTab === 'client_credentials' && 'Client Credentials Master Directory'}
+                    {activeTab === 'client_documents' && 'Client Documents Central Vault'}
+                    {activeTab === 'client_notifications' && 'Client Workspace Operations Notifications'}
+                    {activeTab === 'auth_logs' && 'Authentication Audit Logs'}
                   </h1>
                   <p className="text-gray-400 text-xs">
                     Real-time monitoring console for Going Technologies Global Centers.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* RBAC ROLE SWITCHER */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 shadow-3xs">
+                    <span className="text-[9px] uppercase font-mono text-slate-500 font-extrabold">Active Scope:</span>
+                    <button
+                      onClick={handleToggleRole}
+                      className={`cursor-pointer px-2 py-0.5 rounded text-[10px] font-extrabold transition-all uppercase ${
+                        adminRole === 'super' 
+                          ? 'bg-rose-600 text-white shadow-xs hover:bg-rose-500' 
+                          : 'bg-slate-300 text-slate-700 hover:bg-slate-400'
+                      }`}
+                      title="Toggle role to test view-only Normal Admin restrictions versus full permanent Deletes"
+                    >
+                      {adminRole === 'super' ? '🛡️ Super Admin' : '👤 Normal Admin'}
+                    </button>
+                  </div>
+
                   <button
                     onClick={fetchAllData}
                     disabled={isLoading}
@@ -3155,6 +3958,1092 @@ create policy "Allow public delete on blogs" on public.blogs for delete to anon,
                 </div>
               )}
 
+              {/* CLIENT PORTAL ACCESS GENERATOR TAB */}
+              {activeTab === 'client_portal_access' && (
+                <div className="space-y-6">
+                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    <div>
+                      <h2 className="text-lg font-bold text-[#081B8C] font-display">Enterprise Private URLs</h2>
+                      <p className="text-xs text-gray-400 font-semibold">Copy and securely distribute direct portal endpoints to authorized client representatives.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {[
+                        {
+                          type: 'reg',
+                          title: 'Portal Registration Endpoint',
+                          desc: 'Exclusively for onboarding new client representatives.',
+                          url: `${window.location.origin}/#client-portal`,
+                        },
+                        {
+                          type: 'login',
+                          title: 'Portal Secure Login Gateway',
+                          desc: 'Direct sign-in gate for existing verified workspaces.',
+                          url: `${window.location.origin}/#client-portal`,
+                        },
+                        {
+                          type: 'direct',
+                          title: 'Direct Private Workspace',
+                          desc: 'Redirects active authenticated client sessions.',
+                          url: `${window.location.origin}/#workspace`,
+                        }
+                      ].map((link) => (
+                        <div key={link.type} className="border border-[#DCE7FF]/50 hover:border-blue-500/20 bg-[#F8FAFF] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:shadow-xs transition-all">
+                          <div className="space-y-1.5">
+                            <span className="px-2 py-0.5 bg-[#DCE7FF]/40 text-[#081B8C] text-[10px] font-extrabold uppercase rounded-full">
+                              {link.type === 'reg' ? 'Onboarding' : link.type === 'login' ? 'Authentication' : 'Session Access'}
+                            </span>
+                            <h4 className="text-xs font-bold text-gray-800">{link.title}</h4>
+                            <p className="text-[11px] text-gray-500 leading-relaxed">{link.desc}</p>
+                          </div>
+
+                          <div className="space-y-2 pt-2">
+                            <div className="bg-white border border-[#DCE7FF]/60 p-2.5 rounded-lg select-all font-mono text-[10px] text-gray-600 truncate">
+                              {link.url}
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(link.url);
+                                setCopiedLinkType(link.type);
+                                setTimeout(() => setCopiedLinkType(null), 2000);
+                              }}
+                              className="cursor-pointer w-full bg-[#081B8C] hover:bg-[#2F6DFF] text-white text-xs font-semibold py-2 rounded-xl transition-all flex items-center justify-center gap-1"
+                            >
+                              {copiedLinkType === link.type ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span className="text-emerald-400 font-bold">Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Key className="w-3.5 h-3.5" />
+                                  <span>Copy Secure Link</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="bg-[#F8FAFF] border border-[#DCE7FF]/50 rounded-2xl p-5 flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-[#081B8C]/5 text-[#081B8C] flex items-center justify-center shrink-0">
+                        <Shield className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1.5 text-xs text-gray-600">
+                        <h4 className="font-bold text-[#081B8C]">Search Indexing & Discovery Protection</h4>
+                        <p className="leading-relaxed text-[11px]">
+                          As an enterprise security protocol, the Client Portal remains completely isolated from the main website navigation and search indexes. 
+                          The robots exclusion header (<code className="bg-white px-1.5 py-0.5 border border-gray-100 rounded text-red-500 font-mono">noindex, nofollow</code>) and 
+                          crawler instructions (<code className="bg-white px-1.5 py-0.5 border border-gray-100 rounded text-red-500 font-mono">robots.txt</code>) are fully active.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CLIENT PORTAL ACCOUNTS MANAGEMENT TAB */}
+              {activeTab === 'client_accounts' && (
+                <div className="space-y-6">
+                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                      <div>
+                        <h2 className="text-lg font-bold text-[#081B8C] font-display">Client Workspace Registrations</h2>
+                        <p className="text-xs text-gray-400 font-semibold">Monitor, toggle, reset credentials, and resend onboarding alerts for client logins.</p>
+                      </div>
+
+                      <div className="relative w-full sm:max-w-xs">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search representatives or companies..."
+                          value={accountSearchQuery}
+                          onChange={(e) => setAccountSearchQuery(e.target.value)}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Table of Accounts */}
+                    <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#F8FAFF] border-b border-[#DCE7FF]/40 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                            <th className="p-4">Representative</th>
+                            <th className="p-4">Company Name</th>
+                            <th className="p-4">Created Date</th>
+                            <th className="p-4">Last Active</th>
+                            <th className="p-4">Account Status</th>
+                            <th className="p-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#DCE7FF]/20 text-xs">
+                          {(() => {
+                            const filteredAccounts = clientAccounts
+                              .filter(acc => (acc.status || '').toLowerCase() !== 'archived')
+                              .filter(acc => 
+                                !accountSearchQuery || 
+                                (acc.client_name || acc.name || '').toLowerCase().includes(accountSearchQuery.toLowerCase()) ||
+                                (acc.business_email || acc.email || '').toLowerCase().includes(accountSearchQuery.toLowerCase()) ||
+                                (acc.company_name || acc.company || '').toLowerCase().includes(accountSearchQuery.toLowerCase())
+                              );
+
+                            if (filteredAccounts.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={6} className="p-12 text-center text-gray-400 font-medium">
+                                    No registered client accounts detected.
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return filteredAccounts.map((acc) => {
+                              const emailAddr = acc.email || acc.business_email || '';
+                              const repName = acc.name || acc.client_name || 'Representative';
+                              const compName = acc.company || acc.company_name || 'Going Technologies Partner';
+                              const currentStatus = acc.status || acc.account_status || 'active';
+
+                              return (
+                                <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="p-4 space-y-0.5">
+                                    <div className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
+                                      <Users className="w-3.5 h-3.5 text-gray-400" />
+                                      <span>{repName}</span>
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 font-mono pl-5">{emailAddr}</div>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="font-semibold text-gray-800">{compName}</span>
+                                  </td>
+                                  <td className="p-4 text-gray-500">
+                                    {new Date(acc.created_at || Date.now()).toLocaleDateString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </td>
+                                  <td className="p-4 text-gray-500 font-mono text-[10px]">
+                                    {acc.last_login ? new Date(acc.last_login).toLocaleTimeString(undefined, {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) + ' // ' + new Date(acc.last_login).toLocaleDateString() : 'Never'}
+                                  </td>
+                                  <td className="p-4">
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${currentStatus === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                      {currentStatus === 'active' ? 'Active Access' : 'Suspended'}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex flex-wrap gap-2 justify-end items-center">
+                                      <button
+                                        onClick={() => selectClientForWorkspace(acc)}
+                                        className="px-2.5 py-1 rounded text-[10px] font-extrabold bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer"
+                                        title="Inspect Client Workspace logins, docs & activity logs"
+                                      >
+                                        View
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleToggleAccountStatus(acc)}
+                                        className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                                          currentStatus === 'active' 
+                                            ? 'border-red-200 hover:bg-red-50 text-red-600' 
+                                            : 'border-emerald-200 hover:bg-emerald-50 text-emerald-600'
+                                        }`}
+                                        title={currentStatus === 'active' ? 'Suspend client login access' : 'Activate client access'}
+                                      >
+                                        {currentStatus === 'active' ? 'Suspend' : 'Activate'}
+                                      </button>
+
+                                      <button
+                                        onClick={() => setSelectedAccountForReset(acc)}
+                                        className="px-2 py-1 rounded text-[10px] font-bold border border-[#DCE7FF] hover:bg-[#F8FAFF] text-[#081B8C] cursor-pointer"
+                                        title="Override secret password"
+                                      >
+                                        Reset Password
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleArchiveClient(acc)}
+                                        className="px-2 py-1 rounded text-[10px] font-extrabold bg-amber-50 hover:bg-amber-100 text-amber-700 cursor-pointer inline-flex items-center gap-1 border border-amber-200"
+                                        title="Archive Client"
+                                      >
+                                        <Archive className="w-3.5 h-3.5" />
+                                        <span>Archive</span>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* SELECTED CLIENT WORKSPACE PANEL (Credentials, Documents & Timeline) */}
+                    {selectedClientWorkspace && (
+                      <div className="mt-8 border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 bg-slate-50/50 space-y-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-5">
+                          <div>
+                            <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-blue-100 uppercase tracking-wider mb-2">
+                              <span>Active Workspace Link</span>
+                            </div>
+                            <h3 className="text-base font-bold text-[#081B8C] font-display">
+                              {selectedClientWorkspace.company || selectedClientWorkspace.company_name} Console
+                            </h3>
+                            <p className="text-xs text-gray-400 font-semibold">
+                              Inspecting credentials, private manual SOPs, and system activities for representative <span className="text-gray-800 font-bold">{selectedClientWorkspace.name || selectedClientWorkspace.client_name}</span>.
+                            </p>
+                          </div>
+
+                          <div className="flex gap-2.5">
+                            {['credentials', 'documents', 'activity'].map((t) => (
+                              <button
+                                key={t}
+                                onClick={() => setWorkspaceTab(t as any)}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                  workspaceTab === t 
+                                    ? 'bg-[#081B8C] text-white shadow-xs' 
+                                    : 'bg-white text-gray-600 hover:text-black border border-gray-200'
+                                }`}
+                              >
+                                {t === 'credentials' ? 'Credentials (View-Only)' : t === 'documents' ? 'Documents Vault' : 'Operational Logs'}
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => setSelectedClientWorkspace(null)}
+                              className="px-4 py-2 rounded-xl text-xs font-bold bg-white text-rose-600 hover:bg-rose-50 border border-rose-200"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* SUB-TAB 1: CREDENTIALS (VIEW ONLY) */}
+                        {workspaceTab === 'credentials' && (
+                          <div className="bg-white border border-[#DCE7FF]/30 rounded-2xl overflow-hidden">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="bg-[#F8FAFF] border-b border-gray-100 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                                  <th className="p-4">Platform Info</th>
+                                  <th className="p-4">Category</th>
+                                  <th className="p-4">Username / Email</th>
+                                  <th className="p-4">Decrypted Secret</th>
+                                  <th className="p-4">Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 text-xs">
+                                {workspaceCredentials.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={5} className="p-8 text-center text-gray-400 font-medium">
+                                      Client representative has not created any vault credentials yet.
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  workspaceCredentials.map((cred) => (
+                                    <tr key={cred.id} className="hover:bg-slate-50/50">
+                                      <td className="p-4">
+                                        <span className="font-extrabold text-gray-800 block">{cred.platform}</span>
+                                        {cred.login_url && (
+                                          <a href={cred.login_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-[10px] font-semibold">
+                                            {cred.login_url}
+                                          </a>
+                                        )}
+                                      </td>
+                                      <td className="p-4">
+                                        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
+                                          {cred.category}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 font-mono text-gray-700 font-semibold">{cred.username}</td>
+                                      <td className="p-4 font-mono text-emerald-700 font-bold tracking-wider">
+                                        {decryptClientPassword(cred.password)}
+                                      </td>
+                                      <td className="p-4 text-gray-500 font-medium max-w-xs truncate">{cred.notes || '-'}</td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* SUB-TAB 2: DOCUMENTS (VIEW/DOWNLOAD/UPLOAD) */}
+                        {workspaceTab === 'documents' && (
+                          <div className="space-y-4">
+                            {/* Upload tool */}
+                            <div className="bg-white border border-[#DCE7FF]/30 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <div>
+                                <h4 className="text-xs font-bold text-gray-800">Transmit Secure Manual SOP</h4>
+                                <p className="text-[11px] text-gray-400 font-semibold">Upload underwriting manuals or client guidelines directly to this workspace folder.</p>
+                              </div>
+                              
+                              <div>
+                                <input 
+                                  type="file" 
+                                  id="admin-to-client-upload"
+                                  className="hidden" 
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleAdminUploadToClient(e.target.files[0]);
+                                    }
+                                  }} 
+                                />
+                                <button
+                                  onClick={() => document.getElementById('admin-to-client-upload')?.click()}
+                                  disabled={isUploadingToClient}
+                                  className="bg-[#081B8C] hover:bg-[#2F6DFF] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  {isUploadingToClient ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Uploading File...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-3.5 h-3.5" />
+                                      <span>Upload SOP Document</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Documents list */}
+                            <div className="bg-white border border-[#DCE7FF]/30 rounded-2xl overflow-hidden">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="bg-[#F8FAFF] border-b border-gray-100 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                                    <th className="p-4">File Name</th>
+                                    <th className="p-4">Uploaded By</th>
+                                    <th className="p-4">Size</th>
+                                    <th className="p-4">Uploaded At</th>
+                                    <th className="p-4 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 text-xs">
+                                  {workspaceDocuments.length === 0 ? (
+                                    <tr>
+                                      <td colSpan={5} className="p-8 text-center text-gray-400 font-medium">
+                                        No files archived in this workspace directory folder.
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    workspaceDocuments.map((doc) => (
+                                      <tr key={doc.id} className="hover:bg-slate-50/50">
+                                        <td className="p-4">
+                                          <span className="font-extrabold text-gray-800 block">{doc.file_name}</span>
+                                          <span className="text-[10px] text-gray-400 block font-semibold uppercase">{doc.title}</span>
+                                        </td>
+                                        <td className="p-4">
+                                          <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${doc.uploaded_by === 'Admin' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
+                                            {doc.uploaded_by === 'Admin' ? 'HQ Admin' : 'Client self'}
+                                          </span>
+                                        </td>
+                                        <td className="p-4 font-mono font-bold text-[10px] text-gray-500">{doc.file_size}</td>
+                                        <td className="p-4 text-gray-500 font-medium">
+                                          {new Date(doc.created_at).toLocaleDateString()}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                          <div className="flex justify-end gap-2">
+                                            <button 
+                                              onClick={() => handleAdminDownloadFile(doc)}
+                                              className="p-1 text-gray-400 hover:text-slate-800 animate-fade-in"
+                                            >
+                                              <Download className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                              onClick={() => handleAdminDeleteDocument(doc)}
+                                              className="p-1 text-gray-400 hover:text-rose-600"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SUB-TAB 3: ACTIVITY TIMELINE */}
+                        {workspaceTab === 'activity' && (
+                          <div className="bg-white border border-[#DCE7FF]/30 rounded-2xl p-6 space-y-4">
+                            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Historical Audit Timeline Logs</h4>
+                            
+                            <div className="relative border-l border-gray-100 pl-6 ml-3 space-y-5">
+                              {workspaceActivity.length === 0 ? (
+                                <p className="p-8 text-center text-gray-400 font-medium">No system activity logged under this partner node.</p>
+                              ) : (
+                                workspaceActivity.map((log) => (
+                                  <div key={log.id} className="relative space-y-1">
+                                    <span className="absolute -left-[31px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-600 ring-4 ring-blue-50" />
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs font-extrabold text-gray-800">{log.event_type}</span>
+                                      <span className="text-[10px] text-gray-400 font-mono">
+                                        {new Date(log.created_at).toLocaleTimeString()} - {new Date(log.created_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 font-medium leading-relaxed">{log.description}</p>
+                                    <p className="text-[9px] font-mono text-gray-400">Handshake representative: {log.email}</p>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ARCHIVED CLIENTS TAB */}
+              {activeTab === 'archived_clients' && (
+                <div className="space-y-6">
+                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                      <div>
+                        <h2 className="text-lg font-bold text-[#081B8C] font-display">Archived Clients Directory</h2>
+                        <p className="text-xs text-gray-400 font-semibold">View, restore, or permanently purge archived client portal records.</p>
+                      </div>
+
+                      <div className="relative w-full sm:max-w-xs">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search archived clients..."
+                          value={accountSearchQuery}
+                          onChange={(e) => setAccountSearchQuery(e.target.value)}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Table of Archived Accounts */}
+                    <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#F8FAFF] border-b border-[#DCE7FF]/40 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                            <th className="p-4">Client Name</th>
+                            <th className="p-4">Company</th>
+                            <th className="p-4">Email Address</th>
+                            <th className="p-4">Archived Date</th>
+                            <th className="p-4">Archived By</th>
+                            <th className="p-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#DCE7FF]/20 text-xs">
+                          {(() => {
+                            const archivedAccounts = clientAccounts
+                              .filter(acc => (acc.status || '').toLowerCase() === 'archived')
+                              .filter(acc => 
+                                !accountSearchQuery || 
+                                (acc.client_name || acc.name || '').toLowerCase().includes(accountSearchQuery.toLowerCase()) ||
+                                (acc.business_email || acc.email || '').toLowerCase().includes(accountSearchQuery.toLowerCase()) ||
+                                (acc.company_name || acc.company || '').toLowerCase().includes(accountSearchQuery.toLowerCase())
+                              );
+
+                            if (archivedAccounts.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={6} className="p-12 text-center text-gray-400 font-medium text-slate-500">
+                                    No archived client accounts found.
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return archivedAccounts.map((acc) => {
+                              const emailAddr = acc.email || acc.business_email || '';
+                              const repName = acc.name || acc.client_name || 'Representative';
+                              const compName = acc.company || acc.company_name || 'Going Technologies Partner';
+                              const archivedDate = acc.updated_at ? new Date(acc.updated_at).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : 'Recently';
+
+                              return (
+                                <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="p-4">
+                                    <div className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
+                                      <Users className="w-3.5 h-3.5 text-gray-400" />
+                                      <span>{repName}</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-4 font-semibold text-gray-800">
+                                    {compName}
+                                  </td>
+                                  <td className="p-4 text-gray-500 font-mono text-[11px]">
+                                    {emailAddr}
+                                  </td>
+                                  <td className="p-4 text-gray-500">
+                                    {archivedDate}
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded text-[10px] font-semibold font-mono">
+                                      admin@goingtechnologies.com
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex flex-wrap gap-2 justify-end items-center">
+                                      <button
+                                        onClick={() => handleRestoreClient(acc)}
+                                        className="px-2.5 py-1 rounded text-[10px] font-extrabold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer inline-flex items-center gap-1"
+                                        title="Restore client workspace and login access"
+                                      >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                        <span>Restore</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => handlePermanentDeleteClient(acc)}
+                                        className="px-2.5 py-1 rounded text-[10px] font-extrabold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 cursor-pointer inline-flex items-center gap-1"
+                                        title="Permanently delete auth user and all documents"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span>Permanently Delete</span>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CLIENT CREDENTIALS CONSOLE TAB (VIEW ONLY) */}
+              {activeTab === 'client_credentials' && (
+                <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                    <div>
+                      <h2 className="text-lg font-bold text-[#081B8C] font-display">System Client Credentials Directory</h2>
+                      <p className="text-xs text-gray-400 font-semibold">Consolidated view of all client credentials. Credentials are read-only and updated in real-time.</p>
+                    </div>
+
+                    <div className="relative w-full sm:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by company or client..."
+                        value={credentialsSearchQuery}
+                        onChange={(e) => setCredentialsSearchQuery(e.target.value)}
+                        className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* List of Clients with expanded credentials */}
+                  <div className="space-y-4">
+                    {(() => {
+                      const filteredClients = clientAccounts
+                        .filter(client => (client.status || '').toLowerCase() !== 'archived')
+                        .filter(client => {
+                          const compName = (client.company || client.company_name || '').toLowerCase();
+                          const clientName = (client.name || client.client_name || '').toLowerCase();
+                          const clientEmail = (client.email || client.business_email || '').toLowerCase();
+                          const query = credentialsSearchQuery.toLowerCase();
+                          
+                          // Check if client info matches query
+                          if (compName.includes(query) || clientName.includes(query) || clientEmail.includes(query)) {
+                            return true;
+                          }
+
+                          // Check if any credential matches the query
+                          const clientCreds = allClientCredentials.filter(c => c.client_id === client.id);
+                          return clientCreds.some(c => 
+                            (c.platform || '').toLowerCase().includes(query) ||
+                            (c.category || '').toLowerCase().includes(query) ||
+                            (c.username || '').toLowerCase().includes(query)
+                          );
+                        });
+
+                      if (filteredClients.length === 0) {
+                        return (
+                          <div className="p-12 text-center text-gray-400 font-medium border border-dashed border-[#DCE7FF] rounded-2xl">
+                            No clients or credentials match your search criteria.
+                          </div>
+                        );
+                      }
+
+                      return filteredClients.map((client) => {
+                        const clientCreds = allClientCredentials.filter(c => c.client_id === client.id);
+                        const isExpanded = expandedClientIds.includes(client.id);
+
+                        return (
+                          <div key={client.id} className="border border-[#DCE7FF]/60 rounded-2xl overflow-hidden transition-all bg-white shadow-xs">
+                            {/* Client Row Header */}
+                            <div 
+                              onClick={() => toggleClientCredentialsExpand(client.id)}
+                              className="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-bold text-[#081B8C] text-sm">{client.company || client.company_name || 'Going Technologies Partner'}</h3>
+                                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-extrabold uppercase font-mono">
+                                    {clientCreds.length} {clientCreds.length === 1 ? 'Credential' : 'Credentials'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 font-medium">
+                                  Representative: <strong className="text-gray-700">{client.name || client.client_name}</strong> ({client.email || client.business_email})
+                                </p>
+                              </div>
+
+                              <button 
+                                className="cursor-pointer px-4 py-2 bg-slate-50 hover:bg-[#F8FAFF] border border-gray-100 rounded-xl text-[11px] font-bold text-gray-600 transition-colors flex items-center gap-1.5"
+                              >
+                                <span>{isExpanded ? 'Collapse' : 'Expand Credentials'}</span>
+                                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              </button>
+                            </div>
+
+                            {/* Expanded Credentials Table */}
+                            {isExpanded && (
+                              <div className="border-t border-gray-100 bg-[#FAFBFD]/30 p-5 space-y-4">
+                                {clientCreds.length === 0 ? (
+                                  <p className="text-xs text-gray-400 italic font-medium p-4 text-center">No credentials saved for this client workspace node.</p>
+                                ) : (
+                                  <div className="overflow-x-auto border border-gray-100 rounded-xl bg-white">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                      <thead>
+                                        <tr className="bg-slate-50 border-b border-gray-100 text-gray-500 font-bold uppercase tracking-wider text-[9px]">
+                                          <th className="p-3">Platform</th>
+                                          <th className="p-3">Category</th>
+                                          <th className="p-3">Username / Email</th>
+                                          <th className="p-3">Decrypted Password</th>
+                                          <th className="p-3">Notes</th>
+                                          <th className="p-3">Last Synced</th>
+                                          <th className="p-3 text-right">Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-100 text-xs font-medium">
+                                        {clientCreds.map((cred) => (
+                                          <tr key={cred.id} className="hover:bg-slate-50/50">
+                                            <td className="p-3 font-bold text-gray-800">{cred.platform}</td>
+                                            <td className="p-3">
+                                              <span className="px-2 py-0.5 bg-gray-100 border border-gray-200 text-gray-600 rounded text-[10px]">
+                                                {cred.category || 'General'}
+                                              </span>
+                                            </td>
+                                            <td className="p-3 font-mono text-[11px] text-gray-600 select-all">{cred.username}</td>
+                                            <td className="p-3 font-mono text-[11px] text-[#2F6DFF] font-extrabold select-all">
+                                              {decryptClientPassword(cred.password)}
+                                            </td>
+                                            <td className="p-3 text-gray-500 italic max-w-xs truncate" title={cred.notes}>
+                                              {cred.notes || '—'}
+                                            </td>
+                                            <td className="p-3 text-[10px] text-gray-400 font-mono">
+                                              {new Date(cred.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="p-3 text-right">
+                                              <button
+                                                onClick={() => handleAdminDeleteCredential(cred)}
+                                                className="cursor-pointer p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center"
+                                                title="Permanently Delete Credential"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* CLIENT DOCUMENTS MASTER DIRECTORY TAB */}
+              {activeTab === 'client_documents' && (
+                <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                    <div>
+                      <h2 className="text-lg font-bold text-[#081B8C] font-display">Client Documents Central Vault</h2>
+                      <p className="text-xs text-gray-400 font-semibold">Access and download all documents uploaded inside various client workspace environments.</p>
+                    </div>
+
+                    <div className="relative w-full sm:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search file name, title, or client..."
+                        value={documentsSearchQuery}
+                        onChange={(e) => setDocumentsSearchQuery(e.target.value)}
+                        className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Documents Directory Grid / Table */}
+                  <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8FAFF] border-b border-[#DCE7FF]/40 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                          <th className="p-4">Partner Workspace</th>
+                          <th className="p-4">File Name</th>
+                          <th className="p-4">Source Category / Title</th>
+                          <th className="p-4">Uploaded By</th>
+                          <th className="p-4">File Size</th>
+                          <th className="p-4">Uploaded At</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#DCE7FF]/20 text-xs">
+                        {(() => {
+                          const filteredDocs = allClientDocuments.filter(doc => {
+                            // Find matching client
+                            const client = clientAccounts.find(c => c.id === doc.client_id);
+                            if (client && (client.status || '').toLowerCase() === 'archived') {
+                              return false;
+                            }
+                            
+                            const fileName = (doc.file_name || '').toLowerCase();
+                            const title = (doc.title || '').toLowerCase();
+                            const query = documentsSearchQuery.toLowerCase();
+                            
+                            const compName = (client?.company || client?.company_name || '').toLowerCase();
+                            const clientName = (client?.name || client?.client_name || '').toLowerCase();
+
+                            return (
+                              fileName.includes(query) ||
+                              title.includes(query) ||
+                              compName.includes(query) ||
+                              clientName.includes(query)
+                            );
+                          });
+
+                          if (filteredDocs.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={7} className="p-12 text-center text-gray-400 font-medium">
+                                  No client documents match your search query.
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return filteredDocs.map((doc) => {
+                            const client = clientAccounts.find(c => c.id === doc.client_id);
+                            const compName = client?.company || client?.company_name || 'Going Technologies Partner';
+                            const clientRep = client?.name || client?.client_name || 'Representative';
+
+                            return (
+                              <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-4 space-y-0.5">
+                                  <div className="font-bold text-[#081B8C]">{compName}</div>
+                                  <div className="text-[10px] text-gray-400 font-medium">Node Representative: {clientRep}</div>
+                                </td>
+                                <td className="p-4">
+                                  <span className="font-extrabold text-gray-800 block select-all">{doc.file_name}</span>
+                                </td>
+                                <td className="p-4 uppercase tracking-wider text-[9px] font-mono font-extrabold text-slate-500">
+                                  {doc.title || 'General'}
+                                </td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${doc.uploaded_by === 'Admin' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
+                                    {doc.uploaded_by === 'Admin' ? 'HQ Admin' : 'Client self'}
+                                  </span>
+                                </td>
+                                <td className="p-4 font-mono font-bold text-[10px] text-gray-500">{doc.file_size}</td>
+                                <td className="p-4 text-gray-400 font-mono text-[10px]">
+                                  {new Date(doc.created_at).toLocaleString()}
+                                </td>
+                                <td className="p-4 text-right space-x-1.5">
+                                  <button 
+                                    onClick={() => handleAdminPreviewFile(doc)}
+                                    className="cursor-pointer p-2 text-emerald-700 hover:bg-emerald-50 rounded-xl transition-colors inline-flex items-center gap-1 font-bold text-[10px]"
+                                    title="Preview Document Inline"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>Preview</span>
+                                  </button>
+
+                                  <button 
+                                    onClick={() => handleAdminDownloadFile(doc)}
+                                    className="cursor-pointer p-2 text-[#081B8C] hover:bg-blue-50 rounded-xl transition-colors inline-flex items-center gap-1 font-bold text-[10px]"
+                                    title="Securely Download Document"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download</span>
+                                  </button>
+
+                                  <button 
+                                    onClick={() => handleAdminDeleteDocument(doc)}
+                                    className="cursor-pointer p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors inline-flex items-center gap-1 font-bold text-[10px]"
+                                    title="Permanently Delete Document"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Delete</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* CLIENT WORKSPACE ACTIVITIES & NOTIFICATIONS TAB */}
+              {activeTab === 'client_notifications' && (
+                <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                    <div>
+                      <h2 className="text-lg font-bold text-[#081B8C] font-display">Client Workspace Operations Notifications</h2>
+                      <p className="text-xs text-gray-400 font-semibold">Continuous live audit stream tracking file uploads, profile modifications, credentials changes, and workflow logs.</p>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                      <div className="relative w-full sm:max-w-xs">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Filter by company or message..."
+                          value={notificationsSearchQuery}
+                          onChange={(e) => setNotificationsSearchQuery(e.target.value)}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                        />
+                      </div>
+
+                      {allClientNotifications.length > 0 && (
+                        <button
+                          onClick={handleClearAllNotifications}
+                          className="cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                          title="Permanently clear all notification history"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Clear All</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Operational Timeline Notifications list */}
+                  <div className="relative border-l-2 border-[#DCE7FF]/50 pl-6 ml-4 space-y-6">
+                    {(() => {
+                      const filteredNotifications = allClientNotifications.filter(notif => {
+                        // Find matching client
+                        const client = clientAccounts.find(c => c.id === notif.client_id);
+                        if (client && (client.status || '').toLowerCase() === 'archived') {
+                          return false;
+                        }
+                        
+                        const title = (notif.title || '').toLowerCase();
+                        const msg = (notif.message || '').toLowerCase();
+                        const query = notificationsSearchQuery.toLowerCase();
+                        
+                        const compName = (client?.company || client?.company_name || '').toLowerCase();
+
+                        return (
+                          title.includes(query) ||
+                          msg.includes(query) ||
+                          compName.includes(query)
+                        );
+                      });
+
+                      if (filteredNotifications.length === 0) {
+                        return (
+                          <div className="p-12 text-center text-gray-400 font-medium border border-dashed border-[#DCE7FF] rounded-2xl">
+                            No notifications match your search query.
+                          </div>
+                        );
+                      }
+
+                      return filteredNotifications.map((notif) => {
+                        const client = clientAccounts.find(c => c.id === notif.client_id);
+                        const compName = client?.company || client?.company_name || 'Going Technologies Partner';
+                        const repEmail = client?.email || client?.business_email || 'unknown@client.com';
+
+                        let iconBg = 'bg-blue-50 text-blue-600 border border-blue-100';
+                        let IconComponent = Bell;
+
+                        if (notif.title?.toLowerCase().includes('credential')) {
+                          iconBg = 'bg-amber-50 text-amber-600 border border-amber-100';
+                          IconComponent = Key;
+                        } else if (notif.title?.toLowerCase().includes('file') || notif.title?.toLowerCase().includes('document')) {
+                          iconBg = 'bg-purple-50 text-purple-600 border border-purple-100';
+                          IconComponent = Folder;
+                        }
+
+                        return (
+                          <div key={notif.id} className="relative space-y-1.5 p-4 bg-[#F8FAFF]/40 border border-[#DCE7FF]/30 rounded-2xl hover:border-[#2F6DFF]/30 hover:bg-[#FAFBFD] transition-all">
+                            {/* Marker circle */}
+                            <span className="absolute -left-[35px] top-6 w-4.5 h-4.5 rounded-full bg-white border-2 border-[#2F6DFF] flex items-center justify-center shadow-xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#2F6DFF]" />
+                            </span>
+
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className={`p-1 rounded-lg ${iconBg}`}>
+                                  <IconComponent className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="text-xs font-extrabold text-gray-900">{notif.title}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-400 font-mono font-semibold">
+                                  {new Date(notif.created_at).toLocaleString()}
+                                </span>
+                                <button
+                                  onClick={() => handleClearNotification(notif.id)}
+                                  className="cursor-pointer p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                  title="Clear this notification"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                              {notif.message}
+                            </p>
+
+                            <div className="flex items-center gap-1.5 pt-1 text-[10px] text-gray-400">
+                              <span className="font-bold text-[#081B8C] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5">
+                                {compName}
+                              </span>
+                              <span className="font-mono">{repEmail}</span>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* AUDIT LOGS VIEW TAB */}
+              {activeTab === 'auth_logs' && (
+                <div className="space-y-6">
+                  <div className="bg-white border border-[#DCE7FF]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-gray-100 pb-5">
+                      <div>
+                        <h2 className="text-lg font-bold text-[#081B8C] font-display">Auth Security Audit Trail</h2>
+                        <p className="text-xs text-gray-400 font-semibold">Track historical authentication transactions, OTP verifications, registrations, and administrative changes.</p>
+                      </div>
+
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <select
+                          value={authLogTypeFilter}
+                          onChange={(e) => setAuthLogTypeFilter(e.target.value)}
+                          className="bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                        >
+                          <option value="All">All Events</option>
+                          <option value="Registration">Registration</option>
+                          <option value="verified">Verification</option>
+                          <option value="Login">Login</option>
+                          <option value="Logout">Logout</option>
+                          <option value="Failed">Failed logins</option>
+                          <option value="Reset">Resets</option>
+                          <option value="Disabled">Disables</option>
+                        </select>
+
+                        <div className="relative w-full sm:max-w-xs">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Filter by business email..."
+                            value={authLogsSearchQuery}
+                            onChange={(e) => setAuthLogsSearchQuery(e.target.value)}
+                            className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => exportToCSV(authLogs, 'gt_auth_audit_trail')}
+                          className="cursor-pointer bg-[#F8FAFF] border border-[#DCE7FF] hover:border-gray-300 text-gray-600 px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Export</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Table of Audit Logs */}
+                    <div className="overflow-x-auto border border-[#DCE7FF]/30 rounded-2xl">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#F8FAFF] border-b border-[#DCE7FF]/40 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                            <th className="p-4">Audit Transaction ID</th>
+                            <th className="p-4">Target Business Email</th>
+                            <th className="p-4">Recorded Event Activity</th>
+                            <th className="p-4">Simulated Network IP</th>
+                            <th className="p-4">Timestamp (UTC)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#DCE7FF]/20 text-xs font-mono">
+                          {(() => {
+                            const filteredLogs = authLogs.filter(log => {
+                              const matchesSearch = !authLogsSearchQuery || (log.business_email || '').toLowerCase().includes(authLogsSearchQuery.toLowerCase());
+                              const matchesFilter = authLogTypeFilter === 'All' || (log.event_type || '').toLowerCase().includes(authLogTypeFilter.toLowerCase());
+                              return matchesSearch && matchesFilter;
+                            });
+
+                            if (filteredLogs.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={5} className="p-12 text-center text-gray-400 font-medium">
+                                    No auth logs match your current search filters.
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return filteredLogs.map((log) => (
+                              <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-4 text-gray-400 select-all font-mono">
+                                  #{log.id}
+                                </td>
+                                <td className="p-4 font-bold text-gray-800">
+                                  {log.business_email}
+                                </td>
+                                <td className="p-4">
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                    log.event_type.toLowerCase().includes('failed') || log.event_type.toLowerCase().includes('disable')
+                                      ? 'bg-red-50 text-red-600 border border-red-100'
+                                      : log.event_type.toLowerCase().includes('login') || log.event_type.toLowerCase().includes('verify')
+                                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                      : 'bg-blue-50 text-[#081B8C] border border-blue-100'
+                                  }`}>
+                                    {log.event_type}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-gray-500 font-semibold">
+                                  {log.ip_address || '192.168.10.12'}
+                                </td>
+                                <td className="p-4 text-gray-400">
+                                  {new Date(log.created_at || Date.now()).toISOString().replace('T', ' ').substring(0, 19)}
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* CREATE NEW BLOG MODAL */}
               {isBlogModalOpen && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -4224,6 +6113,120 @@ create policy "Allow public delete on blogs" on public.blogs for delete to anon,
                       </div>
                     </form>
                   </div>
+                </div>
+              )}
+
+              {/* PASSWORD RESET OVERLAY MODAL */}
+              {selectedAccountForReset && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl max-w-sm w-full p-8 relative space-y-6 border border-gray-100 shadow-2xl text-left">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] text-blue-600 font-extrabold uppercase tracking-wide">Secure Override</span>
+                      <h3 className="text-lg font-bold text-gray-900">Reset Client Password</h3>
+                      <p className="text-xs text-gray-400">Account: <strong className="text-[#081B8C] font-mono select-all">{selectedAccountForReset.business_email}</strong></p>
+                    </div>
+
+                    <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-gray-700 uppercase">New Override Password</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Min 12 chars, uppercase, symbol, number"
+                          value={newPasswordInput}
+                          onChange={(e) => setNewPasswordInput(e.target.value)}
+                          className="w-full bg-[#F8FAFF] border border-[#DCE7FF] rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#2F6DFF]"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedAccountForReset(null);
+                            setNewPasswordInput('');
+                          }}
+                          className="cursor-pointer flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="cursor-pointer flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-bold transition-colors"
+                        >
+                          Update Password
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* PREVIEW MODAL */}
+              {previewingDoc && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-gray-100 text-left">
+                    <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-slate-50">
+                      <div>
+                        <h3 className="font-bold text-gray-900 font-display">{previewingDoc.file_name}</h3>
+                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">{previewingDoc.file_size} // {previewingDoc.title || 'General'}</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          if (previewUrl) URL.revokeObjectURL(previewUrl);
+                          setPreviewingDoc(null);
+                          setPreviewUrl(null);
+                        }}
+                        className="cursor-pointer p-2 bg-white hover:bg-gray-100 border border-gray-200 text-gray-500 rounded-xl transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex-grow p-6 bg-slate-900 flex items-center justify-center overflow-auto min-h-[400px]">
+                      {previewUrl && (
+                        previewingDoc.file_name.toLowerCase().endsWith('.pdf') ? (
+                          <iframe src={previewUrl} className="w-full h-[60vh] rounded-xl border border-slate-800" />
+                        ) : (previewingDoc.file_name.toLowerCase().endsWith('.png') || 
+                             previewingDoc.file_name.toLowerCase().endsWith('.jpg') || 
+                             previewingDoc.file_name.toLowerCase().endsWith('.jpeg') || 
+                             previewingDoc.file_name.toLowerCase().endsWith('.gif') || 
+                             previewingDoc.file_name.toLowerCase().endsWith('.webp')) ? (
+                          <img src={previewUrl} alt={previewingDoc.file_name} className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="text-center p-8 text-slate-400 max-w-md">
+                            <Folder className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+                            <h4 className="font-bold text-slate-200">Preview Not Supported Inline</h4>
+                            <p className="text-xs text-slate-500 leading-relaxed mt-1">
+                              Preview is only supported for standard PDF files and common web images. Please download this Microsoft Office or binary document to view its contents securely on your local device.
+                            </p>
+                            <button
+                              onClick={() => handleAdminDownloadFile(previewingDoc)}
+                              className="mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Download Document</span>
+                            </button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SYSTEM ADMINISTRATIVE TOAST ALERT */}
+              {adminAlert && (
+                <div className="fixed bottom-6 right-6 z-50 max-w-sm bg-slate-950 border border-slate-800 text-slate-100 rounded-2xl p-4.5 shadow-2xl flex items-start gap-3.5 animate-bounce">
+                  <div className={`p-1.5 rounded-lg shrink-0 ${adminAlert.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 space-y-0.5">
+                    <p className="text-xs font-extrabold text-white">System Security Log</p>
+                    <p className="text-[11px] text-slate-300 leading-normal">{adminAlert.message}</p>
+                  </div>
+                  <button onClick={() => setAdminAlert(null)} className="text-slate-500 hover:text-slate-300 shrink-0 cursor-pointer">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 

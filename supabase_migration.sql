@@ -716,3 +716,324 @@ begin
     alter publication supabase_realtime add table public.whatsapp_contact_leads;
   end if;
 end $$;
+
+-- =========================================================================
+-- CLIENT PORTAL INTEGRATION MIGRATION (Going Technologies 2026)
+-- =========================================================================
+
+-- 1. client_profiles Table
+create table if not exists public.client_profiles (
+    id uuid primary key references auth.users(id) on delete cascade,
+    company text not null,
+    name text not null,
+    email text unique not null,
+    phone text,
+    country text,
+    industry text,
+    designation text,
+    status text not null default 'active', -- 'active' | 'suspended'
+    last_login timestamp with time zone default now(),
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
+);
+
+-- 2. client_document_folders Table
+create table if not exists public.client_document_folders (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid not null references auth.users(id) on delete cascade,
+    name text not null,
+    parent_id uuid references public.client_document_folders(id) on delete cascade,
+    created_at timestamp with time zone default now()
+);
+
+-- 3. client_documents Table
+create table if not exists public.client_documents (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid not null references auth.users(id) on delete cascade,
+    folder_id uuid references public.client_document_folders(id) on delete cascade,
+    title text not null,
+    file_name text not null,
+    file_size text not null,
+    uploaded_by text not null, -- 'Client' | 'Admin'
+    file_path text not null, -- Supabase Storage file path
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
+);
+
+-- 4. client_credentials Table
+create table if not exists public.client_credentials (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid not null references auth.users(id) on delete cascade,
+    platform text not null,
+    category text not null, -- e.g. CRM, AMS, Server, VPN
+    login_url text,
+    username text not null,
+    password text not null, -- encrypted or masked
+    notes text,
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
+);
+
+-- 5. client_activity_logs Table
+create table if not exists public.client_activity_logs (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid references auth.users(id) on delete cascade,
+    email text not null,
+    event_type text not null,
+    description text not null,
+    created_at timestamp with time zone default now()
+);
+
+-- 6. client_notifications Table
+create table if not exists public.client_notifications (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid references auth.users(id) on delete cascade,
+    title text not null,
+    message text not null,
+    type text not null, -- 'Credential' | 'Document' | 'Auth' | 'System'
+    is_read boolean not null default false,
+    created_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table public.client_profiles enable row level security;
+alter table public.client_document_folders enable row level security;
+alter table public.client_documents enable row level security;
+alter table public.client_credentials enable row level security;
+alter table public.client_activity_logs enable row level security;
+alter table public.client_notifications enable row level security;
+
+-- Create Policies
+-- client_profiles
+drop policy if exists "Allow select profiles" on public.client_profiles;
+create policy "Allow select profiles" on public.client_profiles
+    for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow insert profiles" on public.client_profiles;
+create policy "Allow insert profiles" on public.client_profiles
+    for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow update profiles" on public.client_profiles;
+create policy "Allow update profiles" on public.client_profiles
+    for update to anon, authenticated, public using (true) with check (true);
+
+-- client_document_folders
+drop policy if exists "Allow all folder ops for owner" on public.client_document_folders;
+create policy "Allow all folder ops for owner" on public.client_document_folders
+    for all to authenticated using (client_id = auth.uid()) with check (client_id = auth.uid());
+
+drop policy if exists "Allow admin folder select" on public.client_document_folders;
+create policy "Allow admin folder select" on public.client_document_folders
+    for select to anon, authenticated, public using (true);
+
+-- client_documents
+drop policy if exists "Allow all doc ops for owner" on public.client_documents;
+create policy "Allow all doc ops for owner" on public.client_documents
+    for all to authenticated using (client_id = auth.uid()) with check (client_id = auth.uid());
+
+drop policy if exists "Allow admin select documents" on public.client_documents;
+create policy "Allow admin select documents" on public.client_documents
+    for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow admin insert documents" on public.client_documents;
+create policy "Allow admin insert documents" on public.client_documents
+    for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow admin delete documents" on public.client_documents;
+create policy "Allow admin delete documents" on public.client_documents
+    for delete to anon, authenticated, public using (true);
+
+-- client_credentials
+drop policy if exists "Allow all credential ops for owner" on public.client_credentials;
+create policy "Allow all credential ops for owner" on public.client_credentials
+    for all to authenticated using (client_id = auth.uid()) with check (client_id = auth.uid());
+
+drop policy if exists "Allow admin select credentials" on public.client_credentials;
+create policy "Allow admin select credentials" on public.client_credentials
+    for select to anon, authenticated, public using (true);
+
+-- client_activity_logs
+drop policy if exists "Allow insert activity logs" on public.client_activity_logs;
+create policy "Allow insert activity logs" on public.client_activity_logs
+    for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow select activity logs" on public.client_activity_logs;
+create policy "Allow select activity logs" on public.client_activity_logs
+    for select to anon, authenticated, public using (true);
+
+-- client_notifications
+drop policy if exists "Allow select notifications for owner" on public.client_notifications;
+create policy "Allow select notifications for owner" on public.client_notifications
+    for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow update notifications for owner" on public.client_notifications;
+create policy "Allow update notifications for owner" on public.client_notifications
+    for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow insert notifications" on public.client_notifications;
+create policy "Allow insert notifications" on public.client_notifications
+    for insert to anon, authenticated, public with check (true);
+
+
+-- Indexes for high performance querying
+create index if not exists idx_client_profiles_email on public.client_profiles(email);
+create index if not exists idx_client_credentials_client_id on public.client_credentials(client_id);
+create index if not exists idx_client_documents_client_id on public.client_documents(client_id);
+create index if not exists idx_client_documents_folder_id on public.client_documents(folder_id);
+create index if not exists idx_client_activity_logs_client_id on public.client_activity_logs(client_id);
+create index if not exists idx_client_notifications_client_id on public.client_notifications(client_id);
+
+-- Storage bucket setup
+insert into storage.buckets (id, name, public)
+values ('client-documents', 'client-documents', false)
+on conflict (id) do nothing;
+
+-- Storage policies
+drop policy if exists "Allow auth user storage select" on storage.objects;
+create policy "Allow auth user storage select" on storage.objects
+    for select to anon, authenticated, public using (bucket_id = 'client-documents');
+
+drop policy if exists "Allow auth user storage insert" on storage.objects;
+create policy "Allow auth user storage insert" on storage.objects
+    for insert to anon, authenticated, public with check (bucket_id = 'client-documents');
+
+drop policy if exists "Allow auth user storage delete" on storage.objects;
+create policy "Allow auth user storage delete" on storage.objects
+    for delete to anon, authenticated, public using (bucket_id = 'client-documents');
+
+
+-- Realtime publications enablement
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'client_profiles'
+  ) then
+    alter publication supabase_realtime add table public.client_profiles;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'client_credentials'
+  ) then
+    alter publication supabase_realtime add table public.client_credentials;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'client_documents'
+  ) then
+    alter publication supabase_realtime add table public.client_documents;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'client_document_folders'
+  ) then
+    alter publication supabase_realtime add table public.client_document_folders;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'client_activity_logs'
+  ) then
+    alter publication supabase_realtime add table public.client_activity_logs;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_rel pr
+    join pg_publication p on p.oid = pr.prpubid
+    join pg_class c on c.oid = pr.prrelid
+    where p.pubname = 'supabase_realtime' and c.relname = 'client_notifications'
+  ) then
+    alter publication supabase_realtime add table public.client_notifications;
+  end if;
+end $$;
+
+
+-- Trigger function to log client credentials changes automatically
+create or replace function public.log_credentials_change()
+returns trigger as $$
+declare
+    client_email text;
+    event_desc text;
+begin
+    -- Get client email
+    select email into client_email from public.client_profiles where id = coalesce(new.client_id, old.client_id);
+    
+    if (TG_OP = 'INSERT') then
+        event_desc := 'Created credential for ' || new.platform;
+        insert into public.client_activity_logs (client_id, email, event_type, description)
+        values (new.client_id, coalesce(client_email, 'unknown@client.com'), 'Credential Created', event_desc);
+        
+        insert into public.client_notifications (client_id, title, message, type)
+        values (new.client_id, 'Credential Added', event_desc, 'Credential');
+    elsif (TG_OP = 'UPDATE') then
+        event_desc := 'Updated credential for ' || new.platform;
+        insert into public.client_activity_logs (client_id, email, event_type, description)
+        values (new.client_id, coalesce(client_email, 'unknown@client.com'), 'Credential Updated', event_desc);
+        
+        insert into public.client_notifications (client_id, title, message, type)
+        values (new.client_id, 'Credential Updated', event_desc, 'Credential');
+    elsif (TG_OP = 'DELETE') then
+        event_desc := 'Deleted credential for ' || old.platform;
+        insert into public.client_activity_logs (client_id, email, event_type, description)
+        values (old.client_id, coalesce(client_email, 'unknown@client.com'), 'Credential Deleted', event_desc);
+        
+        insert into public.client_notifications (client_id, title, message, type)
+        values (old.client_id, 'Credential Deleted', event_desc, 'Credential');
+    end if;
+    return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_log_credentials_change on public.client_credentials;
+create trigger trg_log_credentials_change
+after insert or update or delete on public.client_credentials
+for each row execute function public.log_credentials_change();
+
+
+-- Trigger function to log client documents changes automatically
+create or replace function public.log_documents_change()
+returns trigger as $$
+declare
+    client_email text;
+    event_desc text;
+begin
+    -- Get client email
+    select email into client_email from public.client_profiles where id = coalesce(new.client_id, old.client_id);
+    
+    if (TG_OP = 'INSERT') then
+        event_desc := 'Uploaded document: ' || new.file_name;
+        insert into public.client_activity_logs (client_id, email, event_type, description)
+        values (new.client_id, coalesce(client_email, 'unknown@client.com'), 'Document Uploaded', event_desc);
+        
+        insert into public.client_notifications (client_id, title, message, type)
+        values (new.client_id, 'Document Uploaded', event_desc, 'Document');
+    elsif (TG_OP = 'DELETE') then
+        event_desc := 'Deleted document: ' || old.file_name;
+        insert into public.client_activity_logs (client_id, email, event_type, description)
+        values (old.client_id, coalesce(client_email, 'unknown@client.com'), 'Document Deleted', event_desc);
+        
+        insert into public.client_notifications (client_id, title, message, type)
+        values (old.client_id, 'Document Deleted', event_desc, 'Document');
+    end if;
+    return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_log_documents_change on public.client_documents;
+create trigger trg_log_documents_change
+after insert or delete on public.client_documents
+for each row execute function public.log_documents_change();
+

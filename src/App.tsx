@@ -19,6 +19,7 @@ import Careers from './pages/Careers';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Admin from './pages/Admin';
+import ClientPortal from './pages/ClientPortal';
 import { supabase } from './lib/supabase';
 import { logDetailedError, getActualReason } from './utils/errorLogger';
 import { downloadProposal } from './utils/proposalDownloader';
@@ -124,6 +125,30 @@ export default function App() {
 
   // Sync hash to state for seamless SPA navigation
   useEffect(() => {
+    // Direct URL pathname detection fallback for all public and private portal entries
+    const pathname = window.location.pathname.replace(/^\/|\/$/g, '').toLowerCase();
+    const publicPathMap: { [key: string]: PageType } = {
+      '': 'home',
+      'about': 'about',
+      'services': 'services',
+      'industries': 'industries',
+      'case-studies': 'case-studies',
+      'business-tools': 'business-tools',
+      'blogs': 'blog',
+      'blog': 'blog',
+      'contact': 'contact',
+      'careers': 'careers',
+      'privacy': 'privacy',
+      'privacy-policy': 'privacy',
+      'terms': 'terms',
+      'terms-and-conditions': 'terms'
+    };
+    if (publicPathMap[pathname]) {
+      setPage(publicPathMap[pathname]);
+    } else if (pathname === 'workspace' || pathname === 'client-portal') {
+      window.location.hash = pathname;
+    }
+
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
       if (hash) {
@@ -141,7 +166,9 @@ export default function App() {
           'careers',
           'privacy',
           'terms',
-          'admin'
+          'admin',
+          'workspace',
+          'client-portal'
         ];
         if (validPages.includes(pagePart)) {
           setPage(pagePart);
@@ -174,6 +201,128 @@ export default function App() {
   useEffect(() => {
     setShowExitIntent(true);
   }, []);
+
+  // SEO & Proper Dynamic Metatags Implementation
+  useEffect(() => {
+    const origin = window.location.origin;
+    const path = page === 'home' ? '' : `/${page}`;
+    const canonicalUrl = `${origin}${path}`;
+
+    const metaData: { [key: string]: { title: string; desc: string; keywords: string } } = {
+      home: {
+        title: "Going Technologies Global Center | Enterprise Operations & BPO",
+        desc: "Premium dedicated back office solutions, BPO services, and secure operational support for insurance agencies and global brokers.",
+        keywords: "BPO, insurance operations, back office solutions, secure operational support, Going Technologies, insurance backoffice"
+      },
+      about: {
+        title: "About Us | Going Technologies Global Center",
+        desc: "Learn about Going Technologies Global Center, our premium security posture, global delivery model, and dedication to excellence.",
+        keywords: "about going technologies, insurance operational support, global delivery model, BPO security"
+      },
+      services: {
+        title: "Our Services | Going Technologies Global Center",
+        desc: "Comprehensive back office operations, client onboarding, claims support, and specialized service suites for insurance brokers.",
+        keywords: "insurance BPO services, client onboarding, claims support, agency management system operations"
+      },
+      industries: {
+        title: "Industries We Serve | Going Technologies Global Center",
+        desc: "Delivering world-class operational excellence to retail insurance agencies, MGAs, wholesale brokers, and global carriers.",
+        keywords: "retail agencies BPO, MGA support services, wholesale brokers operations, insurance carrier BPO"
+      },
+      'business-tools': {
+        title: "Business Tools & Insights | Going Technologies",
+        desc: "Access our interactive business diagnostic tools, calculators, and custom agency templates to optimize your operations.",
+        keywords: "business diagnostic tools, agency calculators, operational templates, insurance business optimization"
+      },
+      blog: {
+        title: "Resources & Insights Blog | Going Technologies",
+        desc: "Read the latest industry insights, operational trends, and technological updates from Going Technologies Global Center.",
+        keywords: "insurance insights, BPO trends, operational efficiency blog, tech enabled BPO"
+      },
+      'case-studies': {
+        title: "Client Success Stories | Going Technologies",
+        desc: "Real results. Explore our case studies showing how global brokers achieved over 60% operational savings and scaled their growth.",
+        keywords: "BPO case studies, insurance broker success, operational savings BPO"
+      },
+      contact: {
+        title: "Contact Our Global Experts | Going Technologies",
+        desc: "Get in touch with Going Technologies Global Center to schedule an operational assessment or customized BPO consultation.",
+        keywords: "contact BPO, schedule consultation, operational assessment"
+      },
+      careers: {
+        title: "Careers & Opportunities | Going Technologies",
+        desc: "Join a high-growth global delivery team. Explore career opportunities, internships, and professional development pathways.",
+        keywords: "careers going technologies, BPO jobs, global delivery careers"
+      },
+      privacy: {
+        title: "Privacy Policy | Going Technologies Global Center",
+        desc: "Our commitment to data privacy, GDPR compliance, SOC 2 compliance, and secure information handling policies.",
+        keywords: "privacy policy, GDPR, SOC 2 data security"
+      },
+      terms: {
+        title: "Terms & Conditions | Going Technologies Global Center",
+        desc: "The governing terms of service and legal agreement for utilizing Going Technologies Global Center services.",
+        keywords: "terms and conditions, terms of service, legal agreement"
+      },
+      admin: {
+        title: "Admin Portal | Going Technologies",
+        desc: "Secure administrative management console for Going Technologies client records and operations.",
+        keywords: "admin portal, secure console"
+      },
+      'client-portal': {
+        title: "Client Portal | Going Technologies",
+        desc: "Secure operational vault, key-store, and document storage for Going Technologies clients.",
+        keywords: "client portal, operational vault, secure document storage"
+      }
+    };
+
+    const currentMeta = metaData[page] || metaData.home;
+
+    // 1. Update Document Title
+    document.title = currentMeta.title;
+
+    // Helper to update/create meta tag
+    const updateMetaTag = (name: string, value: string, isProperty = false) => {
+      const attribute = isProperty ? 'property' : 'name';
+      let element = document.querySelector(`meta[${attribute}="${name}"]`);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attribute, name);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('content', value);
+    };
+
+    // 2. Update Descriptions
+    updateMetaTag('description', currentMeta.desc);
+    updateMetaTag('og:description', currentMeta.desc, true);
+    updateMetaTag('twitter:description', currentMeta.desc, true);
+
+    // 3. Update Titles (OG / Twitter)
+    updateMetaTag('og:title', currentMeta.title, true);
+    updateMetaTag('twitter:title', currentMeta.title, true);
+
+    // 4. Update Keywords
+    updateMetaTag('keywords', currentMeta.keywords);
+
+    // 5. Update Canonical Link
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonicalUrl);
+
+    // 6. Update OG URL & Twitter Card & Image
+    updateMetaTag('og:url', canonicalUrl, true);
+    updateMetaTag('twitter:card', 'summary_large_image', true);
+    
+    const ogImageUrl = `${origin}/featured_og_image.png`;
+    updateMetaTag('og:image', ogImageUrl, true);
+    updateMetaTag('twitter:image', ogImageUrl, true);
+
+  }, [page]);
 
   const setCurrentPage = (newPage: PageType) => {
     setPage(newPage);
@@ -233,19 +382,26 @@ export default function App() {
         return <Terms setCurrentPage={setCurrentPage} />;
       case 'admin':
         return <Admin setCurrentPage={setCurrentPage} />;
+      case 'workspace':
+      case 'client-portal':
+        return <ClientPortal setCurrentPage={setCurrentPage} />;
       default:
         return <Home setCurrentPage={setCurrentPage} onNavigateToService={handleNavigateToService} />;
     }
   };
 
+  const isPrivateWorkspace = page === 'workspace' || page === 'client-portal';
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAFF]">
       {/* Premium Glass Header */}
-      <Header
-        currentPage={page}
-        setCurrentPage={setCurrentPage}
-        onNavigateToService={handleNavigateToService}
-      />
+      {!isPrivateWorkspace && (
+        <Header
+          currentPage={page}
+          setCurrentPage={setCurrentPage}
+          onNavigateToService={handleNavigateToService}
+        />
+      )}
 
       {/* Main Transition Page Stage */}
       <main className="flex-grow">
@@ -263,41 +419,43 @@ export default function App() {
       </main>
 
       {/* Corporate Footer */}
-      <Footer setCurrentPage={setCurrentPage} />
+      {!isPrivateWorkspace && <Footer setCurrentPage={setCurrentPage} />}
 
       {/* CONVERSION OPTIMIZATION: Sticky floating callout (bottom right) */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
-        
-        {/* Floating WhatsApp Chat Button */}
-        <button
-          onClick={() => setIsWhatsAppOpen(true)}
-          className="pointer-events-auto cursor-pointer p-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center group relative border border-emerald-400/20 shadow-emerald-500/10"
-          title="Chat with us on WhatsApp"
-        >
-          <MessageSquare className="w-5.5 h-5.5" />
-          <span className="absolute right-full mr-3 bg-white text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-            Chat on WhatsApp (+91)
-          </span>
-          <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-500 animate-ping" />
-          <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-500" />
-        </button>
-
-        {/* Scroll To Top (If scrolled) */}
-        {showScrollTop && (
+      {!isPrivateWorkspace && (
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
+          
+          {/* Floating WhatsApp Chat Button */}
           <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="pointer-events-auto cursor-pointer p-3 bg-white border border-[#DCE7FF] hover:border-[#2F6DFF] text-[#081B8C] hover:text-[#2F6DFF] rounded-full shadow-lg transition-all"
-            title="Scroll back to top"
+            onClick={() => setIsWhatsAppOpen(true)}
+            className="pointer-events-auto cursor-pointer p-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center group relative border border-emerald-400/20 shadow-emerald-500/10"
+            title="Chat with us on WhatsApp"
           >
-            <ChevronUp className="w-5 h-5" />
+            <MessageSquare className="w-5.5 h-5.5" />
+            <span className="absolute right-full mr-3 bg-white text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+              Chat on WhatsApp (+91)
+            </span>
+            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-500 animate-ping" />
+            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-500" />
           </button>
-        )}
 
-      </div>
+          {/* Scroll To Top (If scrolled) */}
+          {showScrollTop && (
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="pointer-events-auto cursor-pointer p-3 bg-white border border-[#DCE7FF] hover:border-[#2F6DFF] text-[#081B8C] hover:text-[#2F6DFF] rounded-full shadow-lg transition-all"
+              title="Scroll back to top"
+            >
+              <ChevronUp className="w-5 h-5" />
+            </button>
+          )}
+
+        </div>
+      )}
 
       {/* CONVERSION OPTIMIZATION: Exit Intent Popup Modal */}
       <AnimatePresence>
-        {showExitIntent && !hasDownloaded && (
+        {showExitIntent && !hasDownloaded && !isPrivateWorkspace && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

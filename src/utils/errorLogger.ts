@@ -115,7 +115,7 @@ export async function runProductionAudit(): Promise<void> {
       company_domain: 'goingtechnologies.com',
       source: 'Audit Test',
       page_url: currentUrl,
-      downloaded_file: 'Going Technologies business proposal  (A4).pdf'
+      downloaded_file: 'Going Technologies Insurance operations proposal.pdf'
     }]);
 
     if (error) {
@@ -150,7 +150,7 @@ export async function runProductionAudit(): Promise<void> {
 
   // D. Public URL Verification (Testing standard public bucket 'goingtechnologies')
   try {
-    const { data } = supabase.storage.from('goingtechnologies').getPublicUrl('Going Technologies business proposal  (A4).pdf');
+    const { data } = supabase.storage.from('goingtechnologies').getPublicUrl('Going Technologies Insurance operations proposal.pdf');
     if (!data || !data.publicUrl) {
       publicUrlErrorStr = 'Failed to generate public URL';
       console.log('✗ Public Storage URL Generation: Failed.');
