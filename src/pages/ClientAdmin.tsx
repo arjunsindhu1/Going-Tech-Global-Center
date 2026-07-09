@@ -38,7 +38,8 @@ import {
   Briefcase,
   Layers,
   MapPin,
-  Smartphone
+  Smartphone,
+  Copy
 } from 'lucide-react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
@@ -71,6 +72,7 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
   const [allClientNotifications, setAllClientNotifications] = useState<any[]>([]);
   const [allOnboardings, setAllOnboardings] = useState<any[]>([]);
   const [allActivityLogs, setAllActivityLogs] = useState<any[]>([]);
+  const [isInitialLoadDone, setIsInitialLoadDone] = useState<boolean>(false);
 
   // UI state
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -97,6 +99,7 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
 
   // Alert/Notification State
   const [toastAlert, setToastAlert] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+  const [copiedLink, setCopiedLink] = useState<'registration' | 'workspace' | null>(null);
 
   // Expanded card/credentials lists
   const [expandedClientCredentialsIds, setExpandedClientCredentialsIds] = useState<string[]>([]);
@@ -161,35 +164,40 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
         .from('client_profiles')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!errProfiles && profiles) setClientAccounts(profiles);
+      if (errProfiles) throw errProfiles;
+      if (profiles) setClientAccounts(profiles);
 
       // 2. Fetch Client Credentials
       const { data: credentials, error: errCreds } = await supabase
         .from('client_credentials')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!errCreds && credentials) setAllClientCredentials(credentials);
+      if (errCreds) throw errCreds;
+      if (credentials) setAllClientCredentials(credentials);
 
       // 3. Fetch Client Documents
       const { data: documents, error: errDocs } = await supabase
         .from('client_documents')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!errDocs && documents) setAllClientDocuments(documents);
+      if (errDocs) throw errDocs;
+      if (documents) setAllClientDocuments(documents);
 
       // 4. Fetch Onboardings
       const { data: onboardings, error: errOnboard } = await supabase
         .from('client_onboarding')
         .select('*')
         .order('updated_at', { ascending: false });
-      if (!errOnboard && onboardings) setAllOnboardings(onboardings);
+      if (errOnboard) throw errOnboard;
+      if (onboardings) setAllOnboardings(onboardings);
 
       // 5. Fetch Notifications
       const { data: notifications, error: errNotif } = await supabase
         .from('client_notifications')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!errNotif && notifications) setAllClientNotifications(notifications);
+      if (errNotif) throw errNotif;
+      if (notifications) setAllClientNotifications(notifications);
 
       // 6. Fetch Activity Logs (for timelines and analytics)
       const { data: activityLogs, error: errLogs } = await supabase
@@ -197,36 +205,62 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
-      if (!errLogs && activityLogs) setAllActivityLogs(activityLogs);
+      if (errLogs) throw errLogs;
+      if (activityLogs) setAllActivityLogs(activityLogs);
+
+      // Logging row counts returned from each table as requested
+      console.log("client_profiles:", profiles?.length || 0, "rows");
+      console.log("client_onboarding:", onboardings?.length || 0, "rows");
+      console.log("client_credentials:", credentials?.length || 0, "rows");
+      console.log("client_documents:", documents?.length || 0, "rows");
+      console.log("client_notifications:", notifications?.length || 0, "rows");
+      console.log("client_activity_logs:", activityLogs?.length || 0, "rows");
+
+      // Mark the initial data load as completed to permit Realtime subscriptions
+      setIsInitialLoadDone(true);
 
     } catch (err: any) {
-      console.error('Error fetching client admin datasets:', err);
-      showToast('Error syncing real-time databases', 'error');
+      console.error('Error fetching client admin datasets:', err?.message || err, err?.details || '', err?.hint || '', err?.code || '', err);
+      showToast(err?.message || 'Error syncing real-time databases', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Initialize and Subscribe to Supabase Real-time Broadcast events
+  // 1. Trigger the Initial Fetch
   useEffect(() => {
-    if (!isAuthenticated) return;
-
+    if (!isAuthenticated) {
+      setIsInitialLoadDone(false);
+      return;
+    }
     fetchAllOperationalData();
+  }, [isAuthenticated]);
+
+  // 2. Initialize and Subscribe to Supabase Real-time Broadcast events AFTER live query succeeds
+  useEffect(() => {
+    if (!isAuthenticated || !isInitialLoadDone) return;
 
     // Setup live subscription
     const handleSyncUpdate = (table: string, eventType: string, record: any) => {
       if (!record) return;
 
       const syncStateList = (setter: React.Dispatch<React.SetStateAction<any[]>>) => {
-        if (eventType === 'INSERT') {
+        if (eventType === 'INSERT' || eventType === 'UPSERT') {
           setter((prev) => {
-            if (prev.some((item) => item.id === record.id)) return prev;
+            if (prev.some((item) => item.id === record.id)) {
+              return prev.map((item) => (item.id === record.id ? { ...item, ...record } : item));
+            }
             return [record, ...prev];
           });
         } else if (eventType === 'DELETE') {
           setter((prev) => prev.filter((item) => item.id !== record.id));
         } else if (eventType === 'UPDATE') {
-          setter((prev) => prev.map((item) => (item.id === record.id ? { ...item, ...record } : item)));
+          setter((prev) => {
+            if (!prev.some((item) => item.id === record.id)) {
+              return [record, ...prev];
+            }
+            return prev.map((item) => (item.id === record.id ? { ...item, ...record } : item));
+          });
         }
       };
 
@@ -243,14 +277,17 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
         case 'client_onboarding':
           setAllOnboardings((prev) => {
             if (eventType === 'INSERT' || eventType === 'UPSERT') {
-              if (prev.some((item) => item.client_id === record.client_id)) {
-                return prev.map((item) => (item.client_id === record.client_id ? record : item));
+              if (prev.some((item) => item.client_id === record.client_id || item.id === record.id)) {
+                return prev.map((item) => (item.client_id === record.client_id || item.id === record.id ? { ...item, ...record } : item));
               }
               return [record, ...prev];
             } else if (eventType === 'UPDATE') {
-              return prev.map((item) => (item.client_id === record.client_id ? { ...item, ...record } : item));
+              if (!prev.some((item) => item.client_id === record.client_id || item.id === record.id)) {
+                return [record, ...prev];
+              }
+              return prev.map((item) => (item.client_id === record.client_id || item.id === record.id ? { ...item, ...record } : item));
             } else if (eventType === 'DELETE') {
-              return prev.filter((item) => item.client_id !== record.client_id);
+              return prev.filter((item) => item.client_id !== record.client_id && item.id !== record.id);
             }
             return prev;
           });
@@ -303,7 +340,7 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isInitialLoadDone]);
 
   // Core administrative functions
   const handleToggleAccountStatus = async (account: any) => {
@@ -897,6 +934,100 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
                     exit={{ opacity: 0, y: -15 }}
                     className="space-y-8"
                   >
+                    {/* CLIENT PORTAL ACCESS */}
+                    <div className="bg-gradient-to-r from-[#081B8C] to-[#122CB3] text-white p-6 rounded-3xl shadow-md border border-white/10 space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <h2 className="text-lg font-bold font-display tracking-tight flex items-center gap-2">
+                            <Layers className="w-5 h-5 text-blue-300" />
+                            Client Portal Access
+                          </h2>
+                          <p className="text-blue-100 text-xs">
+                            Direct deployment endpoints for registering new client accounts and logging into client workspaces.
+                          </p>
+                        </div>
+                        <div className="text-[10px] bg-white/10 border border-white/20 px-2.5 py-1 rounded-lg font-mono self-start md:self-auto uppercase">
+                          Operational Synced Gateways
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        {/* REGISTRATION CARD */}
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-3 hover:bg-white/10 transition-colors">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">Registration Link (Login/Signup)</span>
+                            </div>
+                            <p className="text-white font-mono text-xs select-all break-all bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                              {window.location.origin}/client-portal
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 self-end">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/client-portal`);
+                                setCopiedLink('registration');
+                                showToast('Registration URL copied to clipboard!', 'success');
+                                setTimeout(() => setCopiedLink(null), 2000);
+                              }}
+                              className="px-3 py-1.5 bg-white/10 hover:bg-white text-white hover:text-[#081B8C] rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              {copiedLink === 'registration' ? 'Copied' : 'Copy Link'}
+                            </button>
+                            <a
+                              href={`${window.location.origin}/client-portal`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              Open
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* WORKSPACE LOGIN CARD */}
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-3 hover:bg-white/10 transition-colors">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                              <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">Workspace Login Link</span>
+                            </div>
+                            <p className="text-white font-mono text-xs select-all break-all bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                              {window.location.origin}/workspace
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/workspace`);
+                                setCopiedLink('workspace');
+                                showToast('Workspace URL copied to clipboard!', 'success');
+                                setTimeout(() => setCopiedLink(null), 2000);
+                              }}
+                              className="px-3 py-1.5 bg-white/10 hover:bg-white text-white hover:text-[#081B8C] rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              {copiedLink === 'workspace' ? 'Copied' : 'Copy Link'}
+                            </button>
+                            <a
+                              href={`${window.location.origin}/workspace`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              Open
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* BENTO STATS GRID */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                       
