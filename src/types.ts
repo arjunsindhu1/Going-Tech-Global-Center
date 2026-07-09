@@ -11,6 +11,7 @@ export type PageType =
   | 'privacy'
   | 'terms'
   | 'admin'
+  | 'client-admin'
   | 'workspace'
   | 'client-portal';
 

@@ -732,6 +732,7 @@ create table if not exists public.client_profiles (
     industry text,
     designation text,
     status text not null default 'active', -- 'active' | 'suspended'
+    onboarding_completed boolean default false,
     last_login timestamp with time zone default now(),
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now()
@@ -1036,4 +1037,38 @@ drop trigger if exists trg_log_documents_change on public.client_documents;
 create trigger trg_log_documents_change
 after insert or delete on public.client_documents
 for each row execute function public.log_documents_change();
+
+
+-- -------------------------------------------------------------
+-- 15. client_onboarding Table
+-- -------------------------------------------------------------
+create table if not exists public.client_onboarding (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid references auth.users(id) on delete cascade unique,
+    data jsonb not null default '{}'::jsonb,
+    progress integer default 0,
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table public.client_onboarding enable row level security;
+
+-- Create Policies
+drop policy if exists "Allow select onboarding" on public.client_onboarding;
+create policy "Allow select onboarding" on public.client_onboarding
+    for select to anon, authenticated, public using (true);
+
+drop policy if exists "Allow insert onboarding" on public.client_onboarding;
+create policy "Allow insert onboarding" on public.client_onboarding
+    for insert to anon, authenticated, public with check (true);
+
+drop policy if exists "Allow update onboarding" on public.client_onboarding;
+create policy "Allow update onboarding" on public.client_onboarding
+    for update to anon, authenticated, public using (true) with check (true);
+
+drop policy if exists "Allow delete onboarding" on public.client_onboarding;
+create policy "Allow delete onboarding" on public.client_onboarding
+    for delete to anon, authenticated, public using (true);
+
 

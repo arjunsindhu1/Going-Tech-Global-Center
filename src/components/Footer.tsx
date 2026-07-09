@@ -205,6 +205,10 @@ export default function Footer({ setCurrentPage }: FooterProps) {
               <span className="w-1.5 h-1.5 rounded-full bg-[#2F6DFF]" />
               <span>Admin Portal</span>
             </button>
+            <button onClick={() => handleLinkClick('client-admin')} className="hover:text-[#081B8C] transition-colors font-semibold flex items-center gap-1 cursor-pointer">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Client Admin Login</span>
+            </button>
           </div>
         </div>
       </div>

@@ -50,7 +50,7 @@ interface AdminProps {
   setCurrentPage: (page: PageType) => void;
 }
 
-type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'blogs' | 'whatsapp_leads' | 'business_tool_leads' | 'business_proposal_leads' | 'client_portal_access' | 'client_accounts' | 'client_credentials' | 'client_documents' | 'client_notifications' | 'auth_logs' | 'archived_clients';
+type TabType = 'overview' | 'leads' | 'consultations' | 'diagnostics' | 'callbacks' | 'subscribers' | 'jobs' | 'applications' | 'blogs' | 'whatsapp_leads' | 'business_tool_leads' | 'business_proposal_leads';
 
 export default function Admin({ setCurrentPage }: AdminProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -984,6 +984,35 @@ export default function Admin({ setCurrentPage }: AdminProps) {
     await logAdminAuditEvent(account.email || account.business_email, `Account ${newStatus === 'active' ? 'Re-activated' : 'Suspended'} by Admin`);
     setAdminAlert({
       message: `Account status for ${account.email || account.business_email} successfully updated to ${newStatus}.`,
+      type: 'success'
+    });
+  };
+
+  // Reset Client Onboarding (force welcome animations and CEO popup on next login)
+  const handleResetOnboarding = async (account: any) => {
+    if (!confirm(`Are you sure you want to reset the onboarding flow for ${account.name || 'this client'}? They will see the Premium Welcome Animation and CEO Welcome Popup on their next login.`)) {
+      return;
+    }
+    
+    // Update local React state immediately
+    setClientAccounts(prev => prev.map(acc => acc.id === account.id ? { ...acc, onboarding_completed: false } : acc));
+
+    try {
+      const { error } = await supabase
+        .from('client_profiles')
+        .update({ onboarding_completed: false })
+        .eq('id', account.id);
+
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Error resetting onboarding status:', err);
+    }
+
+    // Log the event
+    await logAdminAuditEvent(account.email || account.business_email || '', 'Client Onboarding Flow Reset by Admin');
+    
+    setAdminAlert({
+      message: `Onboarding flow for ${account.email || account.business_email || ''} has been successfully reset.`,
       type: 'success'
     });
   };
@@ -2159,7 +2188,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
             <aside className="w-full md:w-64 bg-slate-950 text-slate-400 border-r border-slate-800 flex flex-col shrink-0">
               <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                 <div>
-                  <h3 className="text-white font-bold text-sm">GT Global Console</h3>
+                  <h3 className="text-white font-bold text-sm">System Admin Console</h3>
                   <span className="text-[10px] font-mono text-slate-500">v1.2 (PROD-EST)</span>
                 </div>
                 <button
@@ -2185,13 +2214,6 @@ export default function Admin({ setCurrentPage }: AdminProps) {
                   { id: 'jobs', label: 'Careers (Jobs)', icon: Briefcase, count: jobs.length },
                   { id: 'applications', label: 'Applications', icon: Layers, count: applications.length },
                   { id: 'blogs', label: 'Blog Articles', icon: FileText, count: blogsList.length + BLOG_POSTS.filter(b => !deletedStaticBlogs.includes(b.id)).filter(b => !blogsList.some(sb => sb.title.toLowerCase() === b.title.toLowerCase())).length },
-                  { id: 'client_portal_access', label: 'Client Portal Links', icon: Key },
-                  { id: 'client_accounts', label: 'Client Accounts', icon: Shield, count: clientAccounts.filter(acc => (acc.status || '').toLowerCase() !== 'archived').length },
-                  { id: 'archived_clients', label: 'Archived Clients', icon: Archive, count: clientAccounts.filter(acc => (acc.status || '').toLowerCase() === 'archived').length },
-                  { id: 'client_credentials', label: 'Client Credentials', icon: Key, count: allClientCredentials.filter(cred => { const client = clientAccounts.find(c => c.id === cred.client_id); return !client || (client.status || '').toLowerCase() !== 'archived'; }).length },
-                  { id: 'client_documents', label: 'Client Documents', icon: Folder, count: allClientDocuments.filter(doc => { const client = clientAccounts.find(c => c.id === doc.client_id); return !client || (client.status || '').toLowerCase() !== 'archived'; }).length },
-                  { id: 'client_notifications', label: 'Client Notifications', icon: Bell, count: allClientNotifications.filter(notif => { const client = clientAccounts.find(c => c.id === notif.client_id); return !client || (client.status || '').toLowerCase() !== 'archived'; }).length },
-                  { id: 'auth_logs', label: 'Auth Audit Logs', icon: Clock, count: authLogs.length },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -2223,7 +2245,7 @@ export default function Admin({ setCurrentPage }: AdminProps) {
               </nav>
 
               <div className="p-4 border-t border-slate-800 text-[11px] text-slate-400 font-semibold tracking-wide">
-                <p>Going Technologies Admin Dashboard</p>
+                <p>System Admin Dashboard</p>
               </div>
             </aside>
 
@@ -4192,6 +4214,15 @@ create policy "Allow public delete on blogs" on public.blogs for delete to anon,
                                         title="Override secret password"
                                       >
                                         Reset Password
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleResetOnboarding(acc)}
+                                        className="px-2 py-1 rounded text-[10px] font-extrabold bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 cursor-pointer inline-flex items-center gap-1"
+                                        title="Reset welcome onboarding experience for this client"
+                                      >
+                                        <Sparkles className="w-3.5 h-3.5" />
+                                        <span>Reset Onboarding</span>
                                       </button>
 
                                       <button

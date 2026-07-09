@@ -19,6 +19,7 @@ import Careers from './pages/Careers';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Admin from './pages/Admin';
+import ClientAdmin from './pages/ClientAdmin';
 import ClientPortal from './pages/ClientPortal';
 import { supabase } from './lib/supabase';
 import { logDetailedError, getActualReason } from './utils/errorLogger';
@@ -145,7 +146,7 @@ export default function App() {
     };
     if (publicPathMap[pathname]) {
       setPage(publicPathMap[pathname]);
-    } else if (pathname === 'workspace' || pathname === 'client-portal') {
+    } else if (pathname === 'workspace' || pathname === 'client-portal' || pathname === 'client-admin') {
       window.location.hash = pathname;
     }
 
@@ -167,6 +168,7 @@ export default function App() {
           'privacy',
           'terms',
           'admin',
+          'client-admin',
           'workspace',
           'client-portal'
         ];
@@ -382,6 +384,8 @@ export default function App() {
         return <Terms setCurrentPage={setCurrentPage} />;
       case 'admin':
         return <Admin setCurrentPage={setCurrentPage} />;
+      case 'client-admin':
+        return <ClientAdmin setCurrentPage={setCurrentPage} />;
       case 'workspace':
       case 'client-portal':
         return <ClientPortal setCurrentPage={setCurrentPage} />;
@@ -390,7 +394,7 @@ export default function App() {
     }
   };
 
-  const isPrivateWorkspace = page === 'workspace' || page === 'client-portal';
+  const isPrivateWorkspace = page === 'workspace' || page === 'client-portal' || page === 'client-admin';
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAFF]">

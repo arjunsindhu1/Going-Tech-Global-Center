@@ -5,7 +5,8 @@ import {
   ArrowRight, Key, FileText, Bell, Clock as ClockIcon, 
   Cpu, CheckCircle, AlertTriangle, Upload, Download, Trash2, 
   ExternalLink, LogOut, Check, ArrowLeft, RefreshCw, Loader2, Info,
-  Search, Plus, Shield, Globe, Landmark, Award, FolderPlus, Folder, ChevronRight, Edit2, Copy, FileCode, CheckSquare
+  Search, Plus, Shield, Globe, Landmark, Award, FolderPlus, Folder, ChevronRight, Edit2, Copy, FileCode, CheckSquare,
+  ClipboardCheck
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -42,6 +43,208 @@ const decryptPassword = (hex: string): string => {
   }
 };
 
+// =========================================================================
+// PREMIUM ONBOARDING EXPERIENCE COMPONENTS (SaaS-Style)
+// =========================================================================
+
+const OnboardingPreloader = ({ onComplete }: { onComplete: () => void }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const duration = 4000; // 4 seconds total
+    const intervalTime = 40;
+    const increment = 100 / (duration / intervalTime);
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            onComplete();
+          }, 400); // Small delay for smooth exit
+          return 100;
+        }
+        return Math.min(prev + increment, 100);
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [onComplete]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+      className="fixed inset-0 z-50 bg-[#F5F8FF] flex items-center justify-center p-6"
+    >
+      {/* Decorative floating ambient orbs */}
+      <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-100 rounded-full blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
+      
+      {/* Grid Pattern mask overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-15 pointer-events-none" />
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="max-w-2xl w-full bg-white/70 backdrop-blur-xl border border-white/60 shadow-2xl rounded-[32px] p-8 md:p-12 text-center space-y-8 relative z-10"
+      >
+        <div className="space-y-6">
+          {/* Logo animation */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.8, type: "spring" }}
+            className="flex justify-center"
+          >
+            <div className="p-4 bg-white/95 shadow-md border border-slate-100/80 rounded-2xl">
+              <img 
+                src="/GTGC Logo.png?v=3" 
+                alt="Going Technologies Logo" 
+                className="h-16 w-auto object-contain" 
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </motion.div>
+
+          <div className="space-y-3">
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-xs font-extrabold text-blue-600 uppercase tracking-widest font-sans"
+            >
+              Welcome to Going Technologies
+            </motion.h2>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-2xl md:text-3xl font-black font-display text-slate-950 tracking-tight leading-tight"
+            >
+              Your Extended Insurance Operations Team Starts Here.
+            </motion.h1>
+          </div>
+        </div>
+
+        {/* Message Panel */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white/85 p-6 md:p-8 rounded-2xl border border-slate-100 shadow-sm text-slate-600 text-xs md:text-sm font-medium leading-relaxed max-w-xl mx-auto space-y-4"
+        >
+          <p className="font-bold text-slate-800">
+            Thank you for choosing Going Technologies.
+          </p>
+          <p className="text-slate-500 font-semibold text-xs leading-relaxed">
+            We're excited to become an extension of your agency and help you improve operational efficiency, service quality, and scalability.
+          </p>
+        </motion.div>
+
+        {/* Dynamic Progress Indicator */}
+        <div className="space-y-3 max-w-md mx-auto pt-4">
+          <div className="flex justify-between items-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+            <span>Configuring Private Node</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-100/50 p-[1px]">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const CEOOnboardingModal = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <div className="fixed inset-0 z-50 bg-[#040A21]/40 backdrop-blur-md flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[32px] p-6 sm:p-10 max-w-lg w-full shadow-2xl space-y-6 relative overflow-hidden"
+      >
+        {/* Background glow effects */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-100 rounded-full blur-3xl opacity-30 -mr-24 -mt-24 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-100 rounded-full blur-3xl opacity-30 -ml-24 -mb-24 pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row gap-6 items-start">
+          {/* Stylized Founder Avatar Placeholder */}
+          <div className="relative shrink-0 mx-auto sm:mx-0">
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 via-[#081B8C] to-blue-600 rounded-2xl flex items-center justify-center shadow-lg border-2 border-white transform rotate-3 hover:rotate-0 transition-transform duration-300">
+              <span className="text-white text-3xl font-black font-display tracking-tight">S</span>
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-emerald-500 border-2 border-white w-4.5 h-4.5 rounded-full" title="CEO is Online" />
+          </div>
+
+          <div className="space-y-1 text-center sm:text-left flex-1">
+            <h2 className="text-2xl font-black text-slate-900 font-display tracking-tight leading-tight">Welcome Aboard!</h2>
+            <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest">A message from our Founder</p>
+          </div>
+        </div>
+
+        {/* Welcome message content */}
+        <div className="text-slate-600 text-xs sm:text-sm font-medium leading-relaxed space-y-4 bg-slate-50/70 p-5 sm:p-6 rounded-2xl border border-slate-100">
+          <p>
+            Thank you for trusting Going Technologies with your insurance operations.
+          </p>
+          <div className="border-l-2 border-blue-500 pl-3 py-1 space-y-2">
+            <p className="font-bold text-slate-800">Our mission is simple:</p>
+            <p className="text-slate-600">
+              Become a seamless extension of your team while maintaining the same quality, responsiveness, and professionalism your clients expect.
+            </p>
+          </div>
+          <p>
+            Through this onboarding portal, we'll gather everything needed to launch your dedicated Virtual Assistant quickly and securely.
+          </p>
+          <p>
+            We look forward to building a long-term partnership.
+          </p>
+        </div>
+
+        {/* CEO Signature Block */}
+        <div className="flex justify-between items-center border-t border-slate-100 pt-5">
+          <div className="space-y-0.5">
+            <p className="text-sm font-extrabold text-slate-900 font-display">— Shirish</p>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Founder & CEO</p>
+            <p className="text-[9px] text-[#081B8C] font-extrabold tracking-tight">Going Technologies Global Center</p>
+          </div>
+          <div className="opacity-15 shrink-0 select-none">
+            <svg width="80" height="40" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-slate-900">
+              <path d="M10 20C15 15 25 10 35 15C45 20 40 30 50 25C60 20 65 15 70 20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Action button controls */}
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+          <button
+            onClick={onClose}
+            className="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-500 cursor-pointer transition-all order-last sm:order-first"
+          >
+            Dismiss
+          </button>
+          <button
+            onClick={onClose}
+            className="px-6 py-3 rounded-xl bg-[#081B8C] hover:bg-[#2F6DFF] hover:scale-[1.02] shadow-md hover:shadow-lg text-white text-xs font-extrabold cursor-pointer transition-all inline-flex items-center justify-center gap-2"
+          >
+            <span>Start Onboarding</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 interface ClientPortalProps {
   setCurrentPage: (page: string) => void;
 }
@@ -58,12 +261,17 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
     industry?: string;
     designation?: string;
     status: string;
+    onboarding_completed?: boolean;
   } | null>(null);
 
   const [authChecked, setAuthChecked] = useState(false);
 
   // Authentication Flows: 'login' | 'register' | 'register_success' | 'forgot_password' | 'dashboard'
   const [flow, setFlow] = useState<'login' | 'register' | 'register_success' | 'forgot_password' | 'dashboard'>('login');
+
+  // Premium Onboarding Flow states
+  const [isOnboardingPreloaderActive, setIsOnboardingPreloaderActive] = useState(false);
+  const [isCeoModalOpen, setIsCeoModalOpen] = useState(false);
 
   // Search protection metadata check on load
   useEffect(() => {
@@ -100,7 +308,7 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; title: string; message: string } | null>(null);
 
   // Dashboard Active Tab
-  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'credentials' | 'documents' | 'notifications' | 'timeline'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'onboarding' | 'credentials' | 'documents' | 'notifications' | 'timeline'>('overview');
 
   // Operational Live Synced states
   const [credentials, setCredentials] = useState<any[]>([]);
@@ -132,6 +340,141 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
 
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Company Onboarding State variables
+  const [onboardingData, setOnboardingData] = useState<any>({
+    legalBusinessName: '',
+    dba: '',
+    ein: '',
+    businessLicense: '',
+    agencyNpn: '',
+    companyType: '',
+    industryType: '',
+    propertyCasualty: false,
+    lifeInsurance: false,
+    healthInsurance: false,
+    medicare: false,
+    employeeBenefits: false,
+    commercialInsurance: false,
+    personalInsurance: false,
+    yearEstablished: '',
+    numEmployees: '',
+    numLicensedAgents: '',
+    companyWebsite: '',
+    timeZone: '',
+    preferredBusinessHours: '',
+
+    hqAddress: '',
+    hqCity: '',
+    hqState: '',
+    hqZip: '',
+    hqCountry: 'United States',
+    billingAddress: '',
+
+    primaryName: '',
+    primaryTitle: '',
+    primaryEmail: '',
+    primaryMobile: '',
+    primaryOffice: '',
+    primaryContactMethod: '',
+    primaryContactTime: '',
+
+    execName: '',
+    execEmail: '',
+    execPhone: '',
+
+    apName: '',
+    apEmail: '',
+    apPhone: '',
+    apBillingEmail: '',
+    apPoRequired: '',
+
+    itName: '',
+    itTitle: '',
+    itEmail: '',
+    itPhone: '',
+    itEmergencyPhone: '',
+
+    opsPrimaryLines: '',
+    opsLicensedStates: '',
+    opsActiveClients: '',
+    opsMonthlyNewVolume: '',
+    opsMonthlyRenewals: '',
+    opsMonthlyEndorsements: '',
+    opsMonthlyClaims: '',
+    opsTeamSize: '',
+
+    sysAms: '',
+    sysCrm: '',
+    sysVoip: '',
+    sysDms: '',
+    sysEmail: '',
+    sysCollaboration: '',
+
+    secNdaRequired: '',
+    secPolicyInPlace: '',
+    secMfaEnabled: '',
+    secPasswordManager: '',
+    secComplianceRequirements: '',
+
+    specPersonalLines: false,
+    specCommercialLines: false,
+    specLifeInsurance: false,
+    specIndividualHealth: false,
+    specGroupHealth: false,
+    specMedicareAdvantage: false,
+    specMedicareSupplement: false,
+    specMedicarePartD: false,
+    specAcaMarketplace: false,
+    specEmployeeBenefits: false,
+    specWorkersComp: false,
+    specBonds: false,
+    specSpecialtyLines: false,
+
+    outsourceCurrently: '',
+    outsourceVendor: '',
+    outsourceNumStaff: '',
+    outsourceReason: '',
+
+    startGoLiveDate: '',
+    startNumVas: '',
+    startWorkingHours: '',
+    startTrialRequired: '',
+
+    docAgencyLicense: '',
+    docW9: '',
+    docNda: '',
+    docMsa: '',
+    docSops: '',
+    docOrgChart: '',
+    docEmployeeDirectory: '',
+    docBrandingAssets: '',
+
+    pcAmsPlatform: '',
+    pcCarrierAppointments: '',
+    pcMix: '',
+    pcAcordUsage: '',
+
+    lifeCarrierAppointments: '',
+    lifeNewBusinessPlatforms: '',
+    lifeIllustrationSoftware: '',
+    lifeEAppPlatforms: '',
+
+    healthMix: '',
+    healthAcaParticipation: '',
+    healthEnrollmentPlatforms: '',
+    healthHipaaContact: '',
+
+    medicareCmsContractNum: '',
+    medicareProductsOffered: '',
+    medicareAepSupport: '',
+    medicareComplianceContact: ''
+  });
+
+  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
+  const [lastSavedOnboarding, setLastSavedOnboarding] = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ '1': true });
+  const hasLoadedInitialOnboarding = useRef(false);
 
   // Trigger global slide toasts
   const triggerToast = (type: 'success' | 'error' | 'info', title: string, message: string) => {
@@ -167,7 +510,8 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
           country: user.user_metadata?.country || 'United States',
           industry: user.user_metadata?.industry || 'Insurance',
           designation: user.user_metadata?.designation || 'Operations Director',
-          status: 'active'
+          status: 'active',
+          onboarding_completed: false
         };
 
         const { data: inserted, error: insertErr } = await supabase
@@ -233,7 +577,15 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
             setFlow('login');
             setErrorMsg(blockMessage);
           } else {
+            const isCompletedOnboarding = 
+              profile.onboarding_completed === true || 
+              authSession?.user?.user_metadata?.onboarding_completed === true || 
+              localStorage.getItem(`onboarding_completed_${profile.id}`) === 'true';
+
             setSession(profile);
+            if (!isCompletedOnboarding) {
+              setIsOnboardingPreloaderActive(true);
+            }
             setFlow('dashboard');
           }
         }
@@ -266,7 +618,15 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
             setSession(null);
             setFlow('login');
           } else {
+            const isCompletedOnboarding = 
+              profile.onboarding_completed === true || 
+              authSession?.user?.user_metadata?.onboarding_completed === true || 
+              localStorage.getItem(`onboarding_completed_${profile.id}`) === 'true';
+
             setSession(profile);
+            if (!isCompletedOnboarding) {
+              setIsOnboardingPreloaderActive(true);
+            }
             setFlow('dashboard');
           }
         }
@@ -327,8 +687,162 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
         .limit(30);
       if (!logErr && logData) setTimeline(logData);
 
+      // 6. Fetch Onboarding data
+      try {
+        const { data: onboardingRes, error: onboardingErr } = await supabase
+          .from('client_onboarding')
+          .select('*')
+          .eq('client_id', session.id)
+          .maybeSingle();
+
+        if (!onboardingErr && onboardingRes) {
+          setOnboardingData(prev => ({
+            ...prev,
+            ...onboardingRes.data
+          }));
+          hasLoadedInitialOnboarding.current = true;
+        } else {
+          // Check local storage fallback
+          const localData = localStorage.getItem(`onboarding_data_${session.id}`);
+          if (localData) {
+            try {
+              setOnboardingData(prev => ({
+                ...prev,
+                ...JSON.parse(localData)
+              }));
+            } catch (_) {}
+          }
+          hasLoadedInitialOnboarding.current = true;
+        }
+      } catch (onboardingCatchErr) {
+        console.warn('Could not fetch onboarding from DB, using fallback state:', onboardingCatchErr);
+        const localData = localStorage.getItem(`onboarding_data_${session.id}`);
+        if (localData) {
+          try {
+            setOnboardingData(prev => ({
+              ...prev,
+              ...JSON.parse(localData)
+            }));
+          } catch (_) {}
+        }
+        hasLoadedInitialOnboarding.current = true;
+      }
+
     } catch (err) {
       console.error('Failed to load secure database datasets:', err);
+    }
+  };
+
+  const calculateOnboardingProgress = (data: any) => {
+    if (!data) return 0;
+    const trackedKeys = [
+      'legalBusinessName', 'ein', 'companyType', 'industryType', 'yearEstablished', 'numEmployees', 'companyWebsite',
+      'hqAddress', 'hqCity', 'hqState', 'hqZip', 'hqCountry',
+      'primaryName', 'primaryEmail', 'primaryMobile',
+      'execName', 'execEmail',
+      'apName', 'apEmail',
+      'itName', 'itEmail',
+      'opsPrimaryLines', 'opsLicensedStates',
+      'sysAms', 'sysCrm', 'sysVoip',
+      'secPolicyInPlace', 'secMfaEnabled'
+    ];
+    let filled = 0;
+    trackedKeys.forEach(k => {
+      if (data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== '') {
+        filled++;
+      }
+    });
+    return Math.round((filled / trackedKeys.length) * 100);
+  };
+
+  const saveOnboardingData = async (dataToSave: any) => {
+    if (!session?.id) return;
+    setIsSavingOnboarding(true);
+    try {
+      const computedProgress = calculateOnboardingProgress(dataToSave);
+      
+      const { error } = await supabase
+        .from('client_onboarding')
+        .upsert({
+          client_id: session.id,
+          data: dataToSave,
+          progress: computedProgress,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'client_id' });
+
+      if (error) throw error;
+      setLastSavedOnboarding(new Date().toLocaleTimeString());
+      localStorage.setItem(`onboarding_data_${session.id}`, JSON.stringify(dataToSave));
+    } catch (err: any) {
+      console.warn('Autosave onboarding to DB failed, saving locally:', err);
+      localStorage.setItem(`onboarding_data_${session.id}`, JSON.stringify(dataToSave));
+    } finally {
+      setIsSavingOnboarding(false);
+    }
+  };
+
+  // Debounced Autosave Effect
+  useEffect(() => {
+    if (!session?.id || !hasLoadedInitialOnboarding.current) return;
+
+    const delayDebounceFn = setTimeout(() => {
+      saveOnboardingData(onboardingData);
+    }, 4000);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [onboardingData, session?.id]);
+
+  const [uploadingDocs, setUploadingDocs] = useState<Record<string, boolean>>({});
+
+  const handleUploadOnboardingDocument = async (docKey: string, file: File) => {
+    if (!session?.id) return;
+    setUploadingDocs(prev => ({ ...prev, [docKey]: true }));
+    triggerToast('info', 'Uploading Document', `Sending ${file.name} to private secure storage...`);
+
+    try {
+      const storagePath = `${session.id}/onboarding_${docKey}_${Date.now()}_${file.name}`;
+      
+      // Upload physical file in Supabase Storage private bucket
+      const { data: storageData, error: storageErr } = await supabase.storage
+        .from('client-documents')
+        .upload(storagePath, file);
+
+      if (storageErr) throw storageErr;
+
+      // Also save document database schema record in client_documents
+      const { error: dbErr } = await supabase
+        .from('client_documents')
+        .insert([{
+          client_id: session.id,
+          title: `Onboarding: ${docKey.replace('doc', '').replace(/([A-Z])/g, ' $1').trim()}`,
+          file_name: file.name,
+          file_size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+          uploaded_by: 'Client',
+          file_path: storagePath
+        }]);
+
+      if (dbErr) {
+        console.warn('Could not insert onboarding document record into client_documents:', dbErr);
+      }
+
+      // Update onboardingData state
+      const newData = {
+        ...onboardingData,
+        [docKey]: storagePath
+      };
+      setOnboardingData(newData);
+      
+      // Save onboardingData with new doc
+      await saveOnboardingData(newData);
+
+      // Re-trigger general dashboard data refresh to show the uploaded file immediately in the file vault!
+      fetchDashboardData();
+
+      triggerToast('success', 'Document Linked', `${file.name} successfully uploaded and registered.`);
+    } catch (err: any) {
+      triggerToast('error', 'Upload Failed', err.message || 'Verify storage permissions.');
+    } finally {
+      setUploadingDocs(prev => ({ ...prev, [docKey]: false }));
     }
   };
 
@@ -346,6 +860,9 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
           fetchDashboardData();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'client_document_folders', filter: `client_id=eq.${session.id}` }, () => {
+          fetchDashboardData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'client_onboarding', filter: `client_id=eq.${session.id}` }, () => {
           fetchDashboardData();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'client_activity_logs', filter: `client_id=eq.${session.id}` }, () => {
@@ -392,6 +909,38 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
       }]);
     } catch (err) {
       console.warn('Logging audit skipped:', err);
+    }
+  };
+
+  // Save onboarding completion to Supabase and Local Storage
+  const handleOnboardingCompleted = async () => {
+    if (!session?.id) return;
+    try {
+      // 1. Update Supabase Auth user metadata
+      await supabase.auth.updateUser({
+        data: { onboarding_completed: true }
+      });
+
+      // 2. Update client_profiles table (safely in try-catch in case column is missing)
+      const { error: dbErr } = await supabase
+        .from('client_profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', session.id);
+      
+      if (dbErr) {
+        console.warn('client_profiles table onboarding_completed field update failed (handled gracefully):', dbErr.message);
+      }
+
+      // 3. Set local storage cache
+      localStorage.setItem(`onboarding_completed_${session.id}`, 'true');
+
+      // 4. Update local session state
+      setSession(prev => prev ? { ...prev, onboarding_completed: true } : null);
+
+    } catch (err) {
+      console.error('Failed to save onboarding completion status:', err);
+    } finally {
+      setIsCeoModalOpen(false);
     }
   };
 
@@ -924,6 +1473,27 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFF] text-gray-900 flex flex-col font-sans relative overflow-hidden pt-6 pb-20">
+      
+      {/* SaaS Welcome Preloader Overlay */}
+      <AnimatePresence>
+        {isOnboardingPreloaderActive && (
+          <OnboardingPreloader 
+            onComplete={() => {
+              setIsOnboardingPreloaderActive(false);
+              setIsCeoModalOpen(true);
+            }} 
+          />
+        )}
+      </AnimatePresence>
+
+      {/* CEO Welcome Onboarding Modal Overlay */}
+      <AnimatePresence>
+        {isCeoModalOpen && (
+          <CEOOnboardingModal 
+            onClose={handleOnboardingCompleted} 
+          />
+        )}
+      </AnimatePresence>
       
       {/* Absolute Decorative Vector Grids */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
@@ -1459,6 +2029,7 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
               {[
                 { id: 'overview', label: 'Welcome Portal', icon: Cpu },
                 { id: 'profile', label: 'Company Profile', icon: Building },
+                { id: 'onboarding', label: 'Company Onboarding', icon: ClipboardCheck },
                 { id: 'credentials', label: 'Access Vault', icon: Key, count: credentials.length },
                 { id: 'documents', label: 'Document Vault', icon: FileText, count: documents.length },
                 { id: 'notifications', label: 'Alerts', icon: Bell, badge: notifications.filter(n => !n.is_read).length },
@@ -1723,6 +2294,1472 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
                           Modify Workspace Password
                         </button>
                       </form>
+                    </div>
+
+                  </div>
+                </motion.div>
+              )}
+
+              {/* TAB 2.5: COMPANY ONBOARDING */}
+              {activeTab === 'onboarding' && (
+                <motion.div key="onboarding" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+                  
+                  {/* Onboarding Overview & Progress Header Card */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-black font-display text-slate-900 tracking-tight">Agency Onboarding Protocol</h3>
+                        <p className="text-xs text-slate-400 font-semibold font-sans">
+                          Complete your operational metrics, system profiles, and submit compliance records.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2 text-xs shrink-0 font-semibold text-slate-600">
+                        {isSavingOnboarding ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                            <span>Saving automatically...</span>
+                          </>
+                        ) : lastSavedOnboarding ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-600" />
+                            <span>Last saved: <span className="font-mono font-bold text-slate-800">{lastSavedOnboarding}</span></span>
+                          </>
+                        ) : (
+                          <>
+                            <Info className="w-4 h-4 text-blue-500" />
+                            <span>Changes saved automatically</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress indicator */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="flex justify-between items-center text-xs font-extrabold uppercase tracking-wider">
+                        <span className="text-slate-400">Onboarding Data Completion</span>
+                        <span className="text-[#2F6DFF] font-black text-sm">{calculateOnboardingProgress(onboardingData)}%</span>
+                      </div>
+                      <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
+                        <div 
+                          className="h-full bg-linear-to-r from-blue-600 to-[#2F6DFF] rounded-full transition-all duration-700 ease-out" 
+                          style={{ width: `${calculateOnboardingProgress(onboardingData)}%` }} 
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        Every field is optional. Provide as much operational structure as possible to accelerate training of your offshore Virtual Assistants.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* FORM SECTIONS (ACCORDION STYLE) */}
+                  <div className="space-y-4">
+                    
+                    {/* SECTION 1: Basic Company Information */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '1': !prev['1'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">01</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Basic Company Information</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Legal structures, EINs, established date, and website references.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['1'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['1'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Legal Business Name</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.legalBusinessName || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, legalBusinessName: e.target.value })}
+                              placeholder="Acme Insurance Services LLC"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">DBA (Doing Business As)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.dba || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, dba: e.target.value })}
+                              placeholder="Acme Direct"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Federal Tax ID (EIN)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.ein || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, ein: e.target.value })}
+                              placeholder="12-3456789"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Business License Number</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.businessLicense || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, businessLicense: e.target.value })}
+                              placeholder="LIC-99887766"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Agency / NPN Number</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.agencyNpn || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, agencyNpn: e.target.value })}
+                              placeholder="e.g. 19123456"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Company Type</label>
+                            <select
+                              value={onboardingData.companyType || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, companyType: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Agency">Agency</option>
+                              <option value="Brokerage">Brokerage</option>
+                              <option value="MGA">MGA</option>
+                              <option value="Carrier">Carrier</option>
+                              <option value="TPA">TPA</option>
+                              <option value="Call Center">Call Center</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Industry Type</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.industryType || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, industryType: e.target.value })}
+                              placeholder="e.g. Insurance Agency"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-sans">Business Scope (Select All That Apply)</label>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                              {[
+                                { key: 'propertyCasualty', label: 'Property & Casualty' },
+                                { key: 'lifeInsurance', label: 'Life Insurance' },
+                                { key: 'healthInsurance', label: 'Health Insurance' },
+                                { key: 'medicare', label: 'Medicare' },
+                                { key: 'employeeBenefits', label: 'Employee Benefits' },
+                                { key: 'commercialInsurance', label: 'Commercial Insurance' },
+                                { key: 'personalInsurance', label: 'Personal Insurance' }
+                              ].map(spec => (
+                                <label key={spec.key} className="flex items-center gap-2 text-xs font-semibold text-slate-600 select-none cursor-pointer">
+                                  <input 
+                                    type="checkbox"
+                                    checked={!!onboardingData[spec.key]}
+                                    onChange={(e) => setOnboardingData({ ...onboardingData, [spec.key]: e.target.checked })}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                  />
+                                  <span>{spec.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Year Established</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.yearEstablished || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, yearEstablished: e.target.value })}
+                              placeholder="2015"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Number of Employees</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.numEmployees || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, numEmployees: e.target.value })}
+                              placeholder="e.g. 25"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Number of Licensed Agents</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.numLicensedAgents || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, numLicensedAgents: e.target.value })}
+                              placeholder="e.g. 12"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Company Website</label>
+                            <input 
+                              type="url"
+                              value={onboardingData.companyWebsite || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, companyWebsite: e.target.value })}
+                              placeholder="https://www.acmeinsurance.com"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Time Zone</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.timeZone || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, timeZone: e.target.value })}
+                              placeholder="EST (UTC-5) / PST (UTC-8)"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Preferred Business Hours</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.preferredBusinessHours || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, preferredBusinessHours: e.target.value })}
+                              placeholder="9:00 AM - 5:00 PM EST"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 2: Corporate Address */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '2': !prev['2'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">02</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Corporate Address</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Headquarters physical parameters and billing locations.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['2'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['2'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Headquarters Address</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.hqAddress || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, hqAddress: e.target.value })}
+                              placeholder="123 Corporate Parkway, Suite 500"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">City</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.hqCity || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, hqCity: e.target.value })}
+                              placeholder="Atlanta"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">State</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.hqState || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, hqState: e.target.value })}
+                              placeholder="Georgia"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ZIP Code</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.hqZip || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, hqZip: e.target.value })}
+                              placeholder="30301"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Country</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.hqCountry || 'United States'}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, hqCountry: e.target.value })}
+                              placeholder="United States"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Billing Address (if different)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.billingAddress || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, billingAddress: e.target.value })}
+                              placeholder="P.O. Box 9999, Atlanta, GA 30302"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 3: Primary Business Contact */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '3': !prev['3'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">03</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Primary Business Contact</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Primary operations officer managing offshore integration.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['3'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['3'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Full Name</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.primaryName || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryName: e.target.value })}
+                              placeholder="John Smith"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Job Title</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.primaryTitle || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryTitle: e.target.value })}
+                              placeholder="Operations Director"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Email Address</label>
+                            <input 
+                              type="email"
+                              value={onboardingData.primaryEmail || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryEmail: e.target.value })}
+                              placeholder="john.smith@acmeinsurance.com"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Mobile Number</label>
+                            <input 
+                              type="tel"
+                              value={onboardingData.primaryMobile || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryMobile: e.target.value })}
+                              placeholder="+1 (404) 555-0199"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Office Number</label>
+                            <input 
+                              type="tel"
+                              value={onboardingData.primaryOffice || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryOffice: e.target.value })}
+                              placeholder="+1 (404) 555-0100 ext 12"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Preferred Contact Method</label>
+                            <select
+                              value={onboardingData.primaryContactMethod || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryContactMethod: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Email">Email</option>
+                              <option value="Phone">Phone</option>
+                              <option value="Mobile">Mobile</option>
+                              <option value="SMS">SMS</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Best Time to Contact</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.primaryContactTime || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, primaryContactTime: e.target.value })}
+                              placeholder="e.g. Tuesdays & Thursdays after 2:00 PM EST"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 4: Executive Contact */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '4': !prev['4'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">04</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Executive Contact</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Owner/President/CEO details.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['4'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['4'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Owner/President/CEO Name</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.execName || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, execName: e.target.value })}
+                              placeholder="Eleanor Vance"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Email Address</label>
+                            <input 
+                              type="email"
+                              value={onboardingData.execEmail || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, execEmail: e.target.value })}
+                              placeholder="eleanor@acmeinsurance.com"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phone Number</label>
+                            <input 
+                              type="tel"
+                              value={onboardingData.execPhone || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, execPhone: e.target.value })}
+                              placeholder="+1 (404) 555-0101"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 5: Accounts Payable Contact */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '5': !prev['5'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">05</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Accounts Payable Contact</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Billing, invoicing, and purchase order controls.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['5'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['5'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Contact Name</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.apName || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, apName: e.target.value })}
+                              placeholder="Sarah Connor"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Email</label>
+                            <input 
+                              type="email"
+                              value={onboardingData.apEmail || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, apEmail: e.target.value })}
+                              placeholder="ap@acmeinsurance.com"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phone</label>
+                            <input 
+                              type="tel"
+                              value={onboardingData.apPhone || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, apPhone: e.target.value })}
+                              placeholder="+1 (404) 555-0122"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Billing Email (Where to send Invoices)</label>
+                            <input 
+                              type="email"
+                              value={onboardingData.apBillingEmail || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, apBillingEmail: e.target.value })}
+                              placeholder="invoices@acmeinsurance.com"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Purchase Order Required?</label>
+                            <select
+                              value={onboardingData.apPoRequired || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, apPoRequired: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 6: IT / Technical Contact */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '6': !prev['6'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">06</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">IT / Technical Contact</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">VDI tunnel management, system administrators, and security.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['6'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['6'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Full Name</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.itName || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, itName: e.target.value })}
+                              placeholder="Miles Dyson"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Job Title</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.itTitle || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, itTitle: e.target.value })}
+                              placeholder="Lead Systems Administrator"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Email</label>
+                            <input 
+                              type="email"
+                              value={onboardingData.itEmail || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, itEmail: e.target.value })}
+                              placeholder="tech@acmeinsurance.com"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phone</label>
+                            <input 
+                              type="tel"
+                              value={onboardingData.itPhone || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, itPhone: e.target.value })}
+                              placeholder="+1 (404) 555-0144"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Emergency Contact Number (VDI lockouts/Server crash)</label>
+                            <input 
+                              type="tel"
+                              value={onboardingData.itEmergencyPhone || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, itEmergencyPhone: e.target.value })}
+                              placeholder="+1 (404) 999-9111"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-rose-600"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 7: Business Operations */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '7': !prev['7'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">07</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Business Operations</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Volume parameters, renewals, claims, and active client metrics.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['7'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['7'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Primary Lines of Business</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsPrimaryLines || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsPrimaryLines: e.target.value })}
+                              placeholder="e.g. Home, Auto, Commercial Fleet"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">States Licensed In (comma-separated)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsLicensedStates || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsLicensedStates: e.target.value })}
+                              placeholder="GA, FL, AL, NC, SC"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Active Clients</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsActiveClients || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsActiveClients: e.target.value })}
+                              placeholder="e.g. 1500"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Average Monthly New Business Volume</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsMonthlyNewVolume || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsMonthlyNewVolume: e.target.value })}
+                              placeholder="e.g. 50 policies"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Average Monthly Renewals</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsMonthlyRenewals || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsMonthlyRenewals: e.target.value })}
+                              placeholder="e.g. 120 policies"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Average Monthly Endorsements</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsMonthlyEndorsements || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsMonthlyEndorsements: e.target.value })}
+                              placeholder="e.g. 40 requests"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Average Monthly Claims</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsMonthlyClaims || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsMonthlyClaims: e.target.value })}
+                              placeholder="e.g. 15 claims"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Current Team Size (Local Staff)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.opsTeamSize || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, opsTeamSize: e.target.value })}
+                              placeholder="e.g. 5 local staff"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 8: Current Systems */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '8': !prev['8'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">08</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Current Systems</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">AMS, CRM, VoIP, document systems, and collaboration software.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['8'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['8'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Agency Management System (AMS)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.sysAms || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, sysAms: e.target.value })}
+                              placeholder="e.g. Applied Epic, EZlynx, HawkSoft"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">CRM</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.sysCrm || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, sysCrm: e.target.value })}
+                              placeholder="e.g. Salesforce, HubSpot, AgencyZoom"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">VoIP / Phone System</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.sysVoip || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, sysVoip: e.target.value })}
+                              placeholder="e.g. RingCentral, Lightspeed, Dialpad"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Document Management System</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.sysDms || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, sysDms: e.target.value })}
+                              placeholder="e.g. Google Drive, SharePoint, Dropbox"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Email Platform</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.sysEmail || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, sysEmail: e.target.value })}
+                              placeholder="e.g. Google Workspace, Microsoft 365"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Team Collaboration Platform</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.sysCollaboration || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, sysCollaboration: e.target.value })}
+                              placeholder="e.g. Slack, MS Teams, Google Chat"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 9: Security & Compliance */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '9': !prev['9'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">09</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Security & Compliance</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">NDA demands, cybersecurity structures, MFA status, and password tools.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['9'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['9'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">NDA Required?</label>
+                            <select
+                              value={onboardingData.secNdaRequired || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, secNdaRequired: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Cybersecurity Policy in Place?</label>
+                            <select
+                              value={onboardingData.secPolicyInPlace || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, secPolicyInPlace: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">MFA Enabled on systems?</label>
+                            <select
+                              value={onboardingData.secMfaEnabled || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, secMfaEnabled: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Password Manager Used (e.g. 1Password, LastPass)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.secPasswordManager || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, secPasswordManager: e.target.value })}
+                              placeholder="1Password Enterprise"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Compliance Requirements (e.g. HIPAA, SOC 2, GLBA)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.secComplianceRequirements || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, secComplianceRequirements: e.target.value })}
+                              placeholder="e.g. HIPAA compliance for healthcare client profiles; SOC 2 Type II"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 10: Insurance Specialization */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '10': !prev['10'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">10</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Insurance Specialization</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Specific insurance niches serviced.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['10'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['10'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2 text-slate-800">Check All Specializations That Apply</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {[
+                                { key: 'specPersonalLines', label: 'Personal Lines' },
+                                { key: 'specCommercialLines', label: 'Commercial Lines' },
+                                { key: 'specLifeInsurance', label: 'Life Insurance' },
+                                { key: 'specIndividualHealth', label: 'Individual Health' },
+                                { key: 'specGroupHealth', label: 'Group Health' },
+                                { key: 'specMedicareAdvantage', label: 'Medicare Advantage' },
+                                { key: 'specMedicareSupplement', label: 'Medicare Supplement' },
+                                { key: 'specMedicarePartD', label: 'Medicare Part D' },
+                                { key: 'specAcaMarketplace', label: 'ACA Marketplace' },
+                                { key: 'specEmployeeBenefits', label: 'Employee Benefits' },
+                                { key: 'specWorkersComp', label: 'Workers\' Compensation' },
+                                { key: 'specBonds', label: 'Bonds' },
+                                { key: 'specSpecialtyLines', label: 'Specialty Lines' }
+                              ].map(spec => (
+                                <label key={spec.key} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 select-none cursor-pointer border border-slate-100 bg-slate-50/30 p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                  <input 
+                                    type="checkbox"
+                                    checked={!!onboardingData[spec.key]}
+                                    onChange={(e) => setOnboardingData({ ...onboardingData, [spec.key]: e.target.checked })}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 cursor-pointer"
+                                  />
+                                  <span>{spec.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 11: Current Outsourcing Status */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '11': !prev['11'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">11</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Current Outsourcing Status</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Outsourcing history and switching drivers.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['11'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['11'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Do you currently outsource?</label>
+                            <select
+                              value={onboardingData.outsourceCurrently || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, outsourceCurrently: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Current Vendor</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.outsourceVendor || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, outsourceVendor: e.target.value })}
+                              placeholder="e.g. ShoreAgent, StaffBoom, None"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Number of Offshore Staff</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.outsourceNumStaff || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, outsourceNumStaff: e.target.value })}
+                              placeholder="e.g. 3 FTEs"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Reason for Switching (Optional)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.outsourceReason || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, outsourceReason: e.target.value })}
+                              placeholder="e.g. Seeking better QA, lower turnover, faster response times"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 12: Preferred Start Information */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '12': !prev['12'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">12</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Preferred Start Information</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Desired go-live dates, offshore VA quantities, and hour schedules.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['12'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['12'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Desired Go-Live Date</label>
+                            <input 
+                              type="date"
+                              value={onboardingData.startGoLiveDate || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, startGoLiveDate: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Number of Virtual Assistants Required</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.startNumVas || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, startNumVas: e.target.value })}
+                              placeholder="e.g. 2 full-time assistants"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Expected Working Hours (in EST/PST)</label>
+                            <input 
+                              type="text"
+                              value={onboardingData.startWorkingHours || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, startWorkingHours: e.target.value })}
+                              placeholder="e.g. 9:00 AM - 6:00 PM EST"
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Trial Required?</label>
+                            <select
+                              value={onboardingData.startTrialRequired || ''}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, startTrialRequired: e.target.value })}
+                              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                            >
+                              <option value="">Select Option</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 13: Required Documents (Upload) */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '13': !prev['13'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">13</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Required Documents Vault</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Securely upload licenses, W-9s, SOP workflow models, branding assets.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['13'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['13'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                          {[
+                            { key: 'docAgencyLicense', label: 'Agency License', desc: 'Active physical state operating license.' },
+                            { key: 'docW9', label: 'W-9 Form', desc: 'Signed IRS tax verification document.' },
+                            { key: 'docNda', label: 'Signed NDA (if applicable)', desc: 'Corporate mutual non-disclosure agreement.' },
+                            { key: 'docMsa', label: 'Master Service Agreement', desc: 'Mutual signed operational agreement.' },
+                            { key: 'docSops', label: 'SOPs / Workflow Documents', desc: 'Daily procedural step lists.' },
+                            { key: 'docOrgChart', label: 'Organizational Chart', desc: 'Team hierarchy structure mapping.' },
+                            { key: 'docEmployeeDirectory', label: 'Employee Directory (Optional)', desc: 'Current staff extension list.' },
+                            { key: 'docBrandingAssets', label: 'Branding Assets', desc: 'Vector logos, color guides, system guidelines.' }
+                          ].map(docItem => {
+                            const isUploaded = !!onboardingData[docItem.key];
+                            const isDocUploading = !!uploadingDocs[docItem.key];
+                            
+                            return (
+                              <div key={docItem.key} className="border border-slate-100 bg-slate-50/40 p-4 rounded-2xl flex flex-col justify-between gap-3 relative">
+                                <div>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <span className="text-xs font-extrabold text-slate-800 block">{docItem.label}</span>
+                                      <span className="text-[10px] text-slate-400 font-semibold block leading-relaxed">{docItem.desc}</span>
+                                    </div>
+                                    {isUploaded && (
+                                      <span className="bg-emerald-50 text-emerald-700 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1 shrink-0 uppercase tracking-wider">
+                                        <Check className="w-3 h-3 stroke-[3px]" />
+                                        <span>Linked</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="mt-2 pt-2 border-t border-slate-100/50">
+                                  {isDocUploading ? (
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 py-2">
+                                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                      <span>Uploading & encrypting file payload...</span>
+                                    </div>
+                                  ) : isUploaded ? (
+                                    <div className="flex items-center justify-between gap-2 bg-white border border-slate-200/60 p-2.5 rounded-xl text-xs font-bold text-slate-700">
+                                      <div className="flex items-center gap-1.5 overflow-hidden">
+                                        <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                                        <span className="truncate text-[11px] font-mono font-medium max-w-[120px] sm:max-w-[180px]">
+                                          {onboardingData[docItem.key].split('/').pop() || 'Attached File'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <button 
+                                          type="button"
+                                          onClick={() => {
+                                            const fileUrl = onboardingData[docItem.key];
+                                            handleDownloadFile({ file_name: fileUrl.split('/').pop(), file_path: fileUrl });
+                                          }}
+                                          className="text-[10px] text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors font-bold cursor-pointer"
+                                        >
+                                          Download
+                                        </button>
+                                        <button 
+                                          type="button"
+                                          onClick={() => {
+                                            if (confirm(`Remove this ${docItem.label} attachment?`)) {
+                                              const updated = { ...onboardingData, [docItem.key]: '' };
+                                              setOnboardingData(updated);
+                                              saveOnboardingData(updated);
+                                            }
+                                          }}
+                                          className="text-[10px] text-rose-600 hover:text-white border border-rose-100 hover:bg-rose-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                          title="Remove attachment"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <label className="cursor-pointer border border-dashed border-slate-200 hover:border-blue-400 bg-white hover:bg-blue-50/10 p-4 rounded-xl flex flex-col items-center justify-center gap-1.5 text-center transition-all">
+                                      <Upload className="w-5 h-5 text-slate-400" />
+                                      <span className="text-[11px] font-extrabold text-slate-600 block">Select File / Drag-and-drop</span>
+                                      <span className="text-[9px] text-slate-400 block font-semibold">PDF, DOCX, XLSX or ZIP (max 15MB)</span>
+                                      <input 
+                                        type="file"
+                                        accept=".pdf,.docx,.xlsx,.xls,.zip,.png,.jpg,.jpeg"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleUploadOnboardingDocument(docItem.key, file);
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 14: Sector-Specific Fields */}
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSections(prev => ({ ...prev, '14': !prev['14'] }))}
+                        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left font-sans"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-[#E8F1FF] text-blue-600 rounded-lg flex items-center justify-center font-extrabold text-xs">14</span>
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Sector-Specific Operational Parameters</span>
+                            <span className="text-[11px] text-slate-400 font-semibold block">Niche-specific systems: P&C, Life, Health, or Medicare platforms.</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${openSections['14'] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {openSections['14'] && (
+                        <div className="px-6 pb-6 pt-4 border-t border-slate-100 space-y-6 animate-fade-in">
+                          
+                          {/* Property & Casualty Parameters */}
+                          <div className="space-y-4">
+                            <h4 className="text-xs font-extrabold text-[#2F6DFF] uppercase tracking-widest border-b border-slate-100 pb-1.5">Property & Casualty Sector</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">AMS Platform Details</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.pcAmsPlatform || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, pcAmsPlatform: e.target.value })}
+                                  placeholder="e.g. Applied Epic, HawkSoft, EZlynx version"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Carrier Appointments</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.pcCarrierAppointments || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, pcCarrierAppointments: e.target.value })}
+                                  placeholder="e.g. Progressive, Travelers, Liberty Mutual"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Personal vs. Commercial Lines Mix</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.pcMix || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, pcMix: e.target.value })}
+                                  placeholder="e.g. 70% Personal / 30% Commercial"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ACORD Forms Usage</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.pcAcordUsage || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, pcAcordUsage: e.target.value })}
+                                  placeholder="e.g. ACORD 125, 126, 140 frequently used"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Life Insurance Parameters */}
+                          <div className="space-y-4 pt-2">
+                            <h4 className="text-xs font-extrabold text-[#2F6DFF] uppercase tracking-widest border-b border-slate-100 pb-1.5">Life Insurance Sector</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Carrier Appointments (Life)</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.lifeCarrierAppointments || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, lifeCarrierAppointments: e.target.value })}
+                                  placeholder="e.g. Mutual of Omaha, Transamerica, Prudential"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">New Business Platforms</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.lifeNewBusinessPlatforms || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, lifeNewBusinessPlatforms: e.target.value })}
+                                  placeholder="e.g. iPipeline, iGO"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Illustration Software Used</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.lifeIllustrationSoftware || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, lifeIllustrationSoftware: e.target.value })}
+                                  placeholder="e.g. WinFlex Web, carrier portals"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">E-Application Platforms</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.lifeEAppPlatforms || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, lifeEAppPlatforms: e.target.value })}
+                                  placeholder="e.g. DocuSign, AssureSign, Carrier E-apps"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Health Insurance Parameters */}
+                          <div className="space-y-4 pt-2">
+                            <h4 className="text-xs font-extrabold text-[#2F6DFF] uppercase tracking-widest border-b border-slate-100 pb-1.5">Health Insurance Sector</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Individual vs. Group Health Mix</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.healthMix || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, healthMix: e.target.value })}
+                                  placeholder="e.g. 40% Individual / 60% Group"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ACA Marketplace Participation?</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.healthAcaParticipation || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, healthAcaParticipation: e.target.value })}
+                                  placeholder="e.g. HealthSherpa, Healthcare.gov"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Enrollment Platforms</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.healthEnrollmentPlatforms || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, healthEnrollmentPlatforms: e.target.value })}
+                                  placeholder="e.g. Ease, Employee Navigator, HealthSherpa"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">HIPAA Compliance Contact</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.healthHipaaContact || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, healthHipaaContact: e.target.value })}
+                                  placeholder="e.g. HIPAA officer Jane Doe (hipaa@acme.com)"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Medicare Parameters */}
+                          <div className="space-y-4 pt-2">
+                            <h4 className="text-xs font-extrabold text-[#2F6DFF] uppercase tracking-widest border-b border-slate-100 pb-1.5">Medicare Sector</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">CMS Contract Number (if applicable)</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.medicareCmsContractNum || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, medicareCmsContractNum: e.target.value })}
+                                  placeholder="e.g. H-1234"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Medicare Product Types Offered</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.medicareProductsOffered || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, medicareProductsOffered: e.target.value })}
+                                  placeholder="e.g. MA, MAPD, MedSup, PDP"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Annual Enrollment Period (AEP) Support Required</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.medicareAepSupport || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, medicareAepSupport: e.target.value })}
+                                  placeholder="e.g. October 15 - December 7 high-volume support"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Compliance Officer Contact</label>
+                                <input 
+                                  type="text"
+                                  value={onboardingData.medicareComplianceContact || ''}
+                                  onChange={(e) => setOnboardingData({ ...onboardingData, medicareComplianceContact: e.target.value })}
+                                  placeholder="e.g. Compliance Director Eleanor (compliance@acme.com)"
+                                  className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 focus:outline-hidden focus:bg-white focus:border-blue-600 rounded-xl font-semibold text-slate-800"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      )}
                     </div>
 
                   </div>
