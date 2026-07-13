@@ -15,6 +15,12 @@ export type PageType =
   | 'workspace'
   | 'client-portal';
 
+export const APP_ROUTES = {
+  REGISTRATION: 'client-portal/register' as const,
+  LOGIN: 'client-portal/login' as const,
+  WORKSPACE: 'workspace' as const,
+};
+
 export interface ServiceDetail {
   id: string;
   title: string;

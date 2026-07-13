@@ -591,7 +591,12 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
         }
       } else {
         setSession(null);
-        setFlow('login');
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes('register')) {
+          setFlow('register');
+        } else {
+          setFlow('login');
+        }
       }
       setAuthChecked(true);
     };
@@ -605,7 +610,12 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
         if (!authSession.user.email_confirmed_at) {
           await supabase.auth.signOut();
           setSession(null);
-          setFlow('login');
+          const hash = window.location.hash.toLowerCase();
+          if (hash.includes('register')) {
+            setFlow('register');
+          } else {
+            setFlow('login');
+          }
           return;
         }
 
@@ -616,7 +626,12 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
           if (isBlocked) {
             await supabase.auth.signOut();
             setSession(null);
-            setFlow('login');
+            const hash = window.location.hash.toLowerCase();
+            if (hash.includes('register')) {
+              setFlow('register');
+            } else {
+              setFlow('login');
+            }
           } else {
             const isCompletedOnboarding = 
               profile.onboarding_completed === true || 
@@ -632,7 +647,12 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
         }
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
-        setFlow('login');
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes('register')) {
+          setFlow('register');
+        } else {
+          setFlow('login');
+        }
       }
     });
 
@@ -640,6 +660,22 @@ export default function ClientPortal({ setCurrentPage }: ClientPortalProps) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Listen to hash shifts for sub-routes
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (!session) {
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes('register')) {
+          setFlow('register');
+        } else if (hash.includes('login')) {
+          setFlow('login');
+        }
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [session]);
 
   // Initialize and Fetch Dashboard Datasets
   const fetchDashboardData = async () => {

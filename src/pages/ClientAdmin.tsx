@@ -41,7 +41,7 @@ import {
   Smartphone,
   Copy
 } from 'lucide-react';
-import { PageType } from '../types';
+import { PageType, APP_ROUTES } from '../types';
 import { supabase } from '../lib/supabase';
 import { broadcastChange } from '../utils/realtimeHelper';
 
@@ -99,7 +99,7 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
 
   // Alert/Notification State
   const [toastAlert, setToastAlert] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
-  const [copiedLink, setCopiedLink] = useState<'registration' | 'workspace' | null>(null);
+  const [copiedLink, setCopiedLink] = useState<'registration' | 'login' | 'workspace' | null>(null);
 
   // Expanded card/credentials lists
   const [expandedClientCredentialsIds, setExpandedClientCredentialsIds] = useState<string[]>([]);
@@ -951,23 +951,23 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
                         {/* REGISTRATION CARD */}
                         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-3 hover:bg-white/10 transition-colors">
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">Registration Link (Login/Signup)</span>
+                              <span className="text-[11px] font-bold text-blue-200 uppercase tracking-wider">Client Registration Portal (Registration only)</span>
                             </div>
                             <p className="text-white font-mono text-xs select-all break-all bg-black/20 px-3 py-2 rounded-lg border border-white/5">
-                              {window.location.origin}/client-portal
+                              {`${window.location.origin}/#${APP_ROUTES.REGISTRATION}`}
                             </p>
                           </div>
                           
                           <div className="flex items-center gap-2 self-end">
                             <button
                               onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/client-portal`);
+                                navigator.clipboard.writeText(`${window.location.origin}/#${APP_ROUTES.REGISTRATION}`);
                                 setCopiedLink('registration');
                                 showToast('Registration URL copied to clipboard!', 'success');
                                 setTimeout(() => setCopiedLink(null), 2000);
@@ -978,7 +978,44 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
                               {copiedLink === 'registration' ? 'Copied' : 'Copy Link'}
                             </button>
                             <a
-                              href={`${window.location.origin}/client-portal`}
+                              href={`${window.location.origin}/#${APP_ROUTES.REGISTRATION}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              Open
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* LOGIN CARD */}
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-3 hover:bg-white/10 transition-colors">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                              <span className="text-[11px] font-bold text-blue-200 uppercase tracking-wider">Client Login Portal (Returning clients)</span>
+                            </div>
+                            <p className="text-white font-mono text-xs select-all break-all bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                              {`${window.location.origin}/#${APP_ROUTES.LOGIN}`}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 self-end">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/#${APP_ROUTES.LOGIN}`);
+                                setCopiedLink('login');
+                                showToast('Login URL copied to clipboard!', 'success');
+                                setTimeout(() => setCopiedLink(null), 2000);
+                              }}
+                              className="px-3 py-1.5 bg-white/10 hover:bg-white text-white hover:text-[#081B8C] rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              {copiedLink === 'login' ? 'Copied' : 'Copy Link'}
+                            </button>
+                            <a
+                              href={`${window.location.origin}/#${APP_ROUTES.LOGIN}`}
                               target="_blank"
                               rel="noreferrer"
                               className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
@@ -994,17 +1031,17 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                               <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                              <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">Workspace Login Link</span>
+                              <span className="text-[11px] font-bold text-blue-200 uppercase tracking-wider">Client Workspace Dashboard (Authenticated client dashboard)</span>
                             </div>
                             <p className="text-white font-mono text-xs select-all break-all bg-black/20 px-3 py-2 rounded-lg border border-white/5">
-                              {window.location.origin}/workspace
+                              {`${window.location.origin}/#${APP_ROUTES.WORKSPACE}`}
                             </p>
                           </div>
 
                           <div className="flex items-center gap-2 self-end">
                             <button
                               onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/workspace`);
+                                navigator.clipboard.writeText(`${window.location.origin}/#${APP_ROUTES.WORKSPACE}`);
                                 setCopiedLink('workspace');
                                 showToast('Workspace URL copied to clipboard!', 'success');
                                 setTimeout(() => setCopiedLink(null), 2000);
@@ -1015,7 +1052,7 @@ export default function ClientAdmin({ setCurrentPage }: ClientAdminProps) {
                               {copiedLink === 'workspace' ? 'Copied' : 'Copy Link'}
                             </button>
                             <a
-                              href={`${window.location.origin}/workspace`}
+                              href={`${window.location.origin}/#${APP_ROUTES.WORKSPACE}`}
                               target="_blank"
                               rel="noreferrer"
                               className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
