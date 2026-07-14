@@ -32,6 +32,8 @@ export interface ServiceDetail {
   process: { step: string; title: string; desc: string }[];
   results: { metric: string; label: string; context: string }[];
   faqs: { question: string; answer: string }[];
+  keyServices?: string[];
+  platforms?: string[];
 }
 
 export interface IndustryDetail {

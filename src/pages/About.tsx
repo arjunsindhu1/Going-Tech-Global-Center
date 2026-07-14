@@ -117,13 +117,13 @@ export default function About({ setCurrentPage }: AboutProps) {
             <div className="lg:col-span-7 space-y-6">
               <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Corporate Story</span>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
-                Empowering Enterprises Through Intelligent Operations
+                Specialized Support. Intelligent Operations.
               </h1>
               <p className="text-gray-600 text-lg leading-relaxed max-w-2xl">
-                Founded by a veteran team of insurance and technology specialists, Going Technologies Global Center was built to solve a critical market challenge: the high administrative burden holding back high-performing organizations.
+                Going Technologies is a specialized operational support partner helping insurance and healthcare organizations scale. We pair certified, carrier-aligned delivery specialists with AI-driven workflow optimization to eliminate clerical bottlenecks.
               </p>
               <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">
-                By bridging the gap between cutting-edge automation tools and highly trained, dedicated global delivery teams, we help mid-market enterprises and leading insurance agencies eliminate backlogs, reduce operational costs, and scale faster.
+                By bridging the gap between state-of-the-art automation tools and highly trained, dedicated global delivery teams, we help mid-market enterprises and leading insurance agencies eliminate backlogs, reduce operational costs, and scale faster.
               </p>
             </div>
 

@@ -27,7 +27,7 @@ import {
   Star
 } from 'lucide-react';
 import { PageType } from '../types';
-import { SERVICES_DATA, CASE_STUDIES, BLOG_POSTS } from '../data';
+import { SERVICES_DATA, INDUSTRIES_DATA, CASE_STUDIES, BLOG_POSTS } from '../data';
 import ROICalculator from '../components/ROICalculator';
 import ClientJourney from '../components/ClientJourney';
 import FeaturedIn from '../components/FeaturedIn';
@@ -169,6 +169,78 @@ const TESTIMONIALS_DATA = [
   }
 ];
 
+const pcWorkflowSteps = [
+  {
+    title: 'Submission Intake',
+    metric: '< 15 Mins SLA',
+    details: 'Our overnight operational team triages incoming broker emails, indexes commercial applications, and pre-keys risk profiles into Applied Epic and AMS360.',
+    activity: 'Ensures zero-backlog start of business. Out-of-appetite submissions are pre-screened and prioritized immediately.'
+  },
+  {
+    title: 'Underwriting Support',
+    metric: '40% Underwriter Time Reclaimed',
+    details: 'We extract loss-run histories, pull distance-to-coast logs, compile hazard scores, and pre-populate online carrier comparative raters.',
+    activity: 'Saves your domestic underwriters from repetitive data entry, letting them spend their days making bind decisions.'
+  },
+  {
+    title: 'Policy Issuance',
+    metric: '99.98% Accuracy Audit',
+    details: 'Post-bind policy checksheets are systematically audited against carrier binders using a dual-verification QC model to catch errors.',
+    activity: 'Discrepancies in limits, endorsements, and spelling are resolved before final policy package delivery to avoid disputes.'
+  },
+  {
+    title: 'COI & Endorsements',
+    metric: '8.4 Minute Turnaround',
+    details: 'We process seasonal Certificate of Insurance (COI) requests and simple endorsement changes on-demand or overnight.',
+    activity: 'Brokerages defeat standard competitor turnaround times, boosting commercial account retention and satisfaction.'
+  },
+  {
+    title: 'Renewals Management',
+    metric: '90 Days Lead Time',
+    details: 'Systematic outreach triggers 90 days before expiration to pull loss runs, verify active payroll rosters, and compile application files.',
+    activity: 'Protects the renewal book from competitive disruption by having quotes ready long before competitor outreach begins.'
+  }
+];
+
+const aiAutomationCards = [
+  {
+    title: 'Intelligent Document Parsing',
+    desc: 'Advanced Large Language Models extract structured data fields from unstructured commercial application scans and carrier PDFs in seconds.',
+    iconName: 'FileText',
+    iconColor: 'text-[#2F6DFF]'
+  },
+  {
+    title: 'Cognitive RPA Pipelines',
+    desc: 'Secure software robots automate high-volume administrative data movement across legacy databases and client Agency Management Systems.',
+    iconName: 'Layers',
+    iconColor: 'text-[#A93DFF]'
+  },
+  {
+    title: 'Human-in-the-Loop Validation',
+    desc: '24/7 supervisor-led delivery teams validate low-confidence data extractions within 90 seconds to maintain an audited 99.98% accuracy rate.',
+    iconName: 'Users',
+    iconColor: 'text-emerald-500'
+  },
+  {
+    title: 'Secure API Integrations',
+    desc: 'Custom Python and Node.js middleware pipelines bridge the gap between ancient database systems and modern web portals without downtime.',
+    iconName: 'Shield',
+    iconColor: 'text-amber-500'
+  },
+  {
+    title: 'HIPAA & NPI Safeguards',
+    desc: 'Isolated Large Language Model instances running on private enterprise clouds with local storage, print, and copy-paste fully disabled.',
+    iconName: 'CheckCircle2',
+    iconColor: 'text-cyan-500'
+  },
+  {
+    title: 'Elastic Queue Distribution',
+    desc: 'A smart task scheduler optimizes back-office queues, automatically distributing overnight workloads to clear carrier backlogs before your office opens.',
+    iconName: 'Clock',
+    iconColor: 'text-[#2F6DFF]'
+  }
+];
+
 interface HomeProps {
   setCurrentPage: (page: PageType) => void;
   onNavigateToService: (serviceId: string) => void;
@@ -177,6 +249,7 @@ interface HomeProps {
 export default function Home({ setCurrentPage, onNavigateToService }: HomeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<number>(0);
+  const [activeWorkflowStep, setActiveWorkflowStep] = useState<number>(0);
   const [employeeScale, setEmployeeScale] = useState<number>(25);
   const [isHovered1, setIsHovered1] = useState(false);
   const [isHovered2, setIsHovered2] = useState(false);
@@ -427,18 +500,31 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
             
             {/* Hero Left Content */}
             <div className="lg:col-span-7 space-y-8">
-              {/* Trust Tag */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                className="inline-flex items-center gap-2 bg-[#DCE7FF]/60 border border-[#DCE7FF] px-4 py-1.5 rounded-full"
-              >
-                <span className="w-2 h-2 rounded-full bg-[#2F6DFF] animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#081B8C]">
-                  US Enterprise Operations Partner
-                </span>
-              </motion.div>
+              {/* Trust Tag with dual premium badges */}
+              <div className="flex flex-wrap items-center gap-3">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className="inline-flex items-center gap-2 bg-[#DCE7FF]/60 border border-[#DCE7FF] px-4 py-1.5 rounded-full"
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#2F6DFF] animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#081B8C]">
+                    ⚡ AI-Powered Insurance Operations
+                  </span>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+                  className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 px-4 py-1.5 rounded-full"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
+                    Property & Casualty Specialists
+                  </span>
+                </motion.div>
+              </div>
 
               {/* Title Stack */}
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-display tracking-tight leading-none text-[#081B8C]">
@@ -448,7 +534,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                   transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
                   className="block"
                 >
-                  Scale Operations.
+                  Industry Expertise.
                 </motion.span>
                 <motion.span
                   initial={{ opacity: 0, y: 15 }}
@@ -456,7 +542,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                   transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
                   className="block text-transparent bg-clip-text bg-gradient-to-r from-[#2F6DFF] to-[#A93DFF]"
                 >
-                  Reduce Costs.
+                  Intelligent Operations.
                 </motion.span>
                 <motion.span
                   initial={{ opacity: 0, y: 15 }}
@@ -464,7 +550,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                   transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
                   className="block"
                 >
-                  Accelerate Growth.
+                  AI-Driven Growth.
                 </motion.span>
               </h1>
 
@@ -475,7 +561,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 transition={{ duration: 0.6, delay: 0.55, ease: 'easeOut' }}
                 className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl"
               >
-                Going Technologies helps insurance organizations and mid-market enterprises streamline operations, eliminate administrative bottlenecks, and unlock rapid scalable growth.
+                Helping insurance and healthcare organizations scale through specialized operational support and AI-powered workflow automation.
               </motion.p>
 
               {/* Action Buttons */}
@@ -579,6 +665,122 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
               </motion.div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* NEW SECTION: PROPERTY & CASUALTY WORKFLOW */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white border-y border-[#DCE7FF]/60 relative">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#2F6DFF]/5 blur-[120px] rounded-full pointer-events-none" />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left info column: 5 cols */}
+          <div className="lg:col-span-5 space-y-6">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3 py-1 rounded-full">
+              P&C Operational Delivery Model
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
+              P&C Operations: From Submission to Renewal
+            </h2>
+            <p className="text-gray-500 text-sm sm:text-base leading-relaxed">
+              We provide carrier-aligned operational specialists who operate directly inside your Agency Management Systems to clear backlogs, manage submissions, process certificates, and verify policies with Six Sigma precision.
+            </p>
+            
+            {/* Steps indicator list */}
+            <div className="space-y-3 pt-4">
+              {pcWorkflowSteps.map((step, idx) => {
+                const isActive = activeWorkflowStep === idx;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveWorkflowStep(idx)}
+                    className={`w-full text-left flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#F8FAFF] border-[#2F6DFF] shadow-sm'
+                        : 'bg-white border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                      isActive ? 'bg-[#2F6DFF] text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-bold ${isActive ? 'text-[#081B8C]' : 'text-gray-700'}`}>
+                        {step.title}
+                      </p>
+                    </div>
+                    <ChevronRight className={`w-4 h-4 transition-transform ${isActive ? 'text-[#2F6DFF] translate-x-1' : 'text-gray-300'}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* Right visual card: 7 cols */}
+          <div className="lg:col-span-7">
+            <motion.div
+              key={activeWorkflowStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="bg-gradient-to-br from-[#081B8C] via-[#1E3A8A] to-[#0A2540] rounded-3xl p-8 lg:p-10 text-white shadow-xl relative overflow-hidden border border-blue-900/40"
+            >
+              {/* Decorative backgrounds */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-[#2F6DFF]/15 blur-3xl rounded-full" />
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#A93DFF]/15 blur-3xl rounded-full" />
+              
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/10 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                    {/* Dynamic Icon */}
+                    {activeWorkflowStep === 0 && <FileText className="w-6 h-6 text-[#4AB7FF]" />}
+                    {activeWorkflowStep === 1 && <ClipboardCheck className="w-6 h-6 text-[#4AB7FF]" />}
+                    {activeWorkflowStep === 2 && <FileCheck className="w-6 h-6 text-[#4AB7FF]" />}
+                    {activeWorkflowStep === 3 && <Clock className="w-6 h-6 text-[#4AB7FF]" />}
+                    {activeWorkflowStep === 4 && <TrendingUp className="w-6 h-6 text-[#4AB7FF]" />}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-cyan-300 font-mono font-bold">
+                      Phase 0{activeWorkflowStep + 1}
+                    </p>
+                    <h3 className="text-xl font-bold font-display">{pcWorkflowSteps[activeWorkflowStep].title}</h3>
+                  </div>
+                </div>
+                
+                {/* Metric Badge */}
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full text-xs font-mono font-bold text-cyan-300">
+                  {pcWorkflowSteps[activeWorkflowStep].metric}
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300/80 mb-2 font-mono">The Operational Approach</h4>
+                  <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                    {pcWorkflowSteps[activeWorkflowStep].details}
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300/80 font-mono">
+                    Active Delivery Activity
+                  </h4>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-slate-200">
+                      {pcWorkflowSteps[activeWorkflowStep].activity}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3 border-t border-white/5 pt-4">
+                    <Shield className="w-5 h-5 text-[#4AB7FF] shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-400">
+                      Executed under continuous Operations Supervisor monitoring and recorded audit trails.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -711,9 +913,9 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {industries.slice(0, 3).map((ind, idx) => (
+            {INDUSTRIES_DATA.map((ind) => (
               <div
-                key={idx}
+                key={ind.id}
                 onClick={() => {
                   setCurrentPage('industries');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -721,8 +923,8 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 className="bg-[#F8FAFF] border border-[#DCE7FF]/60 rounded-xl p-6 hover:bg-white hover:border-[#2F6DFF] hover:shadow-md transition-all duration-200 cursor-pointer group flex justify-between items-center"
               >
                 <div>
-                  <h4 className="font-bold text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors">{ind.name}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{ind.desc}</p>
+                  <h4 className="font-bold text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors">{ind.title}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{ind.tagline}</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#2F6DFF] transition-colors" />
               </div>
@@ -740,6 +942,53 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
               <span>Explore All Industry Verticals</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* NEW SECTION: AI AUTOMATION ADVANTAGE */}
+      <section className="bg-slate-50 border-y border-[#DCE7FF]/60 py-24 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-[#2F6DFF]/5 blur-[100px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3 py-1 rounded-full">
+              Enterprise Technology Integration
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              AI-Powered Workflow Automation
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              We position AI as an operational advantage within our human-led delivery model, combining advanced language models with 24/7 supervisor-backed validation.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {aiAutomationCards.map((card, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-[#DCE7FF] rounded-2xl p-8 hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 flex flex-col justify-between group"
+              >
+                <div className="space-y-4">
+                  <div className={`p-3 bg-slate-50 rounded-xl w-fit border border-gray-100 group-hover:bg-[#DCE7FF]/30 transition-colors`}>
+                    {card.iconName === 'FileText' && <FileText className={`w-6 h-6 ${card.iconColor}`} />}
+                    {card.iconName === 'Layers' && <Layers className={`w-6 h-6 ${card.iconColor}`} />}
+                    {card.iconName === 'Users' && <Users className={`w-6 h-6 ${card.iconColor}`} />}
+                    {card.iconName === 'Shield' && <Shield className={`w-6 h-6 ${card.iconColor}`} />}
+                    {card.iconName === 'CheckCircle2' && <CheckCircle2 className={`w-6 h-6 ${card.iconColor}`} />}
+                    {card.iconName === 'Clock' && <Clock className={`w-6 h-6 ${card.iconColor}`} />}
+                  </div>
+                  <h3 className="text-lg font-bold text-[#081B8C] font-display">{card.title}</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    {card.desc}
+                  </p>
+                </div>
+                <div className="pt-6 border-t border-gray-50/60 mt-6 flex items-center justify-between text-[10px] font-mono font-bold text-gray-400">
+                  <span>DELIVERY INTEGRATION</span>
+                  <span className="text-[#2F6DFF]">SECURE</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -925,13 +1174,15 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          {/* 1. Animated statistics row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
+          {/* 1. Animated statistics row (6 stats) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6 max-w-7xl mx-auto mb-24">
             {[
-              { label: 'Tasks Processed', value: '5000+', icon: FileCheck, color: 'text-[#2F6DFF]', bg: 'bg-[#2F6DFF]/5' },
-              { label: 'Accuracy Focus', value: '98%', icon: TrendingUp, color: 'text-[#A93DFF]', bg: 'bg-[#A93DFF]/5' },
-              { label: 'Operational Support', value: '24/7', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
-              { label: 'Businesses Supported', value: '100+', icon: Building, color: 'text-amber-500', bg: 'bg-amber-500/5' }
+              { label: 'Happy Clients', value: '30+', icon: Users, color: 'text-[#2F6DFF]', bg: 'bg-[#2F6DFF]/5' },
+              { label: 'Industry Verticals', value: '5', icon: Building, color: 'text-[#A93DFF]', bg: 'bg-[#A93DFF]/5' },
+              { label: 'Implementation Speed', value: '21-Day', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
+              { label: 'Support Operations', value: '24/7', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/5' },
+              { label: 'AI Powered Workflow', value: '10x', icon: Sparkles, color: 'text-cyan-500', bg: 'bg-cyan-500/5' },
+              { label: 'Secure Client Operations', value: '100%', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-500/5' }
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
@@ -1265,6 +1516,88 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
 
           </div>
 
+        </div>
+      </section>
+
+      {/* NEW SECTION: ENTERPRISE SECURITY & COMPLIANCE */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-[#2F6DFF]/5 blur-[100px] rounded-full pointer-events-none" />
+        
+        <div className="bg-[#081B8C]/5 border border-[#DCE7FF] rounded-3xl p-8 sm:p-12 lg:p-16 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#2F6DFF]/10 blur-3xl rounded-full" />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Header info: 5 cols */}
+            <div className="lg:col-span-5 space-y-6">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3 py-1 rounded-full">
+                Security Assurance
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
+                Enterprise-Grade Security & Compliance
+              </h2>
+              <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+                Protecting sensitive patient records and corporate data assets is built into our core delivery mechanism. We enforce continuous physical, technical, and administrative controls to protect high-volume healthcare and insurance records.
+              </p>
+              
+              <div className="pt-4 flex flex-wrap gap-4">
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-1.5 rounded-full text-xs font-semibold">
+                  <Shield className="w-4 h-4" />
+                  <span>SOC 2 Type II Compliant</span>
+                </div>
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-1.5 rounded-full text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>HIPAA Aligned Environment</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Pillars grid: 7 cols */}
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {[
+                {
+                  title: 'SOC 2 Type II Audited',
+                  desc: 'All support queues and client environments are strictly managed under SOC 2 Type II certified procedures with full operational logs.',
+                  badge: 'Administrative Audit'
+                },
+                {
+                  title: 'HIPAA & NPI Protections',
+                  desc: 'Complete healthcare data safeguarding, secure private clouds, with physical local storage, print, and external copy-paste capabilities fully disabled.',
+                  badge: 'Technical Guardrail'
+                },
+                {
+                  title: 'Daytime Shift Overlaps',
+                  desc: 'Operations are conducted during daytime hours matching US Eastern, Central, and Pacific timezones under live supervisor monitoring.',
+                  badge: 'US Timezone'
+                },
+                {
+                  title: 'Physical Site Isolation',
+                  desc: 'Our delivery specialists operate from isolated, secure business enterprise sites with badge-restricted access, zero mobile device entry, and 24/7 CCTV.',
+                  badge: 'Physical Control'
+                }
+              ].map((item, idx) => (
+                <div 
+                  key={idx} 
+                  className="bg-white border border-[#DCE7FF]/85 rounded-2xl p-6 hover:shadow-lg hover:border-[#2F6DFF]/30 transition-all duration-300 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <span className="text-[9px] font-mono font-bold tracking-wider text-[#2F6DFF] uppercase bg-[#2F6DFF]/5 px-2 py-0.5 rounded">
+                      {item.badge}
+                    </span>
+                    <h3 className="font-bold text-[#081B8C] font-display text-base">
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-gray-50/60 mt-4 flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                    <span>STATUS: ACTIVE</span>
+                    <Shield className="w-4 h-4 text-emerald-500" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

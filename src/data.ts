@@ -2,235 +2,249 @@ import { ServiceDetail, IndustryDetail, CaseStudy, BlogPost, CareerPosition } fr
 
 export const SERVICES_DATA: ServiceDetail[] = [
   {
-    id: 'insurance-ops',
-    title: 'Insurance Operations Support',
-    shortDesc: 'End-to-end operational enablement for MGAs, carriers, and agencies to accelerate policy life cycle and eliminate compliance friction.',
-    iconName: 'FileText',
-    problem: 'US insurance firms are buried under manual application volume, renewal backlogs, and multi-state licensing friction, forcing highly compensated underwriters and producers to waste over 40% of their day on administrative data entry.',
-    solution: 'We deploy specialized insurance operational teams that integrate into your Agency Management Systems (AMS) to manage submission processing, index underwriting documentation, issue binders, and handle post-bind audits with 99.9% accuracy.',
+    id: 'pc-insurance',
+    title: 'Property & Casualty Insurance',
+    shortDesc: 'Helping agencies, MGAs, brokerages and carriers manage complete policy operations.',
+    iconName: 'Briefcase',
+    problem: 'P&C insurance offices suffer from constant backlog pressures on submissions, underwriting prep, endorsement requests, and certificate updates, locking skilled underwriters and agents in slow administrative cycles.',
+    solution: 'We provide highly trained, carrier-aligned operational specialists who integrate into your Agency Management Systems to clear backlogs, manage submissions, process certificates, and verify policies with Six Sigma precision.',
     benefits: [
       'Overcome backlogs within 48 hours of onboarding',
       'Unshackle licensed agents and underwriters to focus on premium growth',
-      'Maintain continuous compliance across state lines and Carrier guidelines',
-      'Extend operating hours to 24/7 with zero overnight premium cost'
+      'Extend operating hours to 24/7 with zero overnight premium cost',
+      'Absolute compliance across state lines and carrier rules'
     ],
     process: [
-      { step: '01', title: 'AMS Integration & Mapping', desc: 'Secure connection to Applied Epic, Vertafore, EZLynx or custom proprietary portal with strict SOC2 isolation.' },
-      { step: '02', title: 'Standard Operating Procedure Mapping', desc: 'Drafting deterministic process playbooks covering carrier appetite checks, quote comparisons, and binder issuance rules.' },
-      { step: '03', title: 'Pilot Activation & QA', desc: 'A dedicated team executes real-time submission indexing under a dual-oversight Quality Assurance loop.' },
-      { step: '04', title: 'SLA-Driven Steady State', desc: 'Full-scale operations with sub-2-hour turnarounds on urgent certificate issuances and overnight endorsements.' }
+      { step: '01', title: 'SOP Mapping & AMS Sync', desc: 'Secure connection to Applied Epic, AMS360, EZLynx, or proprietary platforms under strict SOC 2 controls.' },
+      { step: '02', title: 'Underwriting Checklist Standardisation', desc: 'Detailing risk appetites, comparative rating steps, and binder issuance rules.' },
+      { step: '03', title: 'Pilot Launch & Active QA', desc: 'Deploying certified assistants to handle real-time submissions under supervisor oversight.' },
+      { step: '04', title: 'SLA-Driven Steady State', desc: 'Overnight queue clearance and rapid certificate turnaround within a 12-hour window.' }
     ],
     results: [
-      { metric: '40%', label: 'Underwriter Productivity Gain', context: 'Refocusing high-cost personnel on risk evaluation rather than administrative entry.' },
-      { metric: '10 Min', label: 'Average Certificate Turnaround', context: 'Eliminating the classic 24-48 hour delay that risks losing wholesale broker business.' },
-      { metric: '99.9%', label: 'Data Input Accuracy', context: 'Rigorous dual-verification process matching data points across ACORD forms.' }
+      { metric: '40%', label: 'Underwriting Time Saved', context: 'Allowing domestic risk experts to focus strictly on binding premium.' },
+      { metric: '10 Min', label: 'Average COI Turnaround', context: 'Eliminating broker wait times to secure high placement speed.' },
+      { metric: '99.98%', label: 'Data Accuracy Level', context: 'Rigorous dual-verification audits matching ACORD data points.' }
+    ],
+    keyServices: [
+      'Submission Intake',
+      'Application Review',
+      'ACORD Processing',
+      'Carrier Quoting',
+      'Underwriting Support',
+      'Policy Binding',
+      'Policy Issuance',
+      'Policy Checking',
+      'Endorsements',
+      'COI Processing',
+      'Renewals',
+      'Billing Support',
+      'Document Management',
+      'Customer Service'
+    ],
+    platforms: [
+      'Applied Epic',
+      'AMS360',
+      'EZLynx',
+      'HawkSoft',
+      'QQCatalyst',
+      'AgencyZoom',
+      'NowCerts',
+      'Sagitta',
+      'JenesisNow',
+      'IVANS'
     ],
     faqs: [
-      { question: 'Which agency management systems do your teams support?', answer: 'Our specialists are highly trained across all industry standard portals including Vertafore (AMS360, Sagitta), Applied Systems (Epic, TAM), EZLynx, HawkSoft, and proprietary Salesforce InsurTech backends.' },
-      { question: 'How do you guarantee data privacy for carrier systems?', answer: 'We operate under strict SOC2 compliance frameworks. Our team accesses systems exclusively via audited virtual desktops (VDI) with copy/paste disabled and zero local data storage.' }
+      { question: 'Which agency systems do you support?', answer: 'We are fully native in Applied Epic, AMS360, EZLynx, HawkSoft, Sagitta, and QQCatalyst. Our specialists operate directly inside your instance.' },
+      { question: 'How is data privacy managed?', answer: 'We operate under SOC 2 Type II controls. Staff access your systems via secure Virtual Desktop Interfaces (VDIs) with print, download, and copy/paste functions disabled.' }
     ]
   },
   {
-    id: 'bpo',
-    title: 'Business Process Outsourcing',
-    shortDesc: 'High-performance outsourced back-office and front-office scaling designed to fit seamlessly into enterprise workflows.',
-    iconName: 'Briefcase',
-    problem: 'Scaling internal customer support and heavy-duty back-office administration in the US is prohibitively expensive, limited by local talent shortages, and experiences high agent turnover.',
-    solution: 'We provide specialized teams trained in complex enterprise processes, customer lifecycle support, and financial administration acting as a seamless extension of your domestic office.',
+    id: 'life-insurance',
+    title: 'Life Insurance',
+    shortDesc: 'Streamlining case management, medical records, and underwriting intake.',
+    iconName: 'Shield',
+    problem: 'Life insurance brokers and case managers spend hours chasing medical exams, cataloging voluminous Attending Physician Statements (APS), and reconciling commissions, which slows policy issuance and leads to high drop-off rates.',
+    solution: 'We deploy experienced life operations assistants to organize and index medical records, manage case logs, proactively follow up with clinics, and handle administrative policy maintenance.',
     benefits: [
-      'Up to 60% operational cost savings compared to US on-shore hiring',
-      'Bilingual capabilities to support diverse demographic markets',
-      'Scalable staffing capacity that flexes instantly during seasonal peaks (e.g. AEP, OEP)',
-      'Highly professional workspace with reliable enterprise fiber pipelines'
+      'Compress case processing times by up to 12 days',
+      'Reduce policy drop-off rates during medical underwriting phases',
+      'Enhance patient and advisor satisfaction with proactive tracking',
+      'Ensure absolute HIPAA compliance across all files'
     ],
     process: [
-      { step: '01', title: 'Talent Profile Alignment', desc: 'Sourcing university-educated professionals matching your exact technical profile and domain requirements.' },
-      { step: '02', title: 'Cultural & Product Immersion', desc: 'Intensive brand voice training to master specific localized US nuances and product values.' },
-      { step: '03', title: 'SLA Dashboard Setup', desc: 'Establishing transparent real-time metrics tracking First Contact Resolution (FCR) and Average Handle Time.' },
-      { step: '04', title: 'Continuous Upskilling', desc: 'Ongoing certification courses to ensure compliance with updated regulatory standards.' }
+      { step: '01', title: 'Secure Environment Handshake', desc: 'Setting up HIPAA-compliant, isolated remote desk access for secure data transfers.' },
+      { step: '02', title: 'APS Indexing & Case Mapping', desc: 'Standardizing medical history reviews and doctor follow-up guidelines.' },
+      { step: '03', title: 'Proactive Case Chasing', desc: 'Contacting clinics and exam providers to accelerate missing physician statement collection.' },
+      { step: '04', title: 'Pruned Delivery State', desc: 'Pruning cycle times and delivering complete, pre-indexed case files to underwriters.' }
     ],
     results: [
-      { metric: '60%', label: 'Total Resource Cost Reduction', context: 'Enabling capital reallocation into marketing, product development, and acquisition.' },
-      { metric: '88%', label: 'Employee Retention Rate', context: 'Significantly higher than standard call-center averages, ensuring stable long-term account knowledge.' },
-      { metric: '4.8/5', label: 'Average Customer CSAT Score', context: 'Unlocking white-glove customer journeys that protect and grow customer lifetime value.' }
+      { metric: '70%', label: 'APS Indexing Time Saved', context: 'Organizing medical sheets chronologically by specialty within minutes.' },
+      { metric: '12 Days', label: 'Case Cycle Time Compression', context: 'Eliminating administrative drag to bind policies faster.' },
+      { metric: '100%', label: 'HIPAA Auditing Compliance', context: 'Complete session logging on all Non-Public Personal Information (NPI).' }
+    ],
+    keyServices: [
+      'Case Management',
+      'APS Chasing',
+      'APS Summarization & Indexing',
+      'Exam Scheduling',
+      'Underwriting Intake',
+      'Policy Issuance',
+      'Commission Reconciliation',
+      'Customer Support',
+      'Beneficiary Changes',
+      'Policy Loans'
+    ],
+    platforms: [
+      'iPipeline',
+      'Paperless Solutions Group',
+      'SmartOffice',
+      'AgencyBloc',
+      'Salesforce'
     ],
     faqs: [
-      { question: 'What is your typical onboarding timeline for BPO teams?', answer: 'For standard administration, we can deploy pilot teams of 3-5 staff in 14-21 days. Larger, highly specialized teams requiring complex system certifications typically take 30-45 days.' },
-      { question: 'How are team members managed on a daily basis?', answer: 'Each client team is assigned a dedicated Operations Supervisor at our global center. They provide real-time monitoring, conduct QA reviews, and deliver weekly performance metrics to you.' }
+      { question: 'How do you handle sensitive medical documentation?', answer: 'Our operations are entirely HIPAA-compliant. Records are accessed read-only in secure cloud VDIs. No physical notes, mobile devices, or recording systems are allowed in our operations center.' },
+      { question: 'What is APS chasing?', answer: 'It is a systematic follow-up process where our team contacts physician offices, handles authorization requests, and manages the collection of outstanding statements.' }
     ]
   },
   {
-    id: 'digital-transform',
-    title: 'Digital Transformation',
-    shortDesc: 'Legacy system modernization, cloud migrations, and custom enterprise architecture tailored to eliminate legacy bottlenecks.',
-    iconName: 'Cpu',
-    problem: 'Enterprises remain chained to brittle legacy core systems and disjointed spreadsheets that create massive organizational silos, delay decision making, and block automation.',
-    solution: 'We modernize your technology stack from legacy platforms to API-driven cloud architectures, integrating Salesforce, customized ERPs, and secure web application frameworks.',
+    id: 'healthcare',
+    title: 'Healthcare',
+    shortDesc: 'Operational and administrative support for health insurance organizations and providers.',
+    iconName: 'Users',
+    problem: 'Health insurance operations are buried under messy group census rosters, constant eligibility inquiries, prior authorization backlogs, and complex claims pre-screening loops.',
+    solution: 'We deploy experienced healthcare back-office specialists who handle roster cleaning, run prior authorizations, pre-screen claim forms, and resolve enrollment inquiries securely.',
     benefits: [
-      'Eliminate high maintenance costs of ancient legacy servers',
-      'Create single sources of truth across finance, sales, and operations',
-      'Enable rapid go-to-market speed for new digital products',
-      'Ensure high-grade cybersecurity standards are baked into all custom applications'
+      'Cut healthcare administrative overhead by up to 60%',
+      'Accelerate prior authorizations to improve patient outcomes',
+      'Ensure 99.9% accuracy on claimant enrollment rosters',
+      'Deploy flexible staffing support during peak annual enrollment'
     ],
     process: [
-      { step: '01', title: 'Infrastructure Audit', desc: 'Deep-dive analysis of your current systems, data flows, and technological dependencies.' },
-      { step: '02', title: 'Architecture Blueprinting', desc: 'Designing modern cloud-native topologies utilizing microservices and API-first protocols.' },
-      { step: '03', title: 'Agile Implementation', desc: 'Iterative, zero-downtime migration of data systems and custom software deployments.' },
-      { step: '04', title: 'Post-Migration Support', desc: 'Comprehensive staff training and 24/7 technical monitoring to ensure seamless operational adoption.' }
+      { step: '01', title: 'Census Roster Standardisation', desc: 'Mapping employer rosters and patient data flows into clean structural schemas.' },
+      { step: '02', title: 'Prior Auth Protocol Review', desc: 'Reviewing clinical criteria and insurance carrier submission guidelines.' },
+      { step: '03', title: 'Active Queue Management', desc: 'Executing claims screening and authorization requests overnight.' },
+      { step: '04', title: 'SLA Dashboard Auditing', desc: 'Real-time throughput metrics ensuring sub-12-hour response times.' }
     ],
     results: [
-      { metric: '99.99%', label: 'Cloud System Uptime', context: 'Ensuring your client portals and tools are always online for brokers and customers.' },
-      { metric: '3.5x', label: 'Data Processing Speed', context: 'Shrinking complex database query and report times from hours to instantaneous seconds.' },
-      { metric: 'SOC2', label: 'Security Alignment', context: 'Protecting highly sensitive customer demographic and financial records.' }
+      { metric: '90%', label: 'Census Processing Speedup', context: 'Converting messy spreadsheets into system-ready enrollment blocks.' },
+      { metric: '60%', label: 'Support Cost Reduction', context: 'Dramatically lowering overhead compared to on-shore processing.' },
+      { metric: '99.95%', label: 'Claim Intake Precision', context: 'Eliminating manual errors to secure immediate carrier adjudication.' }
+    ],
+    keyServices: [
+      'Group Enrollment',
+      'Individual Enrollment',
+      'Eligibility Verification',
+      'Claim Pre-Screening',
+      'Claim Adjudication Support',
+      'Billing & Reconciliation',
+      'Broker Support',
+      'Customer Service',
+      'Provider Credentialing',
+      'Prior Authorization Support'
+    ],
+    platforms: [
+      'HealthConnect',
+      'Benefitfocus',
+      'Salesforce',
+      'TriZetto'
     ],
     faqs: [
-      { question: 'Will digital transformation require shutting down our daily business?', answer: 'Never. We specialize in parallel migrations where legacy systems remain active alongside new environments, with database syncing ensuring a smooth, zero-downtime cutover.' },
-      { question: 'Do you build custom portals for insurance agents or policyholders?', answer: 'Yes, we design and build secure, modern self-service portals that integrate directly with core systems, giving brokers, agents, and policyholders instant access to document retrieval and payments.' }
+      { question: 'Do you support healthcare provider credentialing?', answer: 'Yes. Our specialists manage provider application packages, verify licenses, track background checks, and submit portal files.' },
+      { question: 'How do you manage prior authorization reviews?', answer: 'Our analysts evaluate medical requests against carrier guidelines, verify doctor notes, and manage communication queues.' }
+    ]
+  },
+  {
+    id: 'medicare',
+    title: 'Medicare',
+    shortDesc: 'Compliance-centric CMS-aligned support for Medicare Advantage and Supplement brokers.',
+    iconName: 'FileText',
+    problem: 'Medicare enrollment is strictly governed by CMS guidelines. Operating during intense peak seasons (AEP/OEP) creates massive clerical queues, complex formulary mapping, and scope of appointment (SOA) filing blockages.',
+    solution: 'We provide compliance-certified Medicare back-office teams that process paper applications, audit call recordings, check formulary lists, and manage scope of appointments overnight.',
+    benefits: [
+      'Ensure 100% compliance with strict CMS marketing rules',
+      'Scale up operational staffing instantly during AEP/OEP surges',
+      'Process applications and record scopes within 4 hours of receipt',
+      'Avoid costly broker licensing and appointment violations'
+    ],
+    process: [
+      { step: '01', title: 'CMS Guideline Alignment', desc: 'Rigorously training our dedicated specialists on latest Medicare marketing regulations.' },
+      { step: '02', title: 'Formulary & System Mapping', desc: 'Setting up agency-specific formulary review standards and comparative raters.' },
+      { step: '03', title: 'SOA and Application Queueing', desc: 'Overnight data entry of scope forms and broker paper submissions.' },
+      { step: '04', title: 'Compliance & Audit Oversight', desc: 'Double-checking call logs and applications to guarantee 100% audit pass rates.' }
+    ],
+    results: [
+      { metric: '100%', label: 'CMS Audit Pass Rate', context: 'Guaranteed compliance with zero regulatory discrepancies.' },
+      { metric: '3.5x', label: 'AEP Seasonal Scaling', context: 'Instantly flexing operational capacity to handle Q4 enrollment surges.' },
+      { metric: '<4 Hrs', label: 'Average Application Turnaround', context: 'Accelerating processing times to lock in commissions early.' }
+    ],
+    keyServices: [
+      'Scope of Appointment (SOA) Processing',
+      'Application Quality Control',
+      'Call Recording Audit',
+      'CMS Compliance Checking',
+      'Client Retention Calls',
+      'Lead Triage',
+      'AEP/OEP Peak Staffing',
+      'Commission Tracking',
+      'Broker Onboarding',
+      'Document Indexing'
+    ],
+    platforms: [
+      'Sunfire',
+      'Connecture',
+      'MedicarePRO',
+      'Salesforce',
+      'AgencyBloc'
+    ],
+    faqs: [
+      { question: 'How do you handle AEP peak volume?', answer: 'We maintain a buffer of certified team members who can be deployed into your queues within 72 hours, allowing you to scale up 3x to handle enrollment surges.' },
+      { question: 'Do you audit telephonic enrollments?', answer: 'Yes. We listen to and score recorded calls against CMS-mandated script checkpoints to ensure 100% compliance and prevent commission chargebacks.' }
     ]
   },
   {
     id: 'ai-automation',
-    title: 'AI & Automation',
+    title: 'AI Automation',
     shortDesc: 'Leveraging Generative AI, LLMs, Intelligent Document Processing (IDP), and RPA to orchestrate frictionless, automated operations.',
     iconName: 'Sparkles',
-    problem: 'Firms waste millions paying humans to extract information from thousands of unstructured PDFs, claims, and emails, creating a slow, error-prone bottle-neck that degrades customer satisfaction.',
-    solution: 'We integrate advanced Generative AI and Intelligent Document Processing models that read, extract, analyze, and structure unstructured data with high confidence, pushing data directly into core databases.',
+    problem: 'High-volume processing centers waste millions manually reading unstructured PDFs, claims, and invoices, resulting in costly bottlenecks and slow broker response times.',
+    solution: 'We build secure, enterprise-isolated AI pipelines that read, extract, and structure data from ACORD forms, clinical statements, and claim files, backed by 24/7 Human-in-the-Loop validation.',
     benefits: [
-      'Automate up to 85% of manual, repetitive entry tasks',
-      'Extract data from multi-page documents (ACORD, medical records, financial statements) in seconds',
-      'Dramatically improve claims and quote response times to secure higher conversion rates',
-      'Deploy intelligent AI agents to automate basic client and broker intake triage'
+      'Automate up to 85% of standard administrative entries',
+      'Process complex documents (multi-page medicals/bills) in seconds',
+      'Maintain complete data security with isolated private cloud servers',
+      'Flexible, cost-effective scaling that handles sudden volume spikes with ease'
     ],
     process: [
-      { step: '01', title: 'Cognitive Task Discovery', desc: 'Identifying tasks that consume heavy manual effort and mapping where automated logic or LLMs fit.' },
-      { step: '02', title: 'Model Training & Prompt Tuning', desc: 'Training specialized models on your custom datasets under secure, enterprise-isolated cloud clusters.' },
-      { step: '03', title: 'Human-in-the-Loop Integration', desc: 'Designing elegant verification interfaces where staff confirm low-confidence extractions.' },
-      { step: '04', title: 'Continuous Model Training', desc: 'Systematically feeding edge-cases back into the learning model to scale extraction confidence.' }
+      { step: '01', title: 'Cognitive Task Discovery', desc: 'Auditing your operations to find high-volume tasks suited for AI models.' },
+      { step: '02', title: 'Model Tuning & Isolated Sync', desc: 'Configuring enterprise-isolated LLMs on your unique templates and documents.' },
+      { step: '03', title: 'Human-in-the-Loop Launch', desc: 'Deploying our validation specialists to verify low-confidence extractions.' },
+      { step: '04', title: 'Continuous Learning Loops', desc: 'Feeding edge cases back into model training to scale straight-through rates.' }
     ],
     results: [
-      { metric: '90%', label: 'Reduction in Processing Time', context: 'Compressing invoice, quote, or claim extraction from 30 minutes to under 20 seconds.' },
-      { metric: '85%', label: 'Straight-Through Processing', context: 'Achieving complete automation for standard, well-structured administrative documentation.' },
-      { metric: '10x', label: 'Scalability Factor', context: 'Handling sudden 10x spikes in document processing volumes with zero additional headcount.' }
+      { metric: '90%', label: 'Reduction in Queue Times', context: 'Compressing data extraction from 30 minutes to under 20 seconds.' },
+      { metric: '85%', label: 'Straight-Through Rate', context: 'Fully automating standard structured administrative documentation.' },
+      { metric: '10x', label: 'Scalability Factor', context: 'Handling massive transactional swings with zero additional headcount.' }
+    ],
+    keyServices: [
+      'Intelligent Document Extraction',
+      'Email Triage Automations',
+      'Custom RPA Integration',
+      'Human-in-the-Loop Validation',
+      'Private Cloud LLM Deployment',
+      'Continuous Model Tuning',
+      'API Middleware Development',
+      'Process Audits'
+    ],
+    platforms: [
+      'Python',
+      'LangChain',
+      'Google Cloud Document AI',
+      'UiPath',
+      'custom API pipelines'
     ],
     faqs: [
-      { question: 'Is our sensitive company or client data used to train public AI models?', answer: 'Absolutely not. We deploy dedicated, isolated models within private virtual clouds (AWS VPC, Azure or Google Cloud) ensuring your data is never leaked or used to train public models.' },
-      { question: 'What is a "Human-in-the-Loop" workflow?', answer: 'It is a security mechanism where the AI assigns a confidence score to each extracted field. If a hand-written signature or blurry scan scores below 95%, the document is routed to an operations specialist to verify, ensuring 100% data integrity.' }
-    ]
-  },
-  {
-    id: 'back-office',
-    title: 'Back Office Operations',
-    shortDesc: 'Frictionless data processing, document indexing, accounting reconciliation, and administrative support to keep organizations running.',
-    iconName: 'Layers',
-    problem: 'High administrative overhead from billing management, data reconciliation, record updates, and general documentation slows down executive decision-making and limits operational agility.',
-    solution: 'We build high-capacity back-office centers focused entirely on precise data processing, billing reconciliation, database maintenance, and administrative orchestration.',
-    benefits: [
-      'Guaranteed 100% database updates within designated SLAs',
-      'Continuous daily bookkeeping and accounting reconciliation cycles',
-      'Organized document storage with advanced modern tagging and folder hierarchies',
-      'A predictable, scalable cost structure tied strictly to transaction volumes'
-    ],
-    process: [
-      { step: '01', title: 'Workflow Audit', desc: 'Step-by-step mapping of back-office data pipelines, file structures, and administrative protocols.' },
-      { step: '02', title: 'Secure Environment Handshake', desc: 'Setting up audited remote environments with active credential management and zero-trust policies.' },
-      { step: '03', title: 'SOP Standardization', desc: 'Refining complex workflow steps into bulletproof, repeatable instruction manuals.' },
-      { step: '04', title: 'Operational Launch', desc: 'Deploying dedicated back-office teams with active daily supervision and QA checks.' }
-    ],
-    results: [
-      { metric: '24 Hr', label: 'Guaranteed Update SLA', context: 'Ensuring all ledger entries and database updates are executed overnight.' },
-      { metric: '100%', label: 'Compliance Audit Trailing', context: 'Comprehensive session logging and user action audits for every executed file update.' },
-      { metric: '55%', label: 'Back Office Cost Savings', context: 'Drastically cutting accounting, payroll, and record management administrative costs.' }
-    ],
-    faqs: [
-      { question: 'How do you handle accounting or bookkeeping security?', answer: 'Our financial and back-office team members access accounting software via strict multi-factor authentication, using read-only or restricted-role credentials with zero payment-execution capabilities.' },
-      { question: 'Can you work overnight to process data for our start-of-day?', answer: 'Yes, our global operations center supports overlapping and 24/7 rotational shifts. We can execute data entries while your US offices are closed, so your team wakes up to pristine, fully updated dashboards.' }
-    ]
-  },
-  {
-    id: 'consulting',
-    title: 'Business Consulting',
-    shortDesc: 'Strategic operational planning, workflow optimization, and performance benchmarking to unlock rapid enterprise growth.',
-    iconName: 'Users',
-    problem: 'Fast-growing enterprises scale haphazardly, resulting in fragmented workflows, overlapping software subscriptions, redundant payroll overhead, and highly fragile operational systems.',
-    solution: 'Our expert consulting team conducts deep-dive operations audits, identifies hidden bottlenecks, benchmarks performance metrics, and redesigns your organizational architecture.',
-    benefits: [
-      'Unbiased, data-driven analysis of operational leakages and resource waste',
-      'Clear, actionable step-by-step operational improvement roadmaps',
-      'Software stack consolidation recommendations that slash subscription bloat',
-      'Direct, continuous advisory support from seasoned enterprise operational experts'
-    ],
-    process: [
-      { step: '01', title: 'Discovery & Stakeholder Interviews', desc: 'Deep-dive interviews across executive leadership and frontline teams to identify friction.' },
-      { step: '02', title: 'Data-Driven Friction Analysis', desc: 'Evaluating processing logs, response times, and software utilization metrics to locate leakages.' },
-      { step: '03', title: 'Blueprint Presentation', desc: 'Delivering a detailed operational redesign strategy with concrete ROI calculations.' },
-      { step: '04', title: 'Implementation Coaching', desc: 'Guiding your leadership through change management and team alignment during operational rollouts.' }
-    ],
-    results: [
-      { metric: '30%', label: 'Efficiency Improvement', context: 'Streamlining cross-departmental tasks and automated hand-offs.' },
-      { metric: '15%', label: 'Software Spend Consolation', context: 'Locating and terminating redundant, expensive SaaS licenses.' },
-      { metric: '90 Days', label: 'Average ROI Realization', context: 'Rapid return on consulting advisory costs through unlocked capacity.' }
-    ],
-    faqs: [
-      { question: 'How do your consultants interact with our existing internal teams?', answer: 'We act as collaborative partners. We work alongside your department heads, collecting insight and feedback to ensure all operational recommendations are highly realistic and enthusiastically adopted.' },
-      { question: 'Do you assist with the actual execution of the consulting roadmap?', answer: 'Yes! Unlike standard firms that just deliver a PDF report, we can actively deploy our own technology and BPO teams to execute the recommended integrations and operational expansions.' }
-    ]
-  },
-  {
-    id: 'excellence',
-    title: 'Operational Excellence',
-    shortDesc: 'Continuous improvement frameworks (Six Sigma, Lean) mapped directly to your processes to maximize output quality.',
-    iconName: 'Shield',
-    problem: 'Even modern organizations suffer from persistent variation in product or service quality, high error rates in processing, and general waste from unstandardized procedures.',
-    solution: 'We inject Lean Six Sigma certified operational managers into your workflows to implement systematic error-reduction frameworks and continuous QA cycles.',
-    benefits: [
-      'Drive defect rates down to near-zero statistical margins',
-      'Standardize employee training protocols to guarantee uniform service quality',
-      'Optimize cycle times to outpace market competitors',
-      'Instill a data-driven, self-correcting operational culture'
-    ],
-    process: [
-      { step: '01', title: 'Define & Measure Key Metrics', desc: 'Establishing precise baselines for error rates, cycle speeds, and process variation.' },
-      { step: '02', title: 'Root Cause Analysis', desc: 'Using continuous audits and diagnostic tools to isolate the exact drivers of defects.' },
-      { step: '03', title: 'Systematic Redesign', desc: 'Redesigning workflows, checklist structures, and approval barriers to eliminate human error.' },
-      { step: '04', title: 'Control Loop Establishment', desc: 'Deploying continuous statistical controls and real-time dashboards to catch and fix deviation early.' }
-    ],
-    results: [
-      { metric: '99.98%', label: 'Process Precision Level', context: 'Achieving institutional excellence on heavy transaction sets.' },
-      { metric: '45%', label: 'Cycle Time Compression', context: 'Removing wasteful wait-states and redundant multi-layered approvals.' },
-      { metric: 'Zero', label: 'Unchecked Deviations', context: 'Every single customer experience or claim is audited against the same quality standard.' }
-    ],
-    faqs: [
-      { question: 'What operational frameworks do you utilize?', answer: 'We leverage a combination of Lean methodology (waste reduction), Six Sigma (defect reduction), and agile management to keep your business operating at maximum peak performance.' },
-      { question: 'Does this apply only to heavy manufacturing, or to digital offices?', answer: 'These principles apply beautifully to digital office environments. Processing an insurance policy, reconciling a general ledger, or responding to support tickets are all digital pipelines ripe for optimization.' }
-    ]
-  },
-  {
-    id: 'managed-services',
-    title: 'Managed Services',
-    shortDesc: 'Comprehensive technology, operations, and platform management under strict enterprise SLA agreements.',
-    iconName: 'Server',
-    problem: 'Managing complex digital platforms, multi-cloud hosting, database backups, and secure system operations internally distracts companies from core sales and relationship building.',
-    solution: 'We assume comprehensive, 24/7 operational responsibility for your cloud databases, agent portals, data extraction engines, and core internal tools under contract-backed SLAs.',
-    benefits: [
-      'Peace of mind with guaranteed response times and around-the-clock incident management',
-      'Routine, automated system security patching, audits, and cloud backups',
-      'Predictable monthly flat-rate IT and platform operating budgets',
-      'Instant access to senior cloud engineers, developers, and systems administrators'
-    ],
-    process: [
-      { step: '01', title: 'Platform Discovery', desc: 'Comprehensive mapping of server configurations, APIs, databases, and third-party SaaS pipelines.' },
-      { step: '02', title: 'Security Hardening', desc: 'Implementing zero-trust access management, encryption-at-rest, and active DDoS shielding.' },
-      { step: '03', title: 'SLA Contract Alignment', desc: 'Signing clear performance contracts specifying uptime, recovery times, and reaction speeds.' },
-      { step: '04', title: '24/7/365 Monitoring', desc: 'Activating continuous digital tracking loops with direct paging to our on-call operations engineers.' }
-    ],
-    results: [
-      { metric: '24/7/365', label: 'Continuous Active Shield', context: 'Never leaving your critical digital infrastructure unmonitored.' },
-      { metric: '<15 Min', label: 'Average Critical Incident Response', context: 'Direct, rapid resolution of unexpected server or platform blockages.' },
-      { metric: '100%', label: 'Routine Data Backups Verified', context: 'Automated off-site database mirrors to ensure complete business continuity.' }
-    ],
-    faqs: [
-      { question: 'How do you handle emergency platform failures at 2 AM?', answer: 'We maintain fully staffed, overlapping engineering teams across multiple time zones. If an alert fires, our active engineers respond immediately and coordinate resolution before your US team opens.' },
-      { question: 'Do you support custom-built applications, or only off-the-shelf software?', answer: 'We support both! We specialize in managing complex, bespoke cloud platforms, custom-coded web portals, database clusters, and specialized server-side APIs.' }
+      { question: 'Are public AI models used for our data?', answer: 'Never. All customer data and documents reside in private, isolated virtual private cloud clusters. No data is ever shared with public training sets.' },
+      { question: 'What is your Human-in-the-Loop model?', answer: 'If an AI model has low confidence in extracting a field (like a blurry or handwritten signature), it flags the document for our 24/7 validation team, who corrects it within seconds.' }
     ]
   }
 ];
@@ -240,219 +254,109 @@ export const INDUSTRIES_DATA: IndustryDetail[] = [
     id: 'pc-insurance',
     title: 'Property & Casualty Insurance',
     tagline: 'Supercharge submission volume and slash turnaround times for P&C agencies, brokers, and carriers.',
-    description: 'The Property & Casualty landscape is fiercely competitive. Brokers and underwriters must move at lightning speed to capture premium. Our specialized P&C operations teams handle the heavy manual burden of ACORD data entry, carrier appetite checks, and quote comparisons, enabling your team to bind business ahead of competitors.',
+    description: 'We manage complete policy operations from submission intake through renewals management, integrating natively inside Applied Epic, AMS360, and EZLynx.',
     challenges: [
-      'Inconsistent formatting across commercial client submission sheets',
-      'Entering hundreds of vehicles, properties, or employee lists into carrier quote portals',
-      'Massive certificate of insurance (COI) backlogs during seasonal renewal windows'
+      'Entering multi-line risks and vehicle lists manually across carrier rater portals',
+      'Seasonal certificate of insurance backlogs stalling renewal placements',
+      'Inconsistent formatting across commercial client submission sheets'
     ],
     solutions: [
-      'Dedicated ACORD extraction experts to digitize paper forms instantly',
-      'Bulk spreadsheet transformation pipelines to standard carrier upload formats',
-      'Overnight processing teams to clear certificates and endorsements before your office opens'
+      'Dedicated overnight P&C specialists pre-keying rater entries',
+      'COI and endorsement processing cleared within sub-2-hour windows',
+      'Standardizing paper ACORD files into digital formats with Six Sigma precision'
     ],
     keyMetrics: [
       { label: 'Cycle Time Reduction', value: '45%' },
-      { label: 'Quote Turnaround Speed', value: 'Under 1 Hr' },
-      { label: 'AMS Input Accuracy', value: '99.9%' }
+      { label: 'Quote Speed', value: 'Under 1 Hr' },
+      { label: 'Input Accuracy', value: '99.98%' }
     ],
-    seoKeywords: ['Property and Casualty operations', 'P&C commercial submissions', 'ACORD data extraction', 'insurance agency outsourcing']
+    seoKeywords: ['P&C commercial submissions', 'Applied Epic outsourcing', 'insurance virtual assistant', 'ACORD processing help']
   },
   {
-    id: 'homeowners',
-    title: 'Homeowners Insurance',
-    tagline: 'Frictionless underwriting intake and automated quote routing for residential lines.',
-    description: 'Homeowners insurance requires massive transaction speeds and high-accuracy risk data verification. We help residential agencies and InsurTech platforms manage catastrophic risk checks, flood zone lookups, property tax history pulling, and immediate quote preparation.',
-    challenges: [
-      'High volumes of consumer quote requests during real-estate seasonal peaks',
-      'Verifying outdated roof ages, home building materials, and physical hazard records manually',
-      'Routing leads across multiple carrier sites to secure competitive rates'
-    ],
-    solutions: [
-      'Automated API lookups combined with specialized human verification for hazard checking',
-      'Real-time comparative rater updates and application indexing',
-      'Immediate trigger alerts to follow up on abandoned consumer quote carts'
-    ],
-    keyMetrics: [
-      { label: 'Average Quote Cycle', value: '15 Mins' },
-      { label: 'Aged Submission Clearing', value: '100%' },
-      { label: 'Support Team Cost Savings', value: '55%' }
-    ],
-    seoKeywords: ['Homeowners insurance underwriting support', 'residential policy processing', 'personal lines insurance outsourcing']
-  },
-  {
-    id: 'life',
+    id: 'life-insurance',
     title: 'Life Insurance',
-    tagline: 'Rigorous medical record indexing and high-security customer case file administration.',
-    description: 'Life insurance processing requires the highest levels of data security and medical record indexing precision. Our operational professionals assist case managers in organizing multi-page medical records, requesting physician statements, and ensuring absolute privacy under HIPAA standards.',
+    tagline: 'Frictionless case management and medical records indexing.',
+    description: 'Streamlining case files, medical history retrieval, exam coordination, and commission tracking under strict HIPAA controls.',
     challenges: [
-      'Hours spent reading and categorizing voluminous Attending Physician Statements (APS)',
-      'High policy drop-off rates due to long underwriting and medical review wait times',
-      'Strict HIPAA compliance audits required across all administrative pipelines'
+      'Underwriters bogged down reading voluminous Attending Physician Statements (APS)',
+      'Chasing medical exam clinics and physician offices for outstanding records',
+      'Advisor frustration with slow policy cycle times leading to placement drops'
     ],
     solutions: [
-      'Intelligent medical record indexing to organize pages by doctor specialty and chronology',
-      'Rigorous case file tracking to proactively prompt physicians for missing records',
-      'Secure, virtual-desktop environments that prevent localized patient record storage'
+      'Specialized operations specialists chronologically indexing and summarizing APS reports',
+      'Proactive clinic outreach teams tracking down authorization forms daily',
+      'Seamless case management tracking inside iPipeline and SmartOffice'
     ],
     keyMetrics: [
-      { label: 'APS Indexing Time Saved', value: '70%' },
-      { label: 'Case Cycle Time Shrinkage', value: '12 Days' },
-      { label: 'Security Compliance Auditing', value: '100%' }
+      { label: 'APS Indexing Saved', value: '70%' },
+      { label: 'Cycle Time Saved', value: '12 Days' },
+      { label: 'HIPAA Audits Passed', value: '100%' }
     ],
-    seoKeywords: ['Life insurance case management support', 'medical records indexing', 'HIPAA compliant back office', 'APS collection outsourcing']
+    seoKeywords: ['Life insurance case management support', 'medical record indexing', 'HIPAA compliant back office', 'APS collection outsourcing']
   },
   {
-    id: 'health',
-    title: 'Health Insurance',
-    tagline: 'Streamlining group health submissions and annual enrollment peak staffing operations.',
-    description: 'We enable health insurance organizations to scale operations rapidly, managing individual and group enrollment processing, claim documentation indexing, and agent-of-record updates. Our talent pool scales smoothly to support you during intense Open Enrollment Periods (OEP).',
+    id: 'healthcare',
+    title: 'Healthcare',
+    tagline: 'Operational and administrative support for health organizations and providers.',
+    description: 'Processing group census data, verifying patient eligibility, pre-screening claims, and managing credentialing pipelines.',
     challenges: [
-      'Inundation of applications during the annual Open Enrollment Period (OEP)',
-      'Manually verifying employee eligibility rosters across diverse employer benefit formats',
-      'Slow response times in carrier portal uploads that risk premium loss'
+      'Sifting through messy, unstandardized group census excel sheets during enrollment',
+      'Slow prior authorization reviews delaying patient treatments and provider cash flow',
+      'Clerical claim entry errors causing adjudication friction and insurance carrier rejections'
     ],
     solutions: [
-      'A flexible "on-demand" team model that expands 3x to handle Q4 enrollment surges',
-      'Roster matching services that clean, verify, and structure group census data',
-      'Automated verification pipelines to confirm carrier commission eligibility'
+      'Roster cleaning and verification services transforming census files into database formats',
+      'Dedicated health support experts processing prior authorizations under strict medical guidelines',
+      'Claims intake screening and administrative support inside TriZetto and Benefitfocus'
     ],
     keyMetrics: [
-      { label: 'Peak Capacity Scaling Factor', value: '3.5x' },
-      { label: 'Group Census Processing Speed', value: '90% Faster' },
-      { label: 'Commission Recovery Auditing', value: '$25k+/yr' }
+      { label: 'Census Processing Speed', value: '90% Faster' },
+      { label: 'Administrative Cost Cut', value: '60%' },
+      { label: 'Claim Accuracy', value: '99.95%' }
     ],
-    seoKeywords: ['Health insurance group census', 'OEP enrollment support', 'health insurance operations outsourcing']
+    seoKeywords: ['Health insurance group census', 'prior authorization support', 'medical credentialing services', 'claims back office help']
   },
   {
     id: 'medicare',
-    title: 'Medicare Insurance',
-    tagline: 'Compliance-centric CMS-aligned support for Medicare Advantage and Supplement brokers.',
-    description: 'Medicare enrollment is governed by some of the strictest CMS marketing guidelines and operational timelines. Our teams are rigorously trained in Medicare compliance, helping Medicare agencies manage scope-of-appointment forms, call recording indexing, and application processing.',
+    title: 'Medicare',
+    tagline: 'Compliance-centric CMS-aligned support for Medicare brokers and agencies.',
+    description: 'Specialized, certified Medicare support teams managing scopes of appointment, telephonic audit reviews, and peak season enrollments.',
     challenges: [
-      'Navigating complex CMS regulations with zero margin for operational error',
-      'Heavy clerical burdens during the brief, high-stakes Annual Enrollment Period (AEP)',
-      'Matching customer prescription lists across countless drug formulary schedules'
+      'CMS compliance audits requiring 100% precision on call recordings and paper SOAs',
+      'Extreme transaction surges during brief AEP/OEP annual enrollment periods',
+      'Formulary matching across multiple carriers and localized zip code drug schedules'
     ],
     solutions: [
-      'Rigorous, continuous CMS compliance training for all dedicated Medicare agents',
-      'Overnight data entry of scopes-of-appointment (SOA) and paper applications',
-      'Advanced formulary verification tools managed by trained operational specialists'
+      'Dedicated compliance-trained Medicare operations squads auditing telephonic calls',
+      'Flexible scale-up teams ready to deploy into customer databases within 72 hours',
+      'Specialized formulary checkers validating drug lists inside Sunfire and Connecture'
     ],
     keyMetrics: [
       { label: 'AEP Submission Accuracy', value: '100%' },
-      { label: 'Compliance Audit Pass Rate', value: '100%' },
-      { label: 'Carrier Submission Turnaround', value: '<4 Hrs' }
+      { label: 'Compliance Pass Rate', value: '100%' },
+      { label: 'Carrier Turnaround', value: '<4 Hrs' }
     ],
     seoKeywords: ['Medicare broker back office', 'AEP Medicare support services', 'CMS compliant outsourcing']
   },
   {
-    id: 'agencies',
-    title: 'Insurance Agencies',
-    tagline: 'Liberating licensed retail agents from clerical data entry to focus on writing policies.',
-    description: 'Retail insurance agencies grow by building client relationships, not by completing data entry. We assume full responsibility for your standard administrative burdens, including certificate generation, policy checking, billing tracking, and general client database updates.',
+    id: 'ai-automation',
+    title: 'AI Automation',
+    tagline: 'Intelligent operational scaling powered by secure enterprise AI and human validation.',
+    description: 'Integrating private Large Language Models, document extraction models, and robotics with 24/7 human oversight.',
     challenges: [
-      'Producers wasting prime sales hours chasing document signatures and payment records',
-      'Delayed policy checking that allows carrier coverage mismatches to slip through',
-      'High turnover of customer service representatives (CSR) due to heavy administrative burnout'
+      'Legacy OCR software cracking under unstandardized or handwritten paperwork',
+      'Prohibitively high developer payroll spent coding manual API edge cases',
+      'Fears of customer data exposure or private records leakages in public AI loops'
     ],
     solutions: [
-      'Virtual administrative assistance to draft renewal letters and collect client details',
-      'Rigorous policy checking matching bound quotes directly against issued carrier contracts',
-      'Low-cost, high-performance offshore CSR extensions to field first-level queries'
+      'Deploying advanced LLM document parsers backed by 24/7 validation experts',
+      'Building custom Python API middleware to interface with systems with zero downtime',
+      'Establishing enterprise-isolated virtual private clouds with copy-disable rules'
     ],
     keyMetrics: [
-      { label: 'Producer Sales Hours Unlocked', value: '+15 Hr/wk' },
-      { label: 'Errors & Omissions Mitigation', value: 'Significant' },
-      { label: 'Agency Headcount ROI', value: '3.2x' }
-    ],
-    seoKeywords: ['Retail agency back office help', 'insurance agency CSR virtual assistant', 'policy checking services']
-  },
-  {
-    id: 'carriers',
-    title: 'Insurance Carriers',
-    tagline: 'High-scale risk screening, claims indexing, and back-office policy life cycle management.',
-    description: 'We partner with enterprise insurance carriers to manage high-volume back-office processes, including policy issuing, loss run indexing, claim documentation intake, and premium audit orchestration. Our operational teams provide contract-backed throughput and strict data processing SLAs.',
-    challenges: [
-      'Manual, high-volume processing of property loss run reports',
-      'Severe administrative overhead in checking physical inspector property photos and risk reports',
-      'Backlogs in processing customer-initiated policy cancellations and name changes'
-    ],
-    solutions: [
-      'Intelligent OCR pipelines coupled with human verification to structure loss run histories',
-      'Dedicated property risk underwriters assistants to flag obvious underwriting violations',
-      'Fast, automated overnight queue clearing for policy maintenance workflows'
-    ],
-    keyMetrics: [
-      { label: 'Loss Run Processing Speed', value: '80% Faster' },
-      { label: 'Underwriting Queue Cleared', value: 'Daily' },
-      { label: 'Carrier Operating Expense Ratio', value: '-12%' }
-    ],
-    seoKeywords: ['Carrier policy lifecycle outsourcing', 'loss run processing', 'carrier risk screening assistants']
-  },
-  {
-    id: 'mgas',
-    title: 'Managing General Agents (MGAs)',
-    tagline: 'Underwriting assistance and quote prep services to maximize your binding capacity.',
-    description: 'Managing General Agents bridge the gap between brokers and carriers, requiring both rapid quote speeds and absolute risk integrity. We deploy dedicated underwriting assistants who screen incoming broker submissions, verify risk information, pull credit score records, and draft binder contracts.',
-    challenges: [
-      'Broker submissions arriving with incomplete risk data or missing ACORD forms',
-      'MGA underwriters spending high-cost hours weeding out out-of-appetite submissions',
-      'Tight binding authorities requiring meticulous compliance with varying carrier treaties'
-    ],
-    solutions: [
-      'Frontline intake teams that follow up with brokers for missing documentation instantly',
-      'Aged submission triaging matching incoming risks to specific carrier guidelines',
-      'Pre-underwriting support including distance-to-coast, high-fire-risk, and credit score pulling'
-    ],
-    keyMetrics: [
-      { label: 'Underwriting Time Saved', value: '4 Hours/day' },
-      { label: 'Broker Response Speed', value: 'Top 10% of Market' },
-      { label: 'Binder Compliance Level', value: '100%' }
-    ],
-    seoKeywords: ['MGA underwriting virtual assistants', 'binding authority support', 'MGA operations outsourcing']
-  },
-  {
-    id: 'wholesale-brokers',
-    title: 'Wholesale Brokers',
-    tagline: 'High-volume market-routing support to place difficult risks at premium speeds.',
-    description: 'Wholesale brokers operate under massive pressure, routing hard-to-place risks across hundreds of markets. Our operational teams support wholesale operations by managing high-volume submission indexing, building market comparative files, and coordinating policy issuance with MGAs.',
-    challenges: [
-      'Managing massive data spreads across specialized multi-market programs',
-      'Inability to clear heavy submission backlogs leading retail agents to seek other channels',
-      'Slow policy delivery times that damage retail agency trust'
-    ],
-    solutions: [
-      'Trained submission specialists who organize and route risk profiles to carriers',
-      'Real-time spreadsheet consolidation of multiple carrier quotes for easy comparison',
-      'Overnight document preparation to issue policies and endorsements to retail agents'
-    ],
-    keyMetrics: [
-      { label: 'Broker Capacity Unlocked', value: '2x' },
-      { label: 'Submission Backlog Clearance', value: 'Within 24 Hours' },
-      { label: 'Retail Broker CSAT', value: '95%' }
-    ],
-    seoKeywords: ['Wholesale broker submissions support', 'commercial market routing outsourcing', 'wholesale insurance operations']
-  },
-  {
-    id: 'insurtech',
-    title: 'InsurTech Companies',
-    tagline: 'Blending human verification with digital tools to maximize technology margins.',
-    description: 'InsurTechs promise instantaneous digital insurance binding. However, complete automation is often an illusion, with complex edge cases requiring rapid human oversight. We provide the "Human-in-the-Loop" operational teams that verify automated extracts, process complex claims, and support custom APIs.',
-    challenges: [
-      'System-breaking API errors or extraction failures on unstandardized documents',
-      'Escalating engineering costs spent trying to write code for rare data edge cases',
-      'High transaction dropouts when consumer inquiries require manual review'
-    ],
-    solutions: [
-      'Instant human-in-the-loop operational backups responding to low-confidence extracts',
-      'Rapid, cost-effective manual processing of complex edge cases that aren\'t worth coding',
-      'Integration into your internal Slack or custom APIs for near-instant ticket resolution'
-    ],
-    keyMetrics: [
-      { label: 'API Edge Case Processing', value: '<2 Mins' },
-      { label: 'Engineering Overhead Saved', value: '45%' },
-      { label: 'Platform Straight-Through Rate', value: '98%+' }
+      { label: 'Data Extraction Speed', value: '90% Faster' },
+      { label: 'Manual Entry Bypassed', value: '85%' },
+      { label: 'AI Scalability Factor', value: '10x' }
     ],
     seoKeywords: ['InsurTech human in the loop', 'automated extraction verification', 'InsurTech backend operations']
   }

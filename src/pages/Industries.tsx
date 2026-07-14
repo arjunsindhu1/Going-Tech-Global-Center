@@ -17,7 +17,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { PageType, IndustryDetail } from '../types';
-import { INDUSTRIES_DATA } from '../data';
+import { INDUSTRIES_DATA, SERVICES_DATA } from '../data';
 
 interface IndustriesProps {
   setCurrentPage: (page: PageType) => void;
@@ -27,28 +27,19 @@ export default function Industries({ setCurrentPage }: IndustriesProps) {
   const [activeInd, setActiveInd] = useState<string>('pc-insurance');
 
   const activeIndustry = INDUSTRIES_DATA.find((i) => i.id === activeInd) || INDUSTRIES_DATA[0];
+  const activeServiceInfo = SERVICES_DATA.find((s) => s.id === activeInd);
 
   const getIndustryIcon = (id: string) => {
     switch (id) {
       case 'pc-insurance':
         return <Building className="w-4 h-4" />;
-      case 'homeowners':
-        return <Globe className="w-4 h-4" />;
-      case 'life':
+      case 'life-insurance':
         return <ShieldCheck className="w-4 h-4" />;
-      case 'health':
+      case 'healthcare':
         return <HeartPulse className="w-4 h-4" />;
       case 'medicare':
         return <FileCheck className="w-4 h-4" />;
-      case 'agencies':
-        return <Coins className="w-4 h-4" />;
-      case 'carriers':
-        return <Building className="w-4 h-4" />;
-      case 'mgas':
-        return <ShieldCheck className="w-4 h-4" />;
-      case 'wholesale':
-        return <Coins className="w-4 h-4" />;
-      case 'insurtech':
+      case 'ai-automation':
         return <Zap className="w-4 h-4" />;
       default:
         return <Building className="w-4 h-4" />;
@@ -63,7 +54,7 @@ export default function Industries({ setCurrentPage }: IndustriesProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
           <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Market Alignment</span>
           <h1 className="text-3xl sm:text-5xl font-bold font-display text-[#081B8C] tracking-tight">
-            Who We Serve: 10 Core Industry Verticals
+            Who We Serve: 5 Core Industry Verticals
           </h1>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto leading-relaxed">
             Discover how Going Technologies engineers custom operational workflows for P&C, Health, Life, InsurTech, Medicare platforms, and wholesale brokerage channels.
@@ -220,6 +211,38 @@ export default function Industries({ setCurrentPage }: IndustriesProps) {
                 </ul>
               </div>
             </div>
+
+            {/* Key Services & Supported Systems */}
+            {activeServiceInfo && activeServiceInfo.keyServices && activeServiceInfo.platforms && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 shadow-sm space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#081B8C] border-b border-gray-100 pb-2 font-display">
+                    Key Workflows Handled
+                  </h4>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-xs text-gray-500 font-medium">
+                    {activeServiceInfo.keyServices.slice(0, 10).map((ks, idx) => (
+                      <li key={idx} className="flex gap-2 items-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2F6DFF] shrink-0" />
+                        <span className="truncate">{ks}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 shadow-sm space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#081B8C] border-b border-gray-100 pb-2 font-display">
+                    Supported Systems & Software
+                  </h4>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {activeServiceInfo.platforms.map((plat, idx) => (
+                      <span key={idx} className="bg-[#F8FAFF] border border-[#DCE7FF]/70 text-[#081B8C] text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                        {plat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Outcome KPI highlights */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

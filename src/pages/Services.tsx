@@ -61,7 +61,7 @@ const challenges = [
 ];
 
 export default function Services({ setCurrentPage, activeServiceId, setActiveServiceId }: ServicesProps) {
-  const [activeTab, setActiveTab] = useState<string>(activeServiceId || 'insurance-ops');
+  const [activeTab, setActiveTab] = useState<string>(activeServiceId || 'property-casualty');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<number>(0);
 
@@ -111,7 +111,7 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
           <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Enterprise Capabilities</span>
           <h1 className="text-3xl sm:text-5xl font-bold font-display text-[#081B8C] tracking-tight">
-            Our 8 Core Specialized Services
+            Our 5 Core Specialized Services
           </h1>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto leading-relaxed">
             Toggle between our core divisions below to examine operational blueprints, onboarding processes, metrics, and service compliance guidelines.
@@ -228,6 +228,41 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
                 </p>
               </div>
             </div>
+
+            {/* Key Services and Supported Platforms side-by-side */}
+            {activeService.keyServices && activeService.platforms && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Key Services card */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 shadow-sm space-y-6">
+                  <h3 className="text-base font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-3 font-display">
+                    Key Services Performed
+                  </h3>
+                  <div className="space-y-3">
+                    {activeService.keyServices.map((ks, index) => (
+                      <div key={index} className="flex gap-3 items-start">
+                        <CheckCircle2 className="w-4 h-4 text-[#2F6DFF] shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700 leading-relaxed font-semibold">{ks}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Supported Platforms card */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 shadow-sm space-y-6">
+                  <h3 className="text-base font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-3 font-display">
+                    Supported Systems & Software
+                  </h3>
+                  <div className="space-y-3">
+                    {activeService.platforms.map((plat, index) => (
+                      <div key={index} className="flex gap-3 items-start">
+                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0 mt-1.5" />
+                        <span className="text-xs text-gray-700 leading-relaxed font-semibold">{plat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Benefits Cards */}
             <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 shadow-sm space-y-6">
