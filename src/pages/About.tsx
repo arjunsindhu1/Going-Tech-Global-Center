@@ -1,5 +1,23 @@
 import { motion } from 'motion/react';
-import { Shield, Eye, Target, Award, Users, ChevronRight, Compass, CheckCircle2, MapPin, TrendingUp, DollarSign } from 'lucide-react';
+import {
+  Shield,
+  Eye,
+  Target,
+  Award,
+  Users,
+  ChevronRight,
+  Compass,
+  CheckCircle2,
+  MapPin,
+  TrendingUp,
+  DollarSign,
+  Cpu,
+  Sparkles,
+  MessageSquare,
+  Activity,
+  ArrowRight,
+  Workflow
+} from 'lucide-react';
 import { PageType } from '../types';
 import ClientJourney from '../components/ClientJourney';
 
@@ -31,18 +49,38 @@ export default function About({ setCurrentPage }: AboutProps) {
     }
   ];
 
-  const milestones = [
-    { year: '2021', title: 'Company Inception', desc: 'Going Technologies established in Visakhapatnam, India, focusing on operational consulting and workflow optimization.' },
-    { year: '2022', title: 'Global Delivery Expansion', desc: 'Expanded our high-capacity Global Delivery Center in Visakhapatnam to support round-the-clock queue clearing.' },
-    { year: '2023', title: 'SOC 2 Type II Certification', desc: 'Passed comprehensive independent audits validating our zero-trust VDI architecture and security controls.' },
-    { year: '2024', title: 'InsurTech & BPO Expansion', desc: 'Introduced intelligent document extraction and API-driven Human-in-the-Loop validation services.' },
-    { year: '2025', title: 'Strategic Scale Milestone', desc: 'Successfully supporting over 50 large-scale wholesale brokerages, managing $2B+ in annual premium operations.' },
-    { year: '2026', title: 'Present Day Leader', desc: 'Empowering premium digital transformation, automated data parsing, and high-performance operations internationally.' }
+  // 1. Built Around Operational Excellence cards
+  const excellenceCards = [
+    {
+      title: 'Operational Excellence',
+      desc: 'Six Sigma governed queues running continuous quality assurance checks to eliminate errors and maintain near-flawless transaction delivery.',
+      icon: <Target className="w-6 h-6 text-[#081B8C]" />,
+      color: 'bg-blue-500/5 hover:border-blue-500/40 shadow-blue-500/5'
+    },
+    {
+      title: 'Specialized Industry Knowledge',
+      desc: 'Our staff are strictly domain-specific. Specialists undergo deep carrier-aligned licensing, certificate of insurance (COI), and underwriting education.',
+      icon: <Award className="w-6 h-6 text-[#2F6DFF]" />,
+      color: 'bg-purple-500/5 hover:border-purple-500/40 shadow-purple-500/5'
+    },
+    {
+      title: 'Scalable Global Delivery',
+      desc: 'High-speed secure facility operating 24/7. Instantly flex capacity during peak quarters without recruitment overhead or local payroll friction.',
+      icon: <Compass className="w-6 h-6 text-[#A93DFF]" />,
+      color: 'bg-cyan-500/5 hover:border-cyan-500/40 shadow-cyan-500/5'
+    },
+    {
+      title: 'AI-Powered Workflow Optimization',
+      desc: 'We design and inject custom cognitive OCR, secure API integrations, and automated human-in-the-loop systems to slash manual cycles.',
+      icon: <Sparkles className="w-6 h-6 text-[#4AB7FF]" />,
+      color: 'bg-emerald-500/5 hover:border-emerald-500/40 shadow-emerald-500/5'
+    }
   ];
 
+  // 2. Why Organizations Choose Going Technologies cards (Timeless, Premium)
   const choiceCards = [
     {
-      title: 'Insurance Expertise',
+      title: 'Specialized Insurance Expertise',
       headline: 'Carrier-Grade Insurance Domain Specialization',
       stat: '15+ Years',
       statLabel: 'Avg Experience',
@@ -52,52 +90,52 @@ export default function About({ setCurrentPage }: AboutProps) {
       badgeColor: 'text-[#081B8C] bg-[#DCE7FF]/40'
     },
     {
-      title: 'Operational Excellence',
-      headline: 'Rigorous SLA & Quality Governance',
-      stat: '99.98%',
-      statLabel: 'Data-Accuracy SLA',
-      desc: 'Leverage Lean Six Sigma control frameworks to monitor and eliminate transaction bottlenecks. We track error deviations in real time to ensure near-flawless data ingestion.',
-      icon: <Target className="w-5 h-5 text-[#081B8C]" />,
+      title: 'Dedicated Operational Teams',
+      headline: 'Your 1-to-1 Seamless Agency Extension',
+      stat: '1-to-1',
+      statLabel: 'Client-Exclusive Squads',
+      desc: 'Highly trained professionals act as direct, dedicated extensions of your own administrative staff. They integrate natively inside your Applied Epic, AMS360, or private platforms.',
+      icon: <Users className="w-5 h-5 text-[#081B8C]" />,
       color: 'from-[#081B8C]/10 to-[#A93DFF]/5',
       badgeColor: 'text-[#081B8C] bg-[#DCE7FF]/40'
     },
     {
-      title: 'Scalable Delivery Teams',
-      headline: 'Rapid Operations Scaling on Demand',
-      stat: '24-Hour',
-      statLabel: 'Clear Backlogs SLA',
-      desc: 'Dynamically scale up processing teams during high-volume renewal quarters. Clear backlogs overnight, ensuring underwriters hit the ground running every morning.',
-      icon: <TrendingUp className="w-5 h-5 text-[#2F6DFF]" />,
+      title: 'Transparent Communication',
+      headline: 'Real-Time Operational Live Dashboards',
+      stat: '100%',
+      statLabel: 'SLA Tracking visibility',
+      desc: 'We eliminate BPO guessing. Track our daily processing queue turnaround times, submission counts, errors, and live throughput logs via secure, interactive client admin portals.',
+      icon: <MessageSquare className="w-5 h-5 text-[#2F6DFF]" />,
       color: 'from-[#2F6DFF]/10 to-[#4AB7FF]/5',
       badgeColor: 'text-[#2F6DFF] bg-[#2F6DFF]/10'
     },
     {
-      title: 'Cost Optimization',
-      headline: 'Transform Operational Cost Metrics',
-      stat: '60%',
-      statLabel: 'Direct Cost Reduction',
-      desc: 'Minimize payroll tax, recruitment fees, and local overheads by transferring manual back-office tasks to our high-performance global delivery center under strict quality governance.',
-      icon: <DollarSign className="w-5 h-5 text-[#2F6DFF]" />,
+      title: 'Scalable Delivery Model',
+      headline: 'Rapid Capacity Flexing on Demand',
+      stat: '24-Hour',
+      statLabel: 'Clear Backlogs SLA',
+      desc: 'Dynamically scale up processing teams during high-volume renewal quarters (AEP/OEP). Clear backlogs overnight, ensuring underwriters hit the ground running every morning.',
+      icon: <TrendingUp className="w-5 h-5 text-[#2F6DFF]" />,
       color: 'from-[#2F6DFF]/10 to-[#081B8C]/5',
       badgeColor: 'text-[#2F6DFF] bg-[#2F6DFF]/10'
     },
     {
-      title: 'US Market Focus',
-      headline: '100% Alignment with US Business Hours',
-      stat: '100%',
-      statLabel: 'US Shift Overlap',
-      desc: 'Our delivery teams work in perfect alignment with your standard US time zones. Dedicated leaders provide immediate, continuous native feedback and oversight.',
-      icon: <Compass className="w-5 h-5 text-[#A93DFF]" />,
+      title: 'AI-Enhanced Processes',
+      headline: 'Intelligent Human-in-the-Loop Automation',
+      stat: '85%',
+      statLabel: 'Manual Entries Automated',
+      desc: 'Pair advanced optical parsing with private cloud AI middleware to extract text from unstructured ACORD and medical sheets, backed by instant human supervisor reviews.',
+      icon: <Sparkles className="w-5 h-5 text-[#A93DFF]" />,
       color: 'from-[#A93DFF]/10 to-[#2F6DFF]/5',
       badgeColor: 'text-[#A93DFF] bg-[#A93DFF]/10'
     },
     {
-      title: 'Process Driven Approach',
-      headline: 'Strict AMS Integration & Security Rules',
-      stat: '1-to-1',
-      statLabel: 'Client-Exclusive Squads',
-      desc: 'Dedicated units operate directly inside your instance of Applied Epic, Vertafore, or customized corporate portal, secured with physical keycards and clean-room VDI protocols.',
-      icon: <Users className="w-5 h-5 text-[#4AB7FF]" />,
+      title: 'Quality Assurance',
+      headline: 'Six Sigma Error-Deviation Audits',
+      stat: '99.98%',
+      statLabel: 'Verified Data-Accuracy SLA',
+      desc: 'Continuous double-verification loops guarantee your databases remain immaculate. Every single data entry point is subject to random double-checks before final lock.',
+      icon: <Activity className="w-5 h-5 text-[#4AB7FF]" />,
       color: 'from-[#4AB7FF]/10 to-[#081B8C]/5',
       badgeColor: 'text-[#4AB7FF] bg-[#4AB7FF]/10'
     }
@@ -115,7 +153,9 @@ export default function About({ setCurrentPage }: AboutProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             <div className="lg:col-span-7 space-y-6">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Corporate Story</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3 py-1.5 rounded-full border border-[#DCE7FF]/60">
+                Corporate Story
+              </span>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display text-[#081B8C] tracking-tight leading-tight">
                 Specialized Support. Intelligent Operations.
               </h1>
@@ -276,39 +316,65 @@ export default function About({ setCurrentPage }: AboutProps) {
         </div>
       </section>
 
-      {/* Vertical Interactive Timeline */}
-      <section className="bg-white border-t border-[#DCE7FF] py-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Company Milestones</h2>
-            <h3 className="text-3xl font-bold font-display text-[#081B8C]">Our Journey of Continuous Scale</h3>
+      {/* NEW REDESIGNED SECTION 1: Built Around Operational Excellence (Replaces legacy milestones timeline) */}
+      <section className="bg-white border-t border-[#DCE7FF] py-24 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#2F6DFF]/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#A93DFF]/5 blur-[100px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3.5 py-1.5 rounded-full border border-[#DCE7FF]">
+              Operating Pillars
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              Built Around Operational Excellence
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              We anchor every deployment on four core execution foundations to guarantee compliant, high-performing support.
+            </p>
           </div>
 
-          <div className="relative border-l border-[#DCE7FF] pl-8 space-y-12 ml-4">
-            {milestones.map((mil, idx) => (
-              <div key={idx} className="relative group">
-                {/* Timeline node */}
-                <div className="absolute left-[-41px] top-1.5 w-6 h-6 rounded-full bg-[#F8FAFF] border-2 border-[#2F6DFF] flex items-center justify-center group-hover:bg-[#2F6DFF] transition-colors">
-                  <div className="w-2 h-2 rounded-full bg-[#2F6DFF] group-hover:bg-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {excellenceCards.map((card, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: idx * 0.08 }}
+                whileHover={{ y: -6 }}
+                className={`backdrop-blur-md bg-white/60 border border-[#DCE7FF]/70 rounded-2xl p-6 hover:shadow-xl hover:border-[#2F6DFF]/40 transition-all duration-300 flex flex-col justify-between ${card.color}`}
+              >
+                <div className="space-y-4">
+                  <div className="p-3 bg-white border border-[#DCE7FF]/40 rounded-xl w-fit shadow-xs">
+                    {card.icon}
+                  </div>
+                  <h3 className="font-bold text-[#081B8C] font-display text-base">
+                    {card.title}
+                  </h3>
+                  <p className="text-gray-500 text-xs leading-relaxed">
+                    {card.desc}
+                  </p>
                 </div>
-                
-                <div className="space-y-2">
-                  <span className="font-mono text-xs font-bold text-[#2F6DFF] bg-[#DCE7FF]/40 px-2 py-0.5 rounded">
-                    {mil.year}
-                  </span>
-                  <h4 className="font-bold text-gray-900 group-hover:text-[#081B8C] transition-colors">{mil.title}</h4>
-                  <p className="text-gray-500 text-xs leading-relaxed">{mil.desc}</p>
+
+                <div className="pt-4 border-t border-gray-50 mt-5 flex items-center justify-between text-[9px] text-gray-400 font-mono">
+                  <span>FOUNDATION 0{idx + 1}</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Why Organizations Choose Going Technologies Section */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#DCE7FF]">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Our Edge</h2>
+      {/* NEW REDESIGNED SECTION 2: Why Organizations Choose Going Technologies (Premium, Timeless Animated Feature Cards) */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#DCE7FF] bg-[#F8FAFF] relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-[#2F6DFF]/5 blur-[150px] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2" />
+        
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 relative z-10">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3.5 py-1.5 rounded-full border border-[#DCE7FF] w-fit mx-auto">
+            Our Edge
+          </h2>
           <h3 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
             Why Organizations Choose Going Technologies
           </h3>
@@ -317,15 +383,15 @@ export default function About({ setCurrentPage }: AboutProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
           {choiceCards.map((card, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
-              className="bg-white border border-[#DCE7FF] rounded-2xl p-8 hover:shadow-xl hover:border-[#2F6DFF] transition-all duration-300 relative overflow-hidden group flex flex-col justify-between"
+              transition={{ duration: 0.4, delay: idx * 0.08 }}
+              className="bg-white border border-[#DCE7FF] rounded-2xl p-8 hover:shadow-2xl hover:border-[#2F6DFF] transition-all duration-300 relative overflow-hidden group flex flex-col justify-between"
             >
               {/* Subtle background color glow accent */}
               <div className={`absolute top-0 right-0 w-36 h-36 bg-gradient-to-br ${card.color} opacity-40 blur-2xl rounded-full pointer-events-none transition-transform duration-500 group-hover:scale-125`} />
@@ -350,11 +416,11 @@ export default function About({ setCurrentPage }: AboutProps) {
                 </div>
               </div>
 
-              {/* Data Visualization / Stat element instead of human portrait */}
+              {/* Data Visualization / Stat element */}
               <div className="mt-8 pt-6 border-t border-gray-100/60 relative z-10 flex items-baseline justify-between">
                 <div>
-                  <span className="text-xs text-gray-400 block uppercase font-bold tracking-wider">{card.statLabel}</span>
-                  <span className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight group-hover:text-[#2F6DFF] transition-colors">{card.stat}</span>
+                  <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">{card.statLabel}</span>
+                  <span className="text-2xl font-extrabold text-[#081B8C] font-mono tracking-tight group-hover:text-[#2F6DFF] transition-colors">{card.stat}</span>
                 </div>
                 <div className="w-1.5 h-1.5 rounded-full bg-[#2F6DFF] opacity-30 group-hover:opacity-100 group-hover:scale-150 transition-all duration-300" />
               </div>
@@ -388,18 +454,18 @@ export default function About({ setCurrentPage }: AboutProps) {
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6DFF]/15 blur-2xl rounded-full" />
           <div className="relative z-10 max-w-2xl mx-auto space-y-6">
             <h3 className="text-2xl sm:text-3xl font-bold font-display">Ready to Work with a Highly Secure Operational Partner?</h3>
-            <p className="text-white/80 text-xs leading-relaxed">
-              Schedule a technical overview call. Our team will present our SOC2 security frameworks, review SOP template playbooks, and outline pilot deployment structures.
+            <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
+              Schedule an operational walkthrough call. Our team will present our SOC2 auditing frameworks, review template operating checklists, and map out pilot team deployment parameters.
             </p>
             <button
               onClick={() => {
                 setCurrentPage('contact');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="cursor-pointer inline-flex items-center gap-2 bg-white text-[#081B8C] hover:bg-[#F8FAFF] px-6 py-3 rounded-full font-bold text-sm transition-colors"
+              className="cursor-pointer inline-flex items-center gap-2 bg-white text-[#081B8C] hover:bg-[#F8FAFF] px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 hover:shadow-lg"
             >
-              <span>Connect with our Partners</span>
-              <ChevronRight className="w-4 h-4 text-[#081B8C]" />
+              <span>Talk to Our Team</span>
+              <ArrowRight className="w-4 h-4 text-[#081B8C]" />
             </button>
           </div>
         </div>

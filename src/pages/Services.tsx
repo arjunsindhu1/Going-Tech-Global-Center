@@ -16,9 +16,17 @@ import {
   ChevronDown,
   ChevronRight,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  Clock,
+  Database,
+  Compass,
+  ArrowRightLeft,
+  Settings,
+  Workflow,
+  Zap,
+  Check
 } from 'lucide-react';
-import { PageType, ServiceDetail } from '../types';
+import { PageType } from '../types';
 import { SERVICES_DATA } from '../data';
 
 interface ServicesProps {
@@ -59,6 +67,61 @@ const challenges = [
     cure: 'Operations are strictly managed within dedicated SOC 2 Type II and HIPAA secure environments.'
   }
 ];
+
+// Rich custom workflow timeline mappings for each core service
+const serviceWorkflows: Record<string, { title: string; desc: string; icon: any }[]> = {
+  'pc-insurance': [
+    { title: 'Submission Intake', desc: 'Overnight inbox triage, risk file keying, and AMS account setup.', icon: FileText },
+    { title: 'Underwriting Support', desc: 'Sourcing loss histories, rating prep, and hazard score checks.', icon: Layers },
+    { title: 'Policy Checking', desc: 'Matching post-bind policy checklists against carrier binders.', icon: Shield },
+    { title: 'COI & Endorsements', desc: 'On-demand certificate issuance and simple contract updates.', icon: Clock },
+    { title: 'Renewals Audit', desc: '90-day lead outreach to secure payrolls, vehicles, and active logs.', icon: TrendingUp }
+  ],
+  'life-insurance': [
+    { title: 'Case Intake', desc: 'Standardizing submission sheets and starting secure medical files.', icon: FileText },
+    { title: 'Proactive APS Chasing', desc: 'Active phone & portal clinics follow-up to acquire medical records.', icon: Users },
+    { title: 'Clinical APS Indexing', desc: 'Organizing complex multi-page health papers chronologically by doctor.', icon: Layers },
+    { title: 'Exam Coordination', desc: 'Scheduling medical assessments with agents and end-clients.', icon: Clock },
+    { title: 'Underwriter Delivery', desc: 'Supplying complete, pre-vetted case dossiers to decision-makers.', icon: CheckCircle2 }
+  ],
+  'healthcare': [
+    { title: 'Census Roster Sanitization', desc: 'Standardizing messy employer Excel census lists into unified tables.', icon: Layers },
+    { title: 'Prior Authorization Run', desc: 'Evaluating care codes against carrier rules and filing authorizations.', icon: FileText },
+    { title: 'Eligibility Check', desc: 'Validating real-time active coverage limits across central portals.', icon: Shield },
+    { title: 'Claims pre-Screening', desc: 'Reviewing diagnostic codes and provider referrals for system routing.', icon: Server },
+    { title: 'Enrollment Sync', desc: 'Syncing hundreds of daily members into active benefits files.', icon: CheckCircle2 }
+  ],
+  'medicare': [
+    { title: 'SOA Verification', desc: 'Logging and scoring Scope of Appointment forms within 4 hours.', icon: FileText },
+    { title: 'Formulary Mapping', desc: 'Confirming client prescriptions against active carrier networks.', icon: Layers },
+    { title: 'AEP Seasonal Scaling', desc: 'Expanding processing capacity 3x overnight during key cycles.', icon: Clock },
+    { title: 'Recorded Call Audits', desc: 'Scoring advisor recordings against strict CMS compliance scripts.', icon: Shield },
+    { title: 'Zero-Defect Filing', desc: 'Delivering audit-secure enrollments into provider portals.', icon: CheckCircle2 }
+  ],
+  'ai-automation': [
+    { title: 'Cognitive Task Discovery', desc: 'Analyzing processing queues to detect high-volume workflow fit.', icon: Cpu },
+    { title: 'Model Pipeline Sync', desc: 'Tuning private, isolated enterprise LLMs on custom document schemas.', icon: Sparkles },
+    { title: 'Human Verification', desc: 'Deploying our 24/7 validation experts for sub-90s edge audits.', icon: Users },
+    { title: 'RPA Movement', desc: 'Software bots securely indexing extracted fields into active databases.', icon: Layers },
+    { title: 'Continuous Tuning', desc: 'Updating models using corrected data loops to scale overall speed.', icon: TrendingUp }
+  ]
+};
+
+// Custom brand-aligned colors for software system pills
+const getPlatformStyle = (platName: string) => {
+  const norm = platName.toLowerCase();
+  if (norm.includes('epic')) return 'border-blue-200 bg-blue-50/40 text-blue-800 hover:border-blue-300';
+  if (norm.includes('ams360')) return 'border-indigo-200 bg-indigo-50/40 text-indigo-800 hover:border-indigo-300';
+  if (norm.includes('lynx')) return 'border-cyan-200 bg-cyan-50/40 text-cyan-800 hover:border-cyan-300';
+  if (norm.includes('hawksoft')) return 'border-purple-200 bg-purple-50/40 text-purple-800 hover:border-purple-300';
+  if (norm.includes('agencyzoom')) return 'border-pink-200 bg-pink-50/40 text-pink-800 hover:border-pink-300';
+  if (norm.includes('salesforce')) return 'border-sky-200 bg-sky-50/40 text-sky-800 hover:border-sky-300';
+  if (norm.includes('ipipeline')) return 'border-violet-200 bg-violet-50/40 text-violet-800 hover:border-violet-300';
+  if (norm.includes('smartoffice')) return 'border-teal-200 bg-teal-50/40 text-teal-800 hover:border-teal-300';
+  if (norm.includes('python')) return 'border-amber-200 bg-amber-50/40 text-amber-800 hover:border-amber-300';
+  if (norm.includes('uipath')) return 'border-orange-200 bg-orange-50/40 text-orange-800 hover:border-orange-300';
+  return 'border-gray-200 bg-gray-50/50 text-gray-700 hover:border-gray-300';
+};
 
 export default function Services({ setCurrentPage, activeServiceId, setActiveServiceId }: ServicesProps) {
   const [activeTab, setActiveTab] = useState<string>(activeServiceId || 'property-casualty');
@@ -103,18 +166,25 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const currentWorkflow = serviceWorkflows[activeService.id] || serviceWorkflows['pc-insurance'];
+
   return (
     <div className="bg-[#F8FAFF] font-sans text-[#111827] min-h-screen">
       
       {/* Service Header */}
-      <section className="bg-white border-b border-[#DCE7FF]/60 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Enterprise Capabilities</span>
-          <h1 className="text-3xl sm:text-5xl font-bold font-display text-[#081B8C] tracking-tight">
+      <section className="bg-white border-b border-[#DCE7FF]/60 py-16 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-[#2F6DFF]/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#A93DFF]/5 blur-[120px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3.5 py-1.5 rounded-full border border-[#DCE7FF]">
+            Enterprise Capabilities
+          </span>
+          <h1 className="text-4xl sm:text-5xl font-bold font-display text-[#081B8C] tracking-tight">
             Our 5 Core Specialized Services
           </h1>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto leading-relaxed">
-            Toggle between our core divisions below to examine operational blueprints, onboarding processes, metrics, and service compliance guidelines.
+            Toggle between our core divisions below to examine interactive operational blueprints, system support pipelines, metrics, and compliance guidelines.
           </p>
         </div>
       </section>
@@ -146,7 +216,7 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
             </div>
           </div>
 
-          {/* Left Sidebar Menu: 8 Services (Desktop Only) */}
+          {/* Left Sidebar Menu: 5 Services (Desktop Only) */}
           <div className="hidden lg:block lg:col-span-4 bg-white border border-[#DCE7FF] rounded-2xl p-4 shadow-sm space-y-1.5 lg:sticky lg:top-24">
             <div className="px-3 pb-3 mb-2 border-b border-gray-100 text-[10px] uppercase font-bold tracking-widest text-gray-400">
               Operations Divisions
@@ -187,190 +257,305 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
               >
                 
                 {/* Active Service Title Banner */}
-            <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 shadow-sm space-y-6 relative overflow-hidden">
-              {/* Top gradient blur */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6DFF]/5 blur-2xl rounded-full" />
-              
-              <div className="flex items-center gap-3 bg-[#F8FAFF] border border-[#DCE7FF]/40 px-3 py-1 rounded-md w-fit text-[11px] font-bold text-[#081B8C] uppercase tracking-wide">
-                {getIcon(activeService.iconName)}
-                <span>Division // Active Overview</span>
-              </div>
-
-              <h2 className="text-2xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-                {activeService.title}
-              </h2>
-              <p className="text-gray-600 text-sm leading-relaxed border-l-4 border-[#2F6DFF] pl-4">
-                {activeService.shortDesc}
-              </p>
-            </div>
-
-            {/* Problem vs Solution Split Panel */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Problem */}
-              <div className="bg-white border border-red-100 rounded-2xl p-8 shadow-xs space-y-4">
-                <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wider">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>The Pain Point</span>
-                </div>
-                <p className="text-gray-500 text-xs leading-relaxed">
-                  {activeService.problem}
-                </p>
-              </div>
-
-              {/* Solution */}
-              <div className="bg-white border border-emerald-100 rounded-2xl p-8 shadow-xs space-y-4">
-                <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wider">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>The Operational Response</span>
-                </div>
-                <p className="text-gray-500 text-xs leading-relaxed">
-                  {activeService.solution}
-                </p>
-              </div>
-            </div>
-
-            {/* Key Services and Supported Platforms side-by-side */}
-            {activeService.keyServices && activeService.platforms && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Key Services card */}
-                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 shadow-sm space-y-6">
-                  <h3 className="text-base font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-3 font-display">
-                    Key Services Performed
-                  </h3>
-                  <div className="space-y-3">
-                    {activeService.keyServices.map((ks, index) => (
-                      <div key={index} className="flex gap-3 items-start">
-                        <CheckCircle2 className="w-4 h-4 text-[#2F6DFF] shrink-0 mt-0.5" />
-                        <span className="text-xs text-gray-700 leading-relaxed font-semibold">{ks}</span>
-                      </div>
-                    ))}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 shadow-sm space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-[#2F6DFF]/5 blur-3xl rounded-full" />
+                  <div className="absolute bottom-0 left-0 w-36 h-36 bg-[#A93DFF]/5 blur-2xl rounded-full" />
+                  
+                  <div className="flex items-center gap-3 bg-[#F8FAFF] border border-[#DCE7FF]/40 px-3 py-1 rounded-md w-fit text-[11px] font-bold text-[#081B8C] uppercase tracking-wide relative z-10">
+                    {getIcon(activeService.iconName)}
+                    <span>Division // Active Overview</span>
                   </div>
+
+                  <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight relative z-10">
+                    {activeService.title}
+                  </h2>
+                  <p className="text-gray-600 text-sm leading-relaxed border-l-4 border-[#2F6DFF] pl-4 relative z-10">
+                    {activeService.shortDesc}
+                  </p>
                 </div>
 
-                {/* Supported Platforms card */}
-                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 shadow-sm space-y-6">
-                  <h3 className="text-base font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-3 font-display">
-                    Supported Systems & Software
-                  </h3>
-                  <div className="space-y-3">
-                    {activeService.platforms.map((plat, index) => (
-                      <div key={index} className="flex gap-3 items-start">
-                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0 mt-1.5" />
-                        <span className="text-xs text-gray-700 leading-relaxed font-semibold">{plat}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Benefits Cards */}
-            <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 shadow-sm space-y-6">
-              <h3 className="text-base font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-3">
-                Key Strategic Benefits
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {activeService.benefits.map((benefit, index) => (
-                  <div key={index} className="flex gap-3 items-start">
-                    <CheckCircle2 className="w-4 h-4 text-[#2F6DFF] shrink-0 mt-0.5" />
-                    <span className="text-xs text-gray-600 leading-relaxed font-semibold">{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Delivery Process Milestones */}
-            <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 shadow-sm space-y-8">
-              <h3 className="text-base font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-3">
-                Onboarding & Delivery Process
-              </h3>
-              <div className="relative border-l border-[#DCE7FF] pl-6 space-y-8 ml-2">
-                {activeService.process.map((step, index) => (
-                  <div key={index} className="relative">
-                    {/* step bubble */}
-                    <div className="absolute left-[-35px] top-0 w-6 h-6 rounded-full bg-[#F8FAFF] border border-[#2F6DFF] flex items-center justify-center font-mono text-[10px] text-[#081B8C] font-bold">
-                      {step.step}
+                {/* Problem vs Solution Split Panel */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Problem */}
+                  <div className="bg-white border border-red-100 rounded-2xl p-8 shadow-xs space-y-4 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 blur-xl rounded-full" />
+                    <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wider relative z-10">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>The Pain Point</span>
                     </div>
+                    <p className="text-gray-600 text-xs sm:text-sm leading-relaxed relative z-10 font-medium">
+                      {activeService.problem}
+                    </p>
+                  </div>
+
+                  {/* Solution */}
+                  <div className="bg-white border border-emerald-100 rounded-2xl p-8 shadow-xs space-y-4 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 blur-xl rounded-full" />
+                    <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wider relative z-10">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>The Operational Response</span>
+                    </div>
+                    <p className="text-gray-600 text-xs sm:text-sm leading-relaxed relative z-10 font-medium">
+                      {activeService.solution}
+                    </p>
+                  </div>
+                </div>
+
+                {/* REDESIGN 1: HORIZONTAL ANIMATED WORKFLOW TIMELINE */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-[#2F6DFF]/5 blur-2xl rounded-full pointer-events-none" />
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-[#081B8C] uppercase tracking-wide">{step.title}</h4>
-                      <p className="text-gray-500 text-xs leading-relaxed">{step.desc}</p>
+                      <span className="text-[10px] font-bold text-[#2F6DFF] uppercase tracking-widest font-mono">Operations Flow</span>
+                      <h3 className="text-lg font-bold font-display text-[#081B8C]">
+                        Standard Process Sequence
+                      </h3>
+                    </div>
+                    <span className="text-[11px] bg-slate-50 border border-gray-100 text-gray-500 px-3 py-1 rounded-full font-semibold">
+                      Click or hover stages below
+                    </span>
+                  </div>
+
+                  {/* Horizontal visual track */}
+                  <div className="relative">
+                    {/* Background Connector Line */}
+                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-[#2F6DFF]/20 via-[#A93DFF]/20 to-[#2F6DFF]/20 transform -translate-y-1/2 z-0 hidden md:block" />
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative z-10">
+                      {currentWorkflow.map((flowStep, index) => {
+                        const StepIcon = flowStep.icon;
+                        return (
+                          <motion.div
+                            key={index}
+                            whileHover={{ y: -4 }}
+                            className="bg-[#F8FAFF] border border-[#DCE7FF]/70 rounded-2xl p-5 hover:bg-white hover:border-[#2F6DFF] hover:shadow-lg transition-all duration-300 relative group flex flex-col justify-between min-h-[170px]"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="p-2 bg-white rounded-xl border border-gray-100 text-[#2F6DFF] group-hover:bg-[#2F6DFF] group-hover:text-white transition-all duration-300 shadow-sm">
+                                  <StepIcon className="w-4 h-4" />
+                                </div>
+                                <span className="text-[10px] font-mono font-bold text-gray-400 group-hover:text-[#2F6DFF]">
+                                  Stage 0{index + 1}
+                                </span>
+                              </div>
+                              <h4 className="text-xs font-bold text-[#081B8C] font-display uppercase tracking-wide group-hover:text-[#2F6DFF] transition-colors">
+                                {flowStep.title}
+                              </h4>
+                              <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-4">
+                                {flowStep.desc}
+                              </p>
+                            </div>
+
+                            {/* Mobile/Small Screens indicator */}
+                            <div className="pt-3 border-t border-gray-100/60 mt-3 flex items-center justify-between text-[10px] font-mono font-bold text-gray-400">
+                              <span>ACTIVE DELIV</span>
+                              <Check className="w-3.5 h-3.5 text-emerald-500 opacity-60" />
+                            </div>
+
+                            {/* Connecting Arrow for MD+ (except last one) */}
+                            {index < 4 && (
+                              <div className="absolute right-[-18px] top-1/2 transform -translate-y-1/2 z-20 text-gray-300 group-hover:text-[#2F6DFF] transition-colors hidden md:block">
+                                <ArrowRight className="w-4 h-4 animate-pulse" />
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* SLA Outcomes & Verification Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {activeService.results.map((res, index) => (
-                <div key={index} className="bg-white border border-[#DCE7FF] rounded-2xl p-6 shadow-xs relative overflow-hidden text-center">
-                  <div className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight">{res.metric}</div>
-                  <h4 className="text-xs font-bold text-gray-900 mt-2 mb-1 truncate">{res.label}</h4>
-                  <p className="text-gray-400 text-[10px] leading-relaxed line-clamp-2">{res.context}</p>
                 </div>
-              ))}
-            </div>
 
-            {/* Service Specific FAQ Section */}
-            <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-12 shadow-sm space-y-6">
-              <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-                <HelpCircle className="w-5 h-5 text-[#2F6DFF]" />
-                <h3 className="text-base font-bold uppercase tracking-wider text-gray-900">
-                  Compliance & Operations FAQ
-                </h3>
-              </div>
+                {/* REDESIGN 2: KEY SERVICES PERFORMED (Bento Grid instead of list) */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#A93DFF]/5 blur-2xl rounded-full" />
+                  
+                  <div className="border-b border-gray-100 pb-4">
+                    <span className="text-[10px] font-bold text-[#A93DFF] uppercase tracking-widest font-mono">Specialized Services</span>
+                    <h3 className="text-lg font-bold font-display text-[#081B8C]">
+                      Full Scope of Key Workflows Handled
+                    </h3>
+                  </div>
 
-              <div className="space-y-3">
-                {activeService.faqs.map((faq, index) => {
-                  const isOpen = expandedFaq === index;
-                  return (
-                    <div key={index} className="border border-[#DCE7FF]/60 rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => setExpandedFaq(isOpen ? null : index)}
-                        className="w-full text-left px-5 py-4 bg-[#F8FAFF] hover:bg-[#DCE7FF]/20 text-xs font-bold text-[#081B8C] flex justify-between items-center transition-colors cursor-pointer"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {activeService.keyServices.map((ks, index) => (
+                      <motion.div
+                        key={index}
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-[#F8FAFF] border border-gray-100 rounded-xl p-4 flex items-center gap-3 hover:bg-white hover:border-[#2F6DFF]/40 hover:shadow-md transition-all duration-300"
                       >
-                        <span>{faq.question}</span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      <AnimatePresence>
-                        {isOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="bg-white px-5 py-4 border-t border-gray-100 text-xs text-gray-500 leading-relaxed"
-                          >
-                            {faq.answer}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg shadow-inner shrink-0">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs text-gray-700 font-semibold leading-tight">{ks}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* REDESIGN 3: SUPPORTED SYSTEMS & SOFTWARE (Logo/Platform Pills with custom styles) */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/5 blur-3xl rounded-full pointer-events-none" />
+                  
+                  <div className="border-b border-gray-100 pb-4">
+                    <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest font-mono">Systems Security</span>
+                    <h3 className="text-lg font-bold font-display text-[#081B8C]">
+                      Supported Software & Platforms
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-gray-500 leading-relaxed max-w-xl">
+                    Our staff are certified specialists operating directly within your instance under strict zero-trust operational pipelines.
+                  </p>
+
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {activeService.platforms.map((plat, index) => {
+                      const pillStyle = getPlatformStyle(plat);
+                      return (
+                        <motion.div
+                          key={index}
+                          whileHover={{ scale: 1.05 }}
+                          className={`border rounded-full px-4 py-2.5 text-xs font-bold flex items-center gap-2.5 transition-all duration-300 cursor-default shadow-sm ${pillStyle}`}
+                        >
+                          {/* Live integration green pulse */}
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                          <span>{plat}</span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Key Strategic Benefits - Modern Cards */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6DFF]/5 blur-2xl rounded-full" />
+                  <h3 className="text-lg font-bold font-display text-[#081B8C] border-b border-gray-100 pb-4">
+                    Key Strategic Benefits
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {activeService.benefits.map((benefit, index) => (
+                      <div key={index} className="bg-[#F8FAFF] border border-gray-100 rounded-xl p-5 flex gap-3.5 items-start hover:bg-white hover:border-[#2F6DFF]/30 transition-all shadow-xs">
+                        <div className="p-1.5 bg-[#2F6DFF]/10 text-[#2F6DFF] rounded-lg mt-0.5 shrink-0">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs text-gray-600 leading-relaxed font-semibold">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* REDESIGN 4: ONBOARDING & DELIVERY PROCESS (Glassmorphism & Step Connectors) */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-[#2F6DFF]/5 blur-3xl rounded-full pointer-events-none" />
+                  
+                  <div className="border-b border-gray-100 pb-4">
+                    <span className="text-[10px] font-bold text-[#2F6DFF] uppercase tracking-widest font-mono">Seamless Onboarding</span>
+                    <h3 className="text-lg font-bold font-display text-[#081B8C]">
+                      Implementation & Delivery Blueprint
+                    </h3>
+                  </div>
+
+                  <div className="relative border-l-2 border-[#DCE7FF] pl-8 space-y-8 ml-3">
+                    {activeService.process.map((step, index) => (
+                      <motion.div
+                        key={index}
+                        whileHover={{ x: 3 }}
+                        className="relative group bg-[#F8FAFF] hover:bg-white border border-[#DCE7FF]/40 rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300"
+                      >
+                        {/* Glowing node step connector bubble */}
+                        <div className="absolute left-[-45px] top-6 w-8 h-8 rounded-full bg-white border-2 border-[#2F6DFF] flex items-center justify-center font-mono text-xs text-[#081B8C] font-bold shadow-md group-hover:bg-[#2F6DFF] group-hover:text-white transition-colors duration-300">
+                          {step.step}
+                        </div>
+                        <div className="space-y-1.5">
+                          <h4 className="text-xs font-bold text-[#081B8C] uppercase tracking-wider font-display flex items-center gap-2">
+                            <span>{step.title}</span>
+                          </h4>
+                          <p className="text-gray-500 text-xs leading-relaxed">{step.desc}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SLA Outcomes & Verification Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {activeService.results.map((res, index) => (
+                    <div key={index} className="bg-white border border-[#DCE7FF] rounded-2xl p-6 shadow-xs relative overflow-hidden text-center group hover:border-[#2F6DFF] transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-[#2F6DFF]/5 blur-xl rounded-full" />
+                      <div className="text-3.5xl font-extrabold text-[#081B8C] font-mono tracking-tight group-hover:text-[#2F6DFF] transition-colors">{res.metric}</div>
+                      <h4 className="text-xs font-bold text-gray-900 mt-2 mb-1 truncate">{res.label}</h4>
+                      <p className="text-gray-400 text-[10px] leading-relaxed line-clamp-2">{res.context}</p>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  ))}
+                </div>
 
-            {/* Private Briefing CTA */}
-            <div className="bg-linear-to-r from-[#081B8C] to-[#2F6DFF] rounded-3xl p-8 text-center text-white space-y-6">
-              <h3 className="text-xl font-bold font-display">Ready to Launch a Pilot Team for {activeService.title}?</h3>
-              <p className="text-white/80 text-xs max-w-xl mx-auto leading-relaxed">
-                Connect with our advisory consultants. We will provide detailed case parameters, set up custom workflow scopes, and align certified operators in our SOC2-compliant delivery center.
-              </p>
-              <button
-                onClick={() => {
-                  setCurrentPage('contact');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="cursor-pointer inline-flex items-center gap-1.5 bg-white text-[#081B8C] hover:bg-[#F8FAFF] px-6 py-3 rounded-full font-bold text-xs transition-colors"
-              >
-                <span>Draft Custom Service Contract</span>
-                <ArrowRight className="w-4 h-4 text-[#081B8C]" />
-              </button>
-            </div>
+                {/* Service Specific FAQ Section */}
+                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-6">
+                  <div className="flex items-center gap-2 border-b border-gray-100 pb-4">
+                    <HelpCircle className="w-5 h-5 text-[#2F6DFF]" />
+                    <h3 className="text-lg font-bold font-display text-[#081B8C]">
+                      Compliance & Operations FAQ
+                    </h3>
+                  </div>
 
-          </motion.div>
-        </AnimatePresence>
-      </div>
+                  <div className="space-y-3">
+                    {activeService.faqs.map((faq, index) => {
+                      const isOpen = expandedFaq === index;
+                      return (
+                        <div key={index} className="border border-[#DCE7FF]/60 rounded-xl overflow-hidden transition-colors duration-200">
+                          <button
+                            onClick={() => setExpandedFaq(isOpen ? null : index)}
+                            className="w-full text-left px-5 py-4 bg-[#F8FAFF] hover:bg-[#DCE7FF]/20 text-xs font-bold text-[#081B8C] flex justify-between items-center transition-colors cursor-pointer"
+                          >
+                            <span>{faq.question}</span>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {isOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="bg-white px-5 py-4 border-t border-gray-100 text-xs text-gray-500 leading-relaxed"
+                              >
+                                {faq.answer}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Private Briefing CTA - Updated with CTA requirements */}
+                <div className="bg-linear-to-r from-[#081B8C] via-[#1E3A8A] to-[#0A2540] rounded-3xl p-8 sm:p-12 text-center text-white space-y-6 relative overflow-hidden shadow-xl border border-blue-900/30">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-[#2F6DFF]/15 blur-3xl rounded-full" />
+                  <h3 className="text-2xl font-bold font-display relative z-10">Ready to Launch a Pilot Team for {activeService.title}?</h3>
+                  <p className="text-white/80 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed relative z-10">
+                    Connect with our operations architects. We will provide full documentation checklists, customize your standard operating procedures, and align certified specialists in our SOC2 compliance center.
+                  </p>
+                  <div className="pt-2 relative z-10">
+                    <button
+                      onClick={() => {
+                        setCurrentPage('contact');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="cursor-pointer inline-flex items-center gap-2 bg-white text-[#081B8C] hover:bg-[#F8FAFF] hover:shadow-lg px-8 py-3.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300"
+                    >
+                      <span>Talk to Our Team</span>
+                      <ArrowRight className="w-4 h-4 text-[#081B8C]" />
+                    </button>
+                  </div>
+                </div>
+
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
         </div>
       </div>
