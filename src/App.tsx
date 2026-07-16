@@ -324,6 +324,32 @@ export default function App() {
     updateMetaTag('og:image', ogImageUrl, true);
     updateMetaTag('twitter:image', ogImageUrl, true);
 
+    // 7. Update Robots Meta Tag (index,follow for public pages, noindex,nofollow for private pages)
+    const currentPath = window.location.pathname.toLowerCase();
+    const currentHash = window.location.hash.toLowerCase();
+    const isPrivate = 
+      ['admin', 'client-admin', 'workspace', 'client-portal'].includes(page) ||
+      currentPath.includes('/admin') ||
+      currentPath.includes('/client-portal') ||
+      currentPath.includes('/client-admin') ||
+      currentPath.includes('/workspace') ||
+      currentPath.includes('/login') ||
+      currentPath.includes('/register') ||
+      currentPath.includes('/dashboard') ||
+      currentHash.includes('admin') ||
+      currentHash.includes('client-portal') ||
+      currentHash.includes('client-admin') ||
+      currentHash.includes('workspace') ||
+      currentHash.includes('login') ||
+      currentHash.includes('register') ||
+      currentHash.includes('dashboard');
+
+    if (isPrivate) {
+      updateMetaTag('robots', 'noindex,nofollow');
+    } else {
+      updateMetaTag('robots', 'index,follow');
+    }
+
   }, [page]);
 
   const setCurrentPage = (newPage: PageType) => {
