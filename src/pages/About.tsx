@@ -19,7 +19,7 @@ import {
   Workflow
 } from 'lucide-react';
 import { PageType } from '../types';
-import ClientJourney from '../components/ClientJourney';
+import RadialOrbitalTimeline from '../components/RadialOrbitalTimeline';
 
 interface AboutProps {
   setCurrentPage: (page: PageType) => void;
@@ -437,14 +437,14 @@ export default function About({ setCurrentPage }: AboutProps) {
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Interactive Onboarding</span>
             <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-              Our Onboarding Process & Journey
+              Client Delivery Journey
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Transition from manual backlogs to hyper-efficient, secure, carrier-trained global operations in just simple, transparent phases.
+              Transition from manual backlogs to hyper-efficient, secure, carrier-trained global operations via our orbital client delivery journey.
             </p>
           </div>
 
-          <ClientJourney />
+          <RadialOrbitalTimeline />
         </div>
       </section>
 

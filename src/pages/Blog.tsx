@@ -626,50 +626,83 @@ export default function Blog({ setCurrentPage }: BlogProps) {
             {paginatedPosts
               // Skip the first one if we are showing spotlight, page 1, and no specific category/query filters
               .filter((_, idx) => currentPageNum !== 1 || idx !== 0 || searchQuery !== '' || selectedCategory !== 'All')
-              .map((post) => (
-                <div
-                  key={post.id}
-                  onClick={() => {
-                    setActiveArticle(post);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="bg-white border border-[#DCE7FF] rounded-2xl overflow-hidden hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="p-6 sm:p-8 space-y-5 text-left">
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono font-bold uppercase">
-                      <span>{post.category}</span>
-                      <span>{post.readTime}</span>
-                    </div>
-                    
-                    <h3 className="text-lg font-bold text-[#081B8C] font-display hover:text-[#2F6DFF] transition-colors leading-snug line-clamp-2">
-                      {post.title}
-                    </h3>
-                    
-                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
-                      {post.excerpt}
-                    </p>
+              .map((post) => {
+                // Determine high-fidelity Unsplash image based on category
+                const cat = post.category.toLowerCase();
+                let imgUrl = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&fit=crop&q=80';
+                if (cat.includes('operations') || cat.includes('bpo')) {
+                  imgUrl = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&fit=crop&q=80';
+                } else if (cat.includes('ai') || cat.includes('automation') || cat.includes('digital') || cat.includes('modern')) {
+                  imgUrl = 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&fit=crop&q=80';
+                } else if (cat.includes('advisory') || cat.includes('compliance') || cat.includes('security')) {
+                  imgUrl = 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=600&fit=crop&q=80';
+                }
 
-                    {/* mini Author bar */}
-                    <div className="flex items-center gap-2 pt-4 border-t border-gray-100 mt-4">
-                      <img
-                        src={post.author.avatar}
-                        alt={post.author.name}
-                        className="w-8 h-8 rounded-full object-cover border border-[#DCE7FF]"
-                      />
-                      <div>
-                        <span className="font-bold text-gray-800 text-xs block">{post.author.name}</span>
-                        <span className="text-[10px] text-gray-400">{post.author.role}</span>
+                return (
+                  <motion.div
+                    key={post.id}
+                    onClick={() => {
+                      setActiveArticle(post);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    className="group bg-white border border-[#DCE7FF] rounded-2xl overflow-hidden hover:shadow-xl hover:border-[#2F6DFF] transition-all duration-300 cursor-pointer flex flex-col justify-between text-left"
+                  >
+                    <div>
+                      {/* Image header with category tag overlay and image zoom */}
+                      <div className="relative h-48 overflow-hidden bg-slate-900">
+                        <img 
+                          src={imgUrl} 
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          referrerPolicy="no-referrer"
+                        />
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+                        
+                        {/* Interactive floating badges */}
+                        <span className="absolute top-4 left-4 bg-[#081B8C]/90 text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shadow-sm">
+                          {post.category}
+                        </span>
+                        
+                        <span className="absolute top-4 right-4 bg-white/90 backdrop-blur-xs text-gray-800 text-[9px] font-mono font-bold px-2.5 py-1 rounded-md shadow-sm">
+                          {post.readTime}
+                        </span>
+                      </div>
+
+                      <div className="p-6 sm:p-8 space-y-3.5">
+                        <h3 className="text-lg font-bold text-[#081B8C] font-display group-hover:text-[#2F6DFF] transition-colors leading-snug line-clamp-2">
+                          {post.title}
+                        </h3>
+                        
+                        <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
+                          {post.excerpt}
+                        </p>
+
+                        {/* mini Author bar */}
+                        <div className="flex items-center gap-2 pt-4 border-t border-gray-100 mt-4">
+                          <img
+                            src={post.author.avatar}
+                            alt={post.author.name}
+                            className="w-8 h-8 rounded-full object-cover border border-[#DCE7FF]"
+                          />
+                          <div>
+                            <span className="font-bold text-gray-800 text-xs block">{post.author.name}</span>
+                            <span className="text-[10px] text-gray-400">{post.author.role}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* trigger link footer */}
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] hover:bg-white transition-colors">
-                    <span>Read Full Operational Briefing</span>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-              ))}
+                    {/* trigger link footer */}
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] group-hover:bg-[#2F6DFF]/5 transition-colors">
+                      <span>Read Full Operational Briefing</span>
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </motion.div>
+                );
+              })}
 
             {paginatedPosts.length === 0 && (
               <div className="col-span-full bg-white border border-dashed border-[#DCE7FF] rounded-xl p-12 text-center text-gray-400 text-sm">

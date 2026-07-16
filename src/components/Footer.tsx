@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
-import { Mail, Phone, MapPin, Send, ShieldCheck, ArrowUpRight, CheckCircle, Loader2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, ShieldCheck, ArrowUpRight, CheckCircle, Loader2, Globe } from 'lucide-react';
+import { motion } from 'motion/react';
 import { PageType } from '../types';
 import { supabase } from '../lib/supabase';
 import { broadcastChange } from '../utils/realtimeHelper';
@@ -113,7 +114,6 @@ export default function Footer({ setCurrentPage }: FooterProps) {
                 { name: 'Business Process BPO', page: 'services' as PageType },
                 { name: 'Digital Modernization', page: 'services' as PageType },
                 { name: 'AI & Automation Solutions', page: 'services' as PageType },
-                { name: 'Our Focus Industries', page: 'industries' as PageType },
                 { name: 'Strategic Advisory', page: 'services' as PageType }
               ].map((link) => (
                 <li key={link.name}>
@@ -172,17 +172,43 @@ export default function Footer({ setCurrentPage }: FooterProps) {
 
         </div>
 
-        {/* Global Offices Strip */}
-        <div className="grid grid-cols-1 gap-8 py-10 text-xs text-gray-400 border-b border-[#DCE7FF]/60">
-          <div className="flex items-start gap-3">
-            <MapPin className="w-4 h-4 text-[#2F6DFF] shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-gray-600">Going Technologies Global Center</p>
-              <p className="mt-0.5">Visakhapatnam, Andhra Pradesh 530041, India</p>
-              <p className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[11px]">
-                <span>Phone: 706-383-0888</span>
-                <span>Email: <a href="mailto:connect@goingtechnologies.com" className="text-[#2F6DFF] hover:underline">connect@goingtechnologies.com</a></span>
+        {/* Minimalist, Elegant Address & Security Status Ribbon */}
+        <div className="py-8 my-8 border-t border-b border-[#DCE7FF]/50 relative overflow-hidden group">
+          {/* Subtle gradient glow & tiny dots background */}
+          <div className="absolute inset-0 opacity-40 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-tr from-[#2F6DFF]/5 to-transparent blur-2xl rounded-full pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="space-y-1 text-left">
+              <span className="text-[9px] font-bold text-[#2F6DFF] uppercase tracking-widest font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Active Secure Hub • Visakhapatnam Center
+              </span>
+              <p className="text-sm font-bold text-[#081B8C] font-display">
+                Going Technologies Global Center
               </p>
+              <p className="text-xs text-gray-400">
+                Andhra Pradesh 530041, India
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+              <div className="text-left">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest font-mono block">Direct Dial</span>
+                <a href="tel:7063830888" className="text-sm font-bold text-gray-700 hover:text-[#2F6DFF] transition-colors font-mono">
+                  706-383-0888
+                </a>
+              </div>
+              <div className="text-left">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest font-mono block">Enterprise Intake</span>
+                <a href="mailto:connect@goingtechnologies.com" className="text-sm font-bold text-gray-700 hover:text-[#2F6DFF] transition-colors font-mono">
+                  connect@goingtechnologies.com
+                </a>
+              </div>
+              <div className="bg-[#2F6DFF]/5 border border-[#2F6DFF]/15 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#2F6DFF]" />
+                <span className="text-[10px] font-mono font-bold text-gray-500 uppercase">HIPAA & SOC 2 AUDITED</span>
+              </div>
             </div>
           </div>
         </div>

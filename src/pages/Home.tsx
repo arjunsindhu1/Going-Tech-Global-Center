@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   ArrowRight,
@@ -24,14 +24,17 @@ import {
   Sparkles,
   Calculator,
   Activity,
-  Star
+  Star,
+  RefreshCw,
+  HeartHandshake,
+  Settings
 } from 'lucide-react';
 import { PageType } from '../types';
 import { SERVICES_DATA, INDUSTRIES_DATA, CASE_STUDIES, BLOG_POSTS } from '../data';
 import ROICalculator from '../components/ROICalculator';
-import ClientJourney from '../components/ClientJourney';
 import FeaturedIn from '../components/FeaturedIn';
 import OperationsHealthCheck from '../components/OperationsHealthCheck';
+import ParticleTextEffect from '../components/ParticleTextEffect';
 
 function AnimatedCounter({ value, duration = 1500 }: { value: string; duration?: number }) {
   const numericStr = value.replace(/[^0-9.]/g, '');
@@ -254,6 +257,16 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
   const [isHovered1, setIsHovered1] = useState(false);
   const [isHovered2, setIsHovered2] = useState(false);
   const [isTestimonialExpanded, setIsTestimonialExpanded] = useState(false);
+
+  // Spotlight mouse coordinate tracker
+  const [heroMouse, setHeroMouse] = useState({ x: 0, y: 0 });
+  const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHeroMouse({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
 
   // Canvas interactive network particle animation
   useEffect(() => {
@@ -485,15 +498,62 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
     <div className="bg-[#F8FAFF] font-sans text-[#111827]">
       
       {/* SECTION 1: HERO SECTION */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden pt-12 pb-24">
+      <section 
+        onMouseMove={handleHeroMouseMove}
+        className="relative min-h-[90vh] flex items-center overflow-hidden pt-12 pb-24"
+      >
+        {/* Spotlight Mouse Overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(700px circle at ${heroMouse.x}px ${heroMouse.y}px, rgba(47, 109, 255, 0.08), transparent 45%)`
+          }}
+        />
+
         {/* Interactive Canvas Background */}
         <div className="absolute inset-y-0 right-0 w-full lg:w-[50%] opacity-80 z-0">
           <canvas ref={canvasRef} className="w-full h-full object-cover" />
         </div>
         
-        {/* Background gradient washes */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#2F6DFF]/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#A93DFF]/5 blur-[120px] rounded-full" />
+        {/* Background gradient washes - slowly drifting using Framer Motion */}
+        <motion.div 
+          animate={{
+            x: [0, 40, -20, 0],
+            y: [0, -30, 20, 0],
+            scale: [1, 1.1, 0.95, 1],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#2F6DFF]/10 blur-[120px] rounded-full pointer-events-none" 
+        />
+        <motion.div 
+          animate={{
+            x: [0, -30, 40, 0],
+            y: [0, 20, -30, 0],
+            scale: [1, 0.9, 1.15, 1],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#A93DFF]/5 blur-[120px] rounded-full pointer-events-none" 
+        />
+        <motion.div 
+          animate={{
+            x: [0, 15, -15, 0],
+            y: [0, 15, -15, 0],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-[30%] right-[30%] w-[250px] h-[250px] bg-cyan-400/5 blur-[90px] rounded-full pointer-events-none" 
+        />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -615,13 +675,63 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
             </div>
 
             {/* Hero Right Interactive Display (Desktop only) */}
-            <div className="hidden lg:col-span-5 relative">
+            <div className="hidden lg:col-span-5 relative py-12">
+              
+              {/* Floating Glass Card 1 - Top Left */}
+              <motion.div
+                animate={{
+                  y: [0, -10, 0],
+                  rotate: [0, -1, 1, 0]
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="absolute -top-4 -left-12 z-30 bg-white/70 backdrop-blur-md border border-[#DCE7FF]/80 p-3.5 rounded-2xl shadow-xl flex items-center gap-3 max-w-[190px]"
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-[#2F6DFF] animate-ping shrink-0" />
+                <div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-mono">Overnight SLA</p>
+                  <p className="text-xs font-extrabold text-[#081B8C] font-display">&lt; 15 Mins Response</p>
+                </div>
+              </motion.div>
+
+              {/* Floating Glass Card 2 - Bottom Right */}
+              <motion.div
+                animate={{
+                  y: [0, 8, 0],
+                  rotate: [0, 1, -1, 0]
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.5
+                }}
+                className="absolute -bottom-4 -right-10 z-30 bg-white/70 backdrop-blur-md border border-[#DCE7FF]/80 p-3.5 rounded-2xl shadow-xl flex items-center gap-3 max-w-[190px]"
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-mono">Payroll Savings</p>
+                  <p className="text-xs font-extrabold text-[#081B8C] font-display">60% Overhead Cut</p>
+                </div>
+              </motion.div>
+
+              {/* Main Card */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6 }}
                 className="bg-white border border-[#DCE7FF] rounded-2xl shadow-xl p-6 relative overflow-hidden"
               >
+                {/* Biometric Laser Scanner Beam */}
+                <motion.div 
+                  animate={{ top: ["0%", "100%", "0%"] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-x-0 h-[2.5px] bg-gradient-to-r from-transparent via-[#2F6DFF] to-transparent z-20 pointer-events-none opacity-40"
+                />
+
                 {/* Glowing decorative dot */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-[#4AB7FF]/10 blur-2xl rounded-full" />
                 
@@ -631,34 +741,43 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                     <span className="w-3 h-3 rounded-full bg-yellow-400" />
                     <span className="w-3 h-3 rounded-full bg-green-400" />
                   </div>
-                  <span className="font-mono text-[10px] text-gray-400">GOING_TECH_FLOW // ON</span>
+                  <span className="font-mono text-[10px] text-gray-400">GOING_TECH_FLOW // SECURE</span>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#DCE7FF]/60">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Intake Queue Status</p>
-                    <div className="flex items-baseline gap-2 mt-1">
+                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#DCE7FF]/60 relative group overflow-hidden">
+                    <div className="absolute inset-0 bg-[#2F6DFF]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold font-mono">Intake Queue Status</p>
+                    <div className="flex items-baseline gap-2 mt-1 relative z-10">
                       <span className="text-2xl font-bold text-[#081B8C]">0 New Backlogs</span>
                       <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Cleared</span>
                     </div>
                   </div>
 
-                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#DCE7FF]/60 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Certificate Processing SLA</p>
-                      <p className="text-base font-bold text-gray-800 mt-0.5">Average 8.4 Mins</p>
+                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#DCE7FF]/60 flex items-center justify-between relative group overflow-hidden">
+                    <div className="absolute inset-0 bg-[#2F6DFF]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                    <div className="relative z-10">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold font-mono">Certificate Processing SLA</p>
+                      <p className="text-base font-bold text-gray-800 mt-0.5">
+                        Average <AnimatedCounter value="8.4 Mins" />
+                      </p>
                     </div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping relative z-10" />
                   </div>
 
-                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#DCE7FF]/60">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Data Integrity Loop</p>
-                    <div className="w-full bg-gray-100 h-2 rounded-full mt-2 overflow-hidden">
-                      <div className="bg-[#2F6DFF] h-full w-[99.98%]" />
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 mt-1">
-                      <span>Accuracy Level</span>
-                      <span className="font-bold text-[#081B8C]">99.98%</span>
+                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#DCE7FF]/60 relative group overflow-hidden">
+                    <div className="absolute inset-0 bg-[#2F6DFF]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                    <div className="relative z-10">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold font-mono">Data Integrity Loop</p>
+                      <div className="w-full bg-gray-100 h-2 rounded-full mt-2 overflow-hidden">
+                        <div className="bg-[#2F6DFF] h-full w-[99.98%]" />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 mt-1">
+                        <span>Accuracy Level</span>
+                        <span className="font-bold text-[#081B8C]">
+                          <AnimatedCounter value="99.98%" />
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -668,6 +787,47 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
           </div>
         </div>
       </section>
+
+      {/* 21st.dev Scroll Morph Hero Transition Block */}
+      <div className="w-full relative py-12 flex justify-center overflow-hidden bg-[#F8FAFF]">
+        <motion.div
+          initial={{ borderRadius: "100px", scale: 0.94, opacity: 0.8 }}
+          whileInView={{ borderRadius: "32px", scale: 1, opacity: 1 }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+          className="w-full max-w-7xl mx-4 bg-gradient-to-tr from-[#081B8C] via-[#0A2540] to-[#2F6DFF] text-white p-12 relative overflow-hidden shadow-2xl border border-blue-900/30"
+        >
+          {/* Subtle grid layer */}
+          <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:32px_32px]" />
+          <div className="absolute -right-20 -top-20 w-80 h-80 bg-cyan-400/10 blur-[100px] rounded-full pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-left">
+            <div className="space-y-3 max-w-xl">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-300 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                OPERATIONAL TRANSITION
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold font-display leading-tight tracking-tight">
+                Seamless Transition From Legacy to Scaled Execution
+              </h2>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                As you navigate down our operational pipeline, see how manual bottlenecks dissolve into robust, SOC 2 audited digital workflows.
+              </p>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center min-w-[130px]">
+                <p className="text-2xl font-mono font-extrabold text-cyan-300">60%</p>
+                <p className="text-[9px] uppercase tracking-wider text-slate-300 font-bold mt-1">Average Savings</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center min-w-[130px]">
+                <p className="text-2xl font-mono font-extrabold text-cyan-300">&lt; 15m</p>
+                <p className="text-[9px] uppercase tracking-wider text-slate-300 font-bold mt-1">SLA response</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
 
       {/* NEW SECTION: PROPERTY & CASUALTY WORKFLOW */}
       <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white border-y border-[#DCE7FF]/60 relative">
@@ -781,6 +941,112 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 </div>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* NEW SECTION: ANIMATED P&C INSURANCE CAPABILITIES */}
+      <section className="py-24 bg-white border-t border-[#DCE7FF]/60 relative overflow-hidden">
+        {/* Ambient background glows */}
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#2F6DFF]/3 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#A93DFF]/3 blur-[120px] rounded-full pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3.5 py-1.5 rounded-full border border-[#DCE7FF]">
+              Specialized Domain
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              Property & Casualty Insurance Solutions
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              We deliver dedicated, carrier-aligned support squads trained specifically in standard US insurance workflows, liberating producers from administrative burdens.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {[
+              {
+                title: 'Property & Casualty Insurance',
+                desc: 'Expert support for retail agents, MGAs, and carriers handling standard risk profiles.',
+                icon: <Shield className="w-5 h-5 text-[#2F6DFF]" />
+              },
+              {
+                title: 'Commercial Insurance',
+                desc: 'Comprehensive processing of commercial lines, excess coverages, and specialized risks.',
+                icon: <Briefcase className="w-5 h-5 text-[#A93DFF]" />
+              },
+              {
+                title: 'Agency Operations',
+                desc: 'Internal workflows mapped and optimized to free local agents for high-commission sales.',
+                icon: <Settings className="w-5 h-5 text-[#4AB7FF]" />
+              },
+              {
+                title: 'Policy Processing',
+                desc: 'Meticulous entry, quality checks, and digital delivery of issued policies and binders.',
+                icon: <FileText className="w-5 h-5 text-[#081B8C]" />
+              },
+              {
+                title: 'Back Office Services',
+                desc: 'High-speed data cleansing, carrier statement audits, and commission transaction records.',
+                icon: <Layers className="w-5 h-5 text-emerald-500" />
+              },
+              {
+                title: 'Claims Support',
+                desc: 'First Notice of Loss (FNOL) logging, documentation gathering, and claims tracking.',
+                icon: <HeartHandshake className="w-5 h-5 text-rose-500" />
+              },
+              {
+                title: 'Renewals',
+                desc: 'Proactive renewal exposure tracking, carrier matching, and renewal preparation.',
+                icon: <RefreshCw className="w-5 h-5 text-indigo-500" />
+              },
+              {
+                title: 'Certificates',
+                desc: 'SLA-governed, rapid Certificate (COI) drafting and endorsement issuance.',
+                icon: <Award className="w-5 h-5 text-amber-500" />
+              },
+              {
+                title: 'Quote Processing',
+                desc: 'Accurate translations of client risk parameters into multiple carrier portal submissions.',
+                icon: <FileCheck className="w-5 h-5 text-[#2F6DFF]" />
+              },
+              {
+                title: 'Agency Management',
+                desc: 'Real-time daily optimization of Applied Epic, AMS360, EZLynx, and agency databases.',
+                icon: <Users className="w-5 h-5 text-cyan-500" />
+              }
+            ].map((card, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-30px" }}
+                transition={{ duration: 0.35, delay: idx * 0.05 }}
+                whileHover={{ y: -5, scale: 1.02 }}
+                className="bg-gradient-to-b from-white to-[#F8FAFF] border border-[#DCE7FF]/70 rounded-2xl p-5 hover:shadow-lg hover:border-[#2F6DFF]/40 transition-all duration-300 flex flex-col justify-between relative group overflow-hidden"
+              >
+                {/* Micro-glow effect */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#2F6DFF]/20 to-transparent transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                
+                <div className="space-y-4">
+                  <div className="p-2.5 bg-white border border-[#DCE7FF]/50 rounded-xl w-fit shadow-2xs group-hover:bg-[#DCE7FF]/20 transition-colors">
+                    {card.icon}
+                  </div>
+                  <h4 className="font-bold text-[#081B8C] font-display text-sm tracking-tight group-hover:text-[#2F6DFF] transition-colors leading-snug">
+                    {card.title}
+                  </h4>
+                  <p className="text-gray-500 text-[11px] leading-relaxed">
+                    {card.desc}
+                  </p>
+                </div>
+                
+                <div className="pt-3 border-t border-gray-100/60 mt-4 flex items-center justify-between text-[8px] text-gray-400 font-mono tracking-wider">
+                  <span>P&C PROTOCOL 0{idx + 1}</span>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -917,7 +1183,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
               <div
                 key={ind.id}
                 onClick={() => {
-                  setCurrentPage('industries');
+                  setCurrentPage('services');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="bg-[#F8FAFF] border border-[#DCE7FF]/60 rounded-xl p-6 hover:bg-white hover:border-[#2F6DFF] hover:shadow-md transition-all duration-200 cursor-pointer group flex justify-between items-center"
@@ -934,12 +1200,12 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
           <div className="text-center mt-10">
             <button
               onClick={() => {
-                setCurrentPage('industries');
+                setCurrentPage('services');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="cursor-pointer inline-flex items-center gap-2 text-sm font-bold text-[#081B8C] hover:text-[#2F6DFF] group"
             >
-              <span>Explore All Industry Verticals</span>
+              <span>Explore Our Services</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -951,13 +1217,13 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-[#2F6DFF]/5 blur-[100px] rounded-full pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
+          <div className="text-center max-w-3xl mx-auto space-y-4 flex flex-col items-center">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3 py-1 rounded-full">
               Enterprise Technology Integration
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
-              AI-Powered Workflow Automation
-            </h2>
+            <div className="py-2 w-full flex justify-center">
+              <ParticleTextEffect text="AI AUTOMATION" fontSize={38} textColor="#081B8C" particleColor="rgba(47, 109, 255, 0.75)" />
+            </div>
             <p className="text-gray-500 text-sm leading-relaxed">
               We position AI as an operational advantage within our human-led delivery model, combining advanced language models with 24/7 supervisor-backed validation.
             </p>
@@ -1017,7 +1283,9 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="bg-[#F8FAFF] border border-[#DCE7FF]/50 rounded-2xl p-8 relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-[#2F6DFF]/30"
               >
-                <div className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight">{pil.metric}</div>
+                <div className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight">
+                  <AnimatedCounter value={pil.metric} />
+                </div>
                 <h4 className="text-base font-bold text-[#081B8C] mt-2 mb-1">{pil.title}</h4>
                 <p className="text-gray-500 text-xs leading-relaxed">{pil.desc}</p>
               </motion.div>
@@ -1076,7 +1344,9 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
               <div className="bg-[#F8FAFF] border-t border-[#DCE7FF] p-6 flex justify-between items-center">
                 <div>
                   <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Primary Outcome</p>
-                  <p className="text-lg font-extrabold text-[#081B8C] mt-0.5">{study.metricValue}</p>
+                  <p className="text-lg font-extrabold text-[#081B8C] mt-0.5">
+                    <AnimatedCounter value={study.metricValue} />
+                  </p>
                 </div>
                 <span className="text-xs font-semibold text-gray-500">{study.metricLabel}</span>
               </div>

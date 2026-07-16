@@ -5,6 +5,7 @@ import { PageType } from '../types';
 import ROICalculator from '../components/ROICalculator';
 import OperationsHealthCheck from '../components/OperationsHealthCheck';
 import BusinessToolsModal from '../components/BusinessToolsModal';
+import ActionSearchBar from '../components/ActionSearchBar';
 
 interface BusinessToolsProps {
   setCurrentPage: (page: PageType) => void;
@@ -83,8 +84,17 @@ export default function BusinessTools({ setCurrentPage }: BusinessToolsProps) {
         </div>
       </section>
 
+      {/* ENTERPRISE ACTION SEARCH BAR (inspired by 21st.dev) */}
+      <div className="max-w-4xl mx-auto px-4 -mt-8 relative z-30">
+        <ActionSearchBar 
+          onSelectTab={handleTabChange} 
+          isUnlocked={isUnlocked} 
+          onOpenLeadModal={() => setIsModalOpen(true)} 
+        />
+      </div>
+
       {/* Selector Tabs */}
-      <section className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
+      <section id="business-tools-selector" className="max-w-5xl mx-auto px-4 pt-10 pb-4 relative z-20">
         <div className="bg-white border border-[#DCE7FF] rounded-2xl p-2 shadow-xl flex gap-2">
           <button
             onClick={() => handleTabChange('roi')}

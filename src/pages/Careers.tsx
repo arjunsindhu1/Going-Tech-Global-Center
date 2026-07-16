@@ -294,45 +294,65 @@ export default function Careers({ setCurrentPage }: CareersProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
-              {jobs.map((job) => (
-                <div
+              {jobs.map((job, index) => (
+                <motion.div
                   key={job.id}
-                  className="bg-white border border-[#DCE7FF] rounded-2xl p-6 sm:p-8 hover:shadow-lg hover:border-[#2F6DFF] transition-all duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  whileHover={{ y: -4, scale: 1.005 }}
+                  className="group bg-white border border-[#DCE7FF] rounded-2xl p-6 sm:p-8 hover:shadow-xl hover:border-[#2F6DFF] transition-all duration-350 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden text-left"
                 >
-                  <div className="space-y-3 flex-1">
+                  {/* Subtle inner card background glow */}
+                  <div className="absolute top-0 left-0 w-[4px] h-full bg-[#2F6DFF] opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  <div className="space-y-3 flex-1 relative z-10">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[10px] bg-[#DCE7FF]/40 text-[#081B8C] font-bold px-2.5 py-1 rounded">
+                      <span className="text-[10px] bg-[#DCE7FF]/40 text-[#081B8C] font-extrabold px-2.5 py-1 rounded-md">
                         {job.department}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                      <span className="text-[10px] text-gray-400 font-bold font-mono flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" /> {job.employment_type}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                      <span className="text-[10px] text-gray-400 font-bold font-mono flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" /> {job.location}
                       </span>
                       {job.salary && (
-                        <span className="text-[10px] text-[#2F6DFF] font-bold flex items-center gap-0.5">
+                        <span className="text-[10px] text-[#2F6DFF] font-extrabold flex items-center gap-0.5">
                           <DollarSign className="w-3.5 h-3.5" /> {job.salary}
                         </span>
                       )}
+                      {/* Pulsing Active Recruitment Indicator */}
+                      <span className="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-200/50 font-mono font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 ml-auto md:ml-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        HIRING NOW
+                      </span>
                     </div>
-                    <h4 className="text-lg font-bold text-[#081B8C] font-display">{job.title}</h4>
-                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{job.description}</p>
+                    
+                    <h4 className="text-xl font-extrabold text-[#081B8C] font-display group-hover:text-[#2F6DFF] transition-colors">
+                      {job.title}
+                    </h4>
+                    
+                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                      {job.description}
+                    </p>
+
                     {job.experience && (
-                      <p className="text-[11px] text-gray-400 font-medium">
-                        <strong>Required Experience:</strong> {job.experience}
-                      </p>
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-400 bg-[#F8FAFF] border border-[#DCE7FF]/40 px-2.5 py-1 rounded-md w-fit font-mono">
+                        <span className="font-bold text-gray-500 uppercase">Experience:</span>
+                        <span>{job.experience}</span>
+                      </div>
                     )}
                   </div>
 
                   <button
                     onClick={() => setSelectedJob(job)}
-                    className="cursor-pointer bg-[#081B8C] hover:bg-[#2F6DFF] text-white text-xs font-bold px-6 py-3 rounded-full flex items-center gap-1 shrink-0"
+                    className="cursor-pointer bg-[#081B8C] hover:bg-[#2F6DFF] group-hover:shadow-md group-hover:shadow-[#2F6DFF]/10 text-white text-xs font-bold px-6 py-3 rounded-full flex items-center gap-1.5 shrink-0 transition-all duration-300 transform"
                   >
                     <span>Examine Opening & Apply</span>
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

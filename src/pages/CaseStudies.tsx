@@ -83,54 +83,144 @@ export default function CaseStudies({ setCurrentPage }: CaseStudiesProps) {
         </div>
       </section>
 
-      {/* Main Studies Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {CASE_STUDIES.map((study) => {
+      {/* Main Studies Deck - Premium 21st.dev "Display Cards" implementation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center">
+        
+        {/* Overlapping Deck container (Desktop) */}
+        <div className="w-full max-w-[900px] h-[380px] relative hidden md:flex items-center justify-center mb-12">
+          {CASE_STUDIES.map((study, sIdx) => {
+            const isSelected = activeStudy === study.id;
+            
+            // Configuration for the 3-card fanning effect
+            // Card 0: left slant, Card 1: center, Card 2: right slant
+            let rotateVal = 0;
+            let translateXVal = 0;
+            let translateYVal = 0;
+            let zIndexVal = 10;
+
+            if (sIdx === 0) {
+              rotateVal = -4;
+              translateXVal = -140;
+              translateYVal = 12;
+              zIndexVal = isSelected ? 30 : 10;
+            } else if (sIdx === 1) {
+              rotateVal = 0;
+              translateXVal = 0;
+              translateYVal = 0;
+              zIndexVal = isSelected ? 30 : 20;
+            } else if (sIdx === 2) {
+              rotateVal = 4;
+              translateXVal = 140;
+              translateYVal = 12;
+              zIndexVal = isSelected ? 30 : 10;
+            }
+
+            return (
+              <motion.div
+                key={study.id}
+                onClick={() => setActiveStudy(study.id)}
+                style={{ zIndex: zIndexVal }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1,
+                  rotate: isSelected ? 0 : rotateVal,
+                  x: isSelected ? 0 : translateXVal,
+                  y: isSelected ? -20 : translateYVal,
+                }}
+                whileHover={{
+                  scale: 1.05,
+                  y: isSelected ? -25 : translateYVal - 15,
+                  rotate: isSelected ? 0 : rotateVal * 1.5,
+                  transition: { type: "spring", stiffness: 300, damping: 15 }
+                }}
+                className={`absolute w-[360px] p-[1.5px] rounded-3xl cursor-pointer bg-gradient-to-br transition-all duration-300 shadow-xl ${
+                  isSelected
+                    ? 'from-[#2F6DFF] via-[#A93DFF] to-emerald-400 shadow-2xl shadow-[#2F6DFF]/15'
+                    : 'from-[#DCE7FF] via-slate-100 to-[#DCE7FF]/50 hover:from-[#2F6DFF] hover:to-[#A93DFF]'
+                }`}
+              >
+                <div className="bg-white rounded-[22px] p-6 h-[320px] flex flex-col justify-between relative overflow-hidden group">
+                  {/* Glass reflections & glow */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-[#2F6DFF]/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  
+                  {/* Card top bar */}
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-3 relative z-10">
+                    <span className="text-[9px] font-extrabold uppercase text-[#2F6DFF] tracking-widest bg-[#2F6DFF]/5 px-2.5 py-1 rounded-md border border-[#DCE7FF]/60">
+                      {study.industry}
+                    </span>
+                    <span className="font-mono text-[9px] text-gray-400 font-bold uppercase">
+                      ID: 0{sIdx + 1}
+                    </span>
+                  </div>
+
+                  {/* Client and Title */}
+                  <div className="space-y-2 relative z-10 text-left">
+                    <p className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest leading-none">
+                      {study.client}
+                    </p>
+                    <h3 className="text-base font-bold text-[#081B8C] font-display group-hover:text-[#2F6DFF] transition-colors leading-snug tracking-tight line-clamp-3">
+                      {study.title}
+                    </h3>
+                  </div>
+
+                  {/* Primary Outcome Metric Display */}
+                  <div className="bg-slate-50 border border-[#DCE7FF]/40 p-4 rounded-xl flex justify-between items-center relative overflow-hidden z-10">
+                    <div className="text-left">
+                      <p className="text-[8px] text-gray-400 uppercase font-bold tracking-wider">PRIMARY OUTCOME</p>
+                      <p className="text-xl font-extrabold text-[#081B8C] font-mono mt-0.5">
+                        <MetricCounter value={study.metricValue} />
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold text-gray-500 bg-white border border-[#DCE7FF]/40 px-2 py-0.5 rounded-md">
+                      {study.metricLabel}
+                    </span>
+                  </div>
+
+                  {/* Trigger action bar */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] relative z-10">
+                    <span>{isSelected ? 'Active Study Overview' : 'Click to View Blueprint'}</span>
+                    <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-[#2F6DFF] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Mobile alternative list layout */}
+        <div className="grid grid-cols-1 gap-6 w-full md:hidden">
+          {CASE_STUDIES.map((study, sIdx) => {
             const isSelected = activeStudy === study.id;
             return (
               <div
                 key={study.id}
-                onClick={() => setActiveStudy(isSelected ? null : study.id)}
-                className={`bg-white border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 relative ${
+                onClick={() => setActiveStudy(study.id)}
+                className={`p-[1.5px] rounded-3xl cursor-pointer relative overflow-hidden bg-gradient-to-br ${
                   isSelected
-                    ? 'border-[#2F6DFF] ring-2 ring-[#2F6DFF]/15 shadow-xl'
-                    : 'border-[#DCE7FF] hover:border-[#2F6DFF]/50 hover:shadow-md'
+                    ? 'from-[#2F6DFF] via-[#A93DFF] to-emerald-400'
+                    : 'from-[#DCE7FF] to-slate-100'
                 }`}
               >
-                {/* Metric Header strip */}
-                <div className="bg-[#F8FAFF] border-b border-[#DCE7FF]/60 px-6 py-4 flex justify-between items-center">
-                  <span className="text-[10px] font-extrabold uppercase text-[#2F6DFF] tracking-wider bg-[#DCE7FF]/30 px-2.5 py-1 rounded">
-                    {study.industry}
-                  </span>
-                  <span className="font-mono text-[9px] text-gray-400 font-bold uppercase">CASE_ID: {study.id.slice(0, 5).toUpperCase()}</span>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <h3 className="text-base font-bold text-[#081B8C] font-display hover:text-[#2F6DFF] transition-colors leading-snug">
-                    {study.title}
-                  </h3>
-                  <div className="flex justify-between items-baseline pt-2 border-t border-gray-100">
-                    <div>
-                      <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">PRIMARY METRIC</p>
-                      <p className="text-xl font-extrabold text-[#081B8C] mt-0.5">
-                        <MetricCounter value={study.metricValue} />
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-semibold text-gray-400">{study.metricLabel}</span>
+                <div className="bg-white rounded-[22px] p-6 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-extrabold uppercase text-[#2F6DFF] tracking-widest bg-[#2F6DFF]/5 px-2.5 py-1 rounded-md">
+                      {study.industry}
+                    </span>
+                    <span className="font-mono text-[9px] text-gray-400">0{sIdx + 1}</span>
                   </div>
-                </div>
-
-                {/* footer trigger button */}
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] bg-white hover:bg-gray-50 transition-colors">
-                  <span>{isSelected ? 'Collapse Operational Blueprint' : 'Examine Complete Transformation'}</span>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isSelected ? 'rotate-180 text-[#2F6DFF]' : ''}`} />
+                  <div className="space-y-1.5 text-left">
+                    <p className="text-[9px] font-mono text-gray-400 uppercase">{study.client}</p>
+                    <h3 className="text-base font-bold text-[#081B8C] leading-snug">{study.title}</h3>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-bold text-[#081B8C]">
+                    <span>View Case Study</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-180' : ''}`} />
+                  </div>
                 </div>
               </div>
             );
           })}
-
         </div>
 
         {/* Detailed Expansions panel (Rendered below cards based on selection) */}

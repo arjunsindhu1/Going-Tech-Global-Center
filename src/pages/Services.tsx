@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { PageType } from '../types';
 import { SERVICES_DATA } from '../data';
+import InteractiveWorkflowVisualizer from '../components/InteractiveWorkflowVisualizer';
 
 interface ServicesProps {
   setCurrentPage: (page: PageType) => void;
@@ -367,32 +368,8 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
                   </div>
                 </div>
 
-                {/* REDESIGN 2: KEY SERVICES PERFORMED (Bento Grid instead of list) */}
-                <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#A93DFF]/5 blur-2xl rounded-full" />
-                  
-                  <div className="border-b border-gray-100 pb-4">
-                    <span className="text-[10px] font-bold text-[#A93DFF] uppercase tracking-widest font-mono">Specialized Services</span>
-                    <h3 className="text-lg font-bold font-display text-[#081B8C]">
-                      Full Scope of Key Workflows Handled
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {activeService.keyServices.map((ks, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        className="bg-[#F8FAFF] border border-gray-100 rounded-xl p-4 flex items-center gap-3 hover:bg-white hover:border-[#2F6DFF]/40 hover:shadow-md transition-all duration-300"
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg shadow-inner shrink-0">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="text-xs text-gray-700 font-semibold leading-tight">{ks}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
+                {/* REDESIGN 2: KEY SERVICES PERFORMED (Interactive SaaS Workflow Visualizer) */}
+                <InteractiveWorkflowVisualizer keyServices={activeService.keyServices} serviceName={activeService.title} />
 
                 {/* REDESIGN 3: SUPPORTED SYSTEMS & SOFTWARE (Logo/Platform Pills with custom styles) */}
                 <div className="bg-white border border-[#DCE7FF] rounded-2xl p-8 lg:p-10 shadow-sm space-y-6 relative overflow-hidden">
@@ -406,27 +383,57 @@ export default function Services({ setCurrentPage, activeServiceId, setActiveSer
                   </div>
 
                   <p className="text-xs text-gray-500 leading-relaxed max-w-xl">
-                    Our staff are certified specialists operating directly within your instance under strict zero-trust operational pipelines.
+                    Our staff are certified specialists operating directly within your instance under strict zero-trust operational pipelines. Hover to see them in full brand colors.
                   </p>
 
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    {activeService.platforms.map((plat, index) => {
-                      const pillStyle = getPlatformStyle(plat);
-                      return (
-                        <motion.div
-                          key={index}
-                          whileHover={{ scale: 1.05 }}
-                          className={`border rounded-full px-4 py-2.5 text-xs font-bold flex items-center gap-2.5 transition-all duration-300 cursor-default shadow-sm ${pillStyle}`}
+                  {/* ANIMATED LOGO MARQUEE (grayscale to color on hover) */}
+                  <div className="relative w-full overflow-hidden bg-slate-50/50 py-6 border border-[#DCE7FF]/55 rounded-2xl">
+                    <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+                    
+                    <motion.div 
+                      className="flex gap-6 w-max"
+                      animate={{ x: [0, -400] }}
+                      transition={{
+                        repeat: Infinity,
+                        repeatType: "loop",
+                        duration: 15,
+                        ease: "linear",
+                      }}
+                    >
+                      {[
+                        { name: 'Applied Epic', icon: '⚡' },
+                        { name: 'AMS360', icon: '⚙️' },
+                        { name: 'EZLynx', icon: '🔗' },
+                        { name: 'HawkSoft', icon: '🦅' },
+                        { name: 'AgencyZoom', icon: '📈' },
+                        { name: 'Salesforce', icon: '☁️' },
+                        { name: 'iPipeline', icon: '🧬' },
+                        { name: 'SmartOffice', icon: '💼' },
+                        { name: 'UiPath', icon: '🤖' },
+                        { name: 'Python IDP', icon: '🐍' },
+                        { name: 'Applied Epic', icon: '⚡' },
+                        { name: 'AMS360', icon: '⚙️' },
+                        { name: 'EZLynx', icon: '🔗' },
+                        { name: 'HawkSoft', icon: '🦅' },
+                        { name: 'AgencyZoom', icon: '📈' },
+                        { name: 'Salesforce', icon: '☁️' },
+                        { name: 'iPipeline', icon: '🧬' },
+                        { name: 'SmartOffice', icon: '💼' },
+                        { name: 'UiPath', icon: '🤖' },
+                        { name: 'Python IDP', icon: '🐍' }
+                      ].map((plat, idx) => (
+                        <div 
+                          key={idx}
+                          className="flex items-center gap-3 bg-white border border-[#DCE7FF]/60 px-5 py-3 rounded-xl shadow-2xs group hover:border-[#2F6DFF]/50 transition-all cursor-default filter grayscale hover:grayscale-0 duration-300 shrink-0 hover:-translate-y-0.5"
                         >
-                          {/* Live integration green pulse */}
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          <span className="text-sm">{plat.icon}</span>
+                          <span className="text-xs font-bold text-gray-500 group-hover:text-[#081B8C] transition-colors">
+                            {plat.name}
                           </span>
-                          <span>{plat}</span>
-                        </motion.div>
-                      );
-                    })}
+                        </div>
+                      ))}
+                    </motion.div>
                   </div>
                 </div>
 

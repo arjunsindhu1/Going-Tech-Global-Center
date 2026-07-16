@@ -10,7 +10,6 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import About from './pages/About';
 import Services from './pages/Services';
-import Industries from './pages/Industries';
 import CaseStudies from './pages/CaseStudies';
 import BusinessTools from './pages/BusinessTools';
 import Blog from './pages/Blog';
@@ -132,7 +131,7 @@ export default function App() {
       '': 'home',
       'about': 'about',
       'services': 'services',
-      'industries': 'industries',
+      'industries': 'services', // Redirect to services page
       'case-studies': 'case-studies',
       'business-tools': 'business-tools',
       'blogs': 'blog',
@@ -155,11 +154,15 @@ export default function App() {
       if (hash) {
         const parts = hash.split('/');
         const pagePart = parts[0] as PageType;
+        if (pagePart === 'industries') {
+          setPage('services');
+          window.location.hash = 'services';
+          return;
+        }
         const validPages: PageType[] = [
           'home',
           'about',
           'services',
-          'industries',
           'case-studies',
           'business-tools',
           'blog',
@@ -225,11 +228,6 @@ export default function App() {
         title: "Our Services | Going Technologies Global Center",
         desc: "Comprehensive back office operations, client onboarding, claims support, and specialized service suites for insurance brokers.",
         keywords: "insurance BPO services, client onboarding, claims support, agency management system operations"
-      },
-      industries: {
-        title: "Industries We Serve | Going Technologies Global Center",
-        desc: "Delivering world-class operational excellence to retail insurance agencies, MGAs, wholesale brokers, and global carriers.",
-        keywords: "retail agencies BPO, MGA support services, wholesale brokers operations, insurance carrier BPO"
       },
       'business-tools': {
         title: "Business Tools & Insights | Going Technologies",
@@ -383,8 +381,6 @@ export default function App() {
             setActiveServiceId={setActiveServiceId}
           />
         );
-      case 'industries':
-        return <Industries setCurrentPage={setCurrentPage} />;
       case 'case-studies':
         return <CaseStudies setCurrentPage={setCurrentPage} />;
       case 'business-tools':
