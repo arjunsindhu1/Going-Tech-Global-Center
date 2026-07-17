@@ -86,64 +86,6 @@ export default function Header({ currentPage, setCurrentPage, onNavigateToServic
               {navItems.map((item) => {
                 const isActive = currentPage === item.page;
 
-                if (item.page === 'services') {
-                  return (
-                    <div
-                      key={item.label}
-                      className="relative"
-                      onMouseEnter={() => setServicesDropdown(true)}
-                      onMouseLeave={() => setServicesDropdown(false)}
-                    >
-                      <button
-                        onClick={() => handleNavClick('services')}
-                        className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                          isActive
-                            ? 'text-[#081B8C] bg-[#DCE7FF]/40 font-semibold'
-                            : 'text-[#111827] hover:text-[#081B8C] hover:bg-[#DCE7FF]/20'
-                        }`}
-                      >
-                        {item.label}
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {/* Dropdown menu */}
-                      <AnimatePresence>
-                        {servicesDropdown && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute left-0 mt-1 w-64 bg-white border border-[#DCE7FF] rounded-xl shadow-lg py-3 z-50"
-                          >
-                            <div className="px-4 pb-2 mb-2 border-b border-gray-100 text-[11px] uppercase font-semibold text-gray-400 tracking-wider">
-                              Core Operations
-                            </div>
-                            {quickServices.map((qs) => (
-                              <button
-                                key={qs.id}
-                                onClick={() => handleServiceClick(qs.id)}
-                                className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:text-[#081B8C] hover:bg-[#F8FAFF] font-medium flex items-center justify-between group cursor-pointer"
-                              >
-                                {qs.name}
-                                <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-[#2F6DFF]" />
-                              </button>
-                            ))}
-                            <div className="px-4 pt-2 border-t border-gray-100 mt-2">
-                              <button
-                                onClick={() => handleNavClick('services')}
-                                className="w-full text-center py-1.5 bg-[#F8FAFF] hover:bg-[#DCE7FF]/40 text-[#081B8C] font-semibold text-[11px] rounded-md transition-colors block cursor-pointer"
-                              >
-                                View All 8 Services
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                }
-
                 return (
                   <button
                     key={item.label}

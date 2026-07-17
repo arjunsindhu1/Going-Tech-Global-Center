@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight,
   TrendingUp,
@@ -27,7 +27,8 @@ import {
   Star,
   RefreshCw,
   HeartHandshake,
-  Settings
+  Settings,
+  Cpu
 } from 'lucide-react';
 import { PageType } from '../types';
 import { SERVICES_DATA, INDUSTRIES_DATA, CASE_STUDIES, BLOG_POSTS } from '../data';
@@ -35,6 +36,7 @@ import ROICalculator from '../components/ROICalculator';
 import FeaturedIn from '../components/FeaturedIn';
 import OperationsHealthCheck from '../components/OperationsHealthCheck';
 import ParticleTextEffect from '../components/ParticleTextEffect';
+import RadialOrbitalTimeline from '../components/RadialOrbitalTimeline';
 
 function AnimatedCounter({ value, duration = 1500 }: { value: string; duration?: number }) {
   const numericStr = value.replace(/[^0-9.]/g, '');
@@ -207,8 +209,8 @@ const pcWorkflowSteps = [
 
 const aiAutomationCards = [
   {
-    title: 'Intelligent Document Parsing',
-    desc: 'Advanced Large Language Models extract structured data fields from unstructured commercial application scans and carrier PDFs in seconds.',
+    title: 'Automated Systems Mapping',
+    desc: 'Advanced data models map and structure critical data points from commercial application templates and system records in seconds.',
     iconName: 'FileText',
     iconColor: 'text-[#2F6DFF]'
   },
@@ -244,6 +246,91 @@ const aiAutomationCards = [
   }
 ];
 
+const CaseStudyCard = ({ study, onClick }: { key?: string; study: typeof CASE_STUDIES[0]; onClick: () => void }) => {
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+  const [glowPos, setGlowPos] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    
+    const mouseX = e.clientX - rect.left - width / 2;
+    const mouseY = e.clientY - rect.top - height / 2;
+    
+    // Max 10 degrees rotation for refined enterprise aesthetic
+    const rX = -(mouseY / height) * 10;
+    const rY = (mouseX / width) * 10;
+    
+    setRotateX(rX);
+    setRotateY(rY);
+    setGlowPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+  };
+
+  return (
+    <motion.div
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      animate={{
+        rotateX,
+        rotateY,
+        transformPerspective: 1000,
+        scale: rotateX !== 0 ? 1.015 : 1
+      }}
+      transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+      className="bg-white border border-[#DCE7FF] rounded-3xl overflow-hidden hover:shadow-2xl hover:border-[#2F6DFF] transition-all duration-300 cursor-pointer flex flex-col justify-between h-full relative group select-none"
+      style={{ transformStyle: 'preserve-3d' }}
+    >
+      {/* 3D Depth Card Overlay Glow */}
+      <div 
+        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+        style={{
+          background: `radial-gradient(280px circle at ${glowPos.x}px ${glowPos.y}px, rgba(47, 109, 255, 0.08), transparent 80%)`
+        }}
+      />
+      
+      <div className="p-8 space-y-6 flex-1 flex flex-col justify-between" style={{ transform: 'translateZ(12px)' }}>
+        <div className="space-y-4">
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-xs font-extrabold uppercase text-[#2F6DFF] tracking-wider bg-[#DCE7FF]/40 px-2.5 py-1 rounded">
+              {study.industry}
+            </span>
+            <span className="text-[10px] text-gray-400 font-mono">CASE_ID: {study.id.slice(0, 5).toUpperCase()}</span>
+          </div>
+          <h3 className="text-lg font-bold text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors leading-snug">
+            {study.title}
+          </h3>
+          <p className="text-gray-500 text-xs leading-relaxed line-clamp-4">
+            {study.challenge}
+          </p>
+        </div>
+      </div>
+
+      {/* Stat callout footer */}
+      <div className="bg-[#F8FAFF] border-t border-[#DCE7FF] p-6 flex justify-between items-center shrink-0" style={{ transform: 'translateZ(6px)' }}>
+        <div>
+          <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Primary Outcome</p>
+          <p className="text-lg font-extrabold text-[#081B8C] mt-0.5">
+            <AnimatedCounter value={study.metricValue} />
+          </p>
+        </div>
+        <span className="text-xs font-semibold text-gray-500 max-w-[150px] text-right">{study.metricLabel}</span>
+      </div>
+    </motion.div>
+  );
+};
+
 interface HomeProps {
   setCurrentPage: (page: PageType) => void;
   onNavigateToService: (serviceId: string) => void;
@@ -253,6 +340,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<number>(0);
   const [activeWorkflowStep, setActiveWorkflowStep] = useState<number>(0);
+  const [activeTransitionStep, setActiveTransitionStep] = useState<number>(0);
   const [employeeScale, setEmployeeScale] = useState<number>(25);
   const [isHovered1, setIsHovered1] = useState(false);
   const [isHovered2, setIsHovered2] = useState(false);
@@ -260,6 +348,14 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
 
   // Spotlight mouse coordinate tracker
   const [heroMouse, setHeroMouse] = useState({ x: 0, y: 0 });
+  const [spotlightCoords, setSpotlightCoords] = useState<Record<number, { x: number; y: number }>>({});
+  const handleSpotlightMouseMove = (idx: number, e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setSpotlightCoords(prev => ({
+      ...prev,
+      [idx]: { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    }));
+  };
   const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setHeroMouse({
@@ -788,6 +884,73 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
+      {/* ENTERPRISE KPI ANALYTICS ROW (RELOCATED & ENHANCED) */}
+      <section className="py-20 bg-white border-b border-[#DCE7FF]/60 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#2F6DFF]/3 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#A93DFF]/3 blur-[120px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3 py-1 rounded-full border border-[#DCE7FF]">
+              Performance Indicators
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-[#081B8C] tracking-tight">
+              Enterprise Scaling At a Glance
+            </h2>
+            <p className="text-gray-500 text-xs sm:text-sm">
+              Our key operational metrics, verified across all active enterprise portfolios.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6">
+            {[
+              { label: 'Happy Clients', value: '30+', icon: Users, color: 'text-[#2F6DFF]', bg: 'bg-[#2F6DFF]/5' },
+              { label: 'Industry Verticals', value: '5', icon: Building, color: 'text-[#A93DFF]', bg: 'bg-[#A93DFF]/5' },
+              { label: 'Implementation Speed', value: '21-Day', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
+              { label: 'Support Operations', value: '24/7', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/5' },
+              { label: 'AI Powered Workflow', value: '10x', icon: Sparkles, color: 'text-cyan-500', bg: 'bg-cyan-500/5' },
+              { label: 'Secure Client Operations', value: '100%', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-500/5' }
+            ].map((stat, idx) => {
+              const StatIcon = stat.icon;
+              const coords = spotlightCoords[idx];
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.08 }}
+                  onMouseMove={(e) => handleSpotlightMouseMove(idx, e)}
+                  whileHover={{ y: -6 }}
+                  className="bg-white border border-[#DCE7FF]/80 rounded-2xl p-6 text-center shadow-xs flex flex-col items-center group relative overflow-hidden transition-all duration-300"
+                >
+                  {/* Glowing/moving border line glow */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#2F6DFF]/15 via-[#A93DFF]/15 to-[#2F6DFF]/15 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
+
+                  {/* Vercel-style Mouse Spotlight effect */}
+                  {coords && (
+                    <div
+                      className="pointer-events-none absolute -inset-px rounded-2xl opacity-100 transition-opacity duration-300 z-10"
+                      style={{
+                        background: `radial-gradient(130px circle at ${coords.x}px ${coords.y}px, rgba(47, 109, 255, 0.12), transparent 80%)`
+                      }}
+                    />
+                  )}
+
+                  <div className={`p-3 rounded-xl mb-4 ${stat.bg} relative z-20 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(47,109,255,0.2)] transition-all duration-300`}>
+                    <StatIcon className={`w-5 h-5 ${stat.color} group-hover:animate-pulse`} />
+                  </div>
+                  <div className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight mb-1 relative z-20">
+                    <AnimatedCounter value={stat.value} />
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider relative z-20">{stat.label}</span>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* 21st.dev Scroll Morph Hero Transition Block */}
       <div className="w-full relative py-12 flex justify-center overflow-hidden bg-[#F8FAFF]">
         <motion.div
@@ -801,29 +964,231 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
           <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:32px_32px]" />
           <div className="absolute -right-20 -top-20 w-80 h-80 bg-cyan-400/10 blur-[100px] rounded-full pointer-events-none" />
           
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-left">
-            <div className="space-y-3 max-w-xl">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                OPERATIONAL TRANSITION
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold font-display leading-tight tracking-tight">
-                Seamless Transition From Legacy to Scaled Execution
-              </h2>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                As you navigate down our operational pipeline, see how manual bottlenecks dissolve into robust, SOC 2 audited digital workflows.
-              </p>
+          <div className="relative z-10 space-y-10">
+            {/* Top header with badge */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  OPERATIONAL TRANSITION HUB
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-extrabold font-display leading-tight tracking-tight">
+                  Seamless Transition from Legacy to Scaled Execution
+                </h2>
+                <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
+                  As you navigate down our operational pipeline, see how manual bottlenecks dissolve into robust, SOC 2 audited digital workflows in real-time.
+                </p>
+              </div>
+
+              {/* High-level metrics */}
+              <div className="flex gap-4 shrink-0">
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl text-center min-w-[110px]">
+                  <p className="text-xl font-mono font-extrabold text-cyan-300">60%</p>
+                  <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mt-1">Average Savings</p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl text-center min-w-[110px]">
+                  <p className="text-xl font-mono font-extrabold text-cyan-300">&lt; 15m</p>
+                  <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mt-1">SLA Response</p>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex gap-4">
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center min-w-[130px]">
-                <p className="text-2xl font-mono font-extrabold text-cyan-300">60%</p>
-                <p className="text-[9px] uppercase tracking-wider text-slate-300 font-bold mt-1">Average Savings</p>
+
+            {/* Interactive Workspace */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+              
+              {/* Left Column: Node Selector */}
+              <div className="lg:col-span-5 flex flex-col justify-center gap-3">
+                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-1">
+                  Click a node to trigger simulated pipeline
+                </p>
+                {[
+                  {
+                    id: 0,
+                    title: '1. Secure Intake Triaging',
+                    desc: 'Secure VDI inbox monitoring triages risks and logs submissions instantly.',
+                    icon: <FileText className="w-4 h-4" />,
+                    color: 'group-hover:text-cyan-400'
+                  },
+                  {
+                    id: 1,
+                    title: '2. Cognitive Systems Parsing',
+                    desc: 'Private language models extract critical fields with zero external exposure.',
+                    icon: <Sparkles className="w-4 h-4" />,
+                    color: 'group-hover:text-[#A93DFF]'
+                  },
+                  {
+                    id: 2,
+                    title: '3. Agency Database Mapping',
+                    desc: 'Structured fields map natively into active Applied Epic, AMS360 or EZLynx records.',
+                    icon: <Cpu className="w-4 h-4" />,
+                    color: 'group-hover:text-[#4AB7FF]'
+                  },
+                  {
+                    id: 3,
+                    title: '4. Supervisor Verification Audit',
+                    desc: '24/7 validation experts verify low-confidence exceptions within a 15-minute window.',
+                    icon: <Shield className="w-4 h-4" />,
+                    color: 'group-hover:text-emerald-400'
+                  }
+                ].map((step) => {
+                  const isActive = activeTransitionStep === step.id;
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={() => setActiveTransitionStep(step.id)}
+                      className={`w-full text-left p-4 rounded-xl border transition-all duration-300 cursor-pointer group flex items-start gap-4 relative overflow-hidden ${
+                        isActive
+                          ? 'bg-white/10 border-white/30 shadow-lg shadow-black/10'
+                          : 'bg-white/2 border-white/5 hover:bg-white/5 hover:border-white/15'
+                      }`}
+                    >
+                      {/* Active Background Glow Bar */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTransitionGlow"
+                          className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 via-[#2F6DFF] to-[#A93DFF]"
+                        />
+                      )}
+                      
+                      <div className={`p-2 rounded-lg shrink-0 transition-colors ${
+                        isActive ? 'bg-cyan-500/20 text-cyan-300' : 'bg-white/5 text-slate-400 group-hover:text-slate-200'
+                      }`}>
+                        {step.icon}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <h4 className={`text-xs font-bold font-display uppercase tracking-wider transition-colors ${
+                          isActive ? 'text-cyan-300' : 'text-slate-200'
+                        }`}>
+                          {step.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">
+                          {step.desc}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center min-w-[130px]">
-                <p className="text-2xl font-mono font-extrabold text-cyan-300">&lt; 15m</p>
-                <p className="text-[9px] uppercase tracking-wider text-slate-300 font-bold mt-1">SLA response</p>
+
+              {/* Right Column: Dynamic Glass Telemetry Panel */}
+              <div className="lg:col-span-7 flex flex-col justify-between bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden">
+                {/* SVG Connecting Flow Beam Grid */}
+                <div className="absolute inset-0 opacity-20 pointer-events-none">
+                  <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="grid-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#2F6DFF" />
+                        <stop offset="50%" stopColor="#A93DFF" />
+                        <stop offset="100%" stopColor="#4AB7FF" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 50,50 L 250,150 L 450,100 L 550,250"
+                      fill="none"
+                      stroke="url(#grid-grad)"
+                      strokeWidth="2"
+                      strokeDasharray="4 4"
+                    />
+                    <motion.circle
+                      r="4"
+                      fill="#22d3ee"
+                      style={{
+                        offsetPath: 'path("M 50,50 L 250,150 L 450,100 L 550,250")'
+                      }}
+                      animate={{
+                        offsetDistance: ["0%", "100%"]
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "linear"
+                      }}
+                    />
+                  </svg>
+                </div>
+
+                <div className="relative z-10 space-y-6">
+                  {/* Status Indicator Bar */}
+                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                      </span>
+                      <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-300 uppercase">
+                        ACTIVE_PIPELINE_FLOWING
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400">
+                      TELEMETRY // ID_{activeTransitionStep}
+                    </span>
+                  </div>
+
+                  {/* Active Step Showcase */}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeTransitionStep}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.25 }}
+                      className="space-y-4"
+                    >
+                      <div className="inline-block bg-white/10 border border-white/20 px-2.5 py-1 rounded text-[9px] font-mono font-bold tracking-wider text-cyan-300">
+                        {activeTransitionStep === 0 && 'SLA STATUS: ON TRACK'}
+                        {activeTransitionStep === 1 && 'LLM ENVELOPE: ISOLATED'}
+                        {activeTransitionStep === 2 && 'API CONNECTIVITY: SECURE'}
+                        {activeTransitionStep === 3 && 'HUMAN ASSURANCE: GUARANTEED'}
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold font-display text-white">
+                        {activeTransitionStep === 0 && 'Secure Intake Queue Cleared'}
+                        {activeTransitionStep === 1 && 'Enterprise-Isolated AI Pipeline'}
+                        {activeTransitionStep === 2 && 'Natively Integrated Database Sync'}
+                        {activeTransitionStep === 3 && 'Supervisor-Backed Delivery Hub'}
+                      </h3>
+                      
+                      <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                        {activeTransitionStep === 0 && 'All incoming client documents, emails, and attachments are processed overnight under strict biometric restricted controls, fully eliminating legacy morning administrative backlogs.'}
+                        {activeTransitionStep === 1 && 'Our models operate within secure, isolated virtual private cloud environments. Data is parsed and fields structured without ever risking exposure to external or public training sets.'}
+                        {activeTransitionStep === 2 && 'Our specialists input variables directly into Applied Epic, AMS360, and EZLynx via secure, restricted desktop protocols with zero fragile bots or custom system breakdowns.'}
+                        {activeTransitionStep === 3 && 'Any low-confidence system output is instantly routed to our global operations managers. 24/7 dual-checking ensures 100% data fidelity before files reach client eyes.'}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                {/* Simulated Logs & Metric Readouts */}
+                <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-white/5 pt-6 mt-6">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-mono font-bold text-slate-400 uppercase">Confidence Score</p>
+                    <p className="text-lg font-mono font-bold text-cyan-300">
+                      {activeTransitionStep === 0 && '99.98%'}
+                      {activeTransitionStep === 1 && '99.85%'}
+                      {activeTransitionStep === 2 && '99.92%'}
+                      {activeTransitionStep === 3 && '100.0%'}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-mono font-bold text-slate-400 uppercase">Processing Rate</p>
+                    <p className="text-lg font-mono font-bold text-[#A93DFF]">
+                      {activeTransitionStep === 0 && '12.4s / msg'}
+                      {activeTransitionStep === 1 && '0.8s / page'}
+                      {activeTransitionStep === 2 && 'Real-time'}
+                      {activeTransitionStep === 3 && '< 15m SLA'}
+                    </p>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1 space-y-1">
+                    <p className="text-[8px] font-mono font-bold text-slate-400 uppercase">Auditing Status</p>
+                    <p className="text-xs font-bold text-emerald-400 flex items-center gap-1 mt-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      SOC 2 PASS
+                    </p>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         </motion.div>
@@ -945,6 +1310,25 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         </div>
       </section>
 
+      {/* Onboarding / Client Onboarding Journey */}
+      <section className="bg-slate-50 border-y border-[#DCE7FF] py-24 relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#2F6DFF]/5 blur-[120px] rounded-full" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Interactive Onboarding</span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-display text-[#081B8C] tracking-tight">
+              Client Delivery Journey
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Transition from manual backlogs to hyper-efficient, secure, carrier-trained global operations via our orbital client delivery journey.
+            </p>
+          </div>
+
+          <RadialOrbitalTimeline />
+        </div>
+      </section>
+
       {/* NEW SECTION: ANIMATED P&C INSURANCE CAPABILITIES */}
       <section className="py-24 bg-white border-t border-[#DCE7FF]/60 relative overflow-hidden">
         {/* Ambient background glows */}
@@ -1044,6 +1428,83 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
                 <div className="pt-3 border-t border-gray-100/60 mt-4 flex items-center justify-between text-[8px] text-gray-400 font-mono tracking-wider">
                   <span>P&C PROTOCOL 0{idx + 1}</span>
                   <CheckCircle2 className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ENTERPRISE OPERATIONS MODEL SECTION */}
+      <section className="py-28 bg-[#F8FAFF] border-t border-[#DCE7FF]/60 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#2F6DFF]/3 blur-[140px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF] bg-[#2F6DFF]/5 px-3.5 py-1.5 rounded-full border border-[#DCE7FF]">
+              Operational Framework
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-[#081B8C] tracking-tight">
+              Our Managed Operations Model
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed max-w-xl mx-auto">
+              How we build, secure, and scale your dedicated operational cells for seamless day-to-day transaction processing.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                title: 'Certified Specialists',
+                subtitle: 'College-Educated & Certified',
+                desc: 'Every team member holds a university degree and completes rigorous, carrier-aligned workflow training in your specific line of insurance or operations before joining your dedicated pod.',
+                icon: <Users className="w-6 h-6 text-[#2F6DFF]" />,
+                badge: '100% Certified'
+              },
+              {
+                title: 'SOC 2 Type II Certified',
+                subtitle: 'Bank-Grade Compliance Controls',
+                desc: 'Operating out of physical, biometric-restricted processing centers. No work-from-home vulnerabilities, clean-desk policy, and active operations supervisor oversight at all times.',
+                icon: <Shield className="w-6 h-6 text-[#A93DFF]" />,
+                badge: 'Audited & Secure'
+              },
+              {
+                title: 'Direct System Access',
+                subtitle: 'Zero-Trust Integration',
+                desc: 'No messy middleware or fragile bots. Our specialists operate directly inside your active Applied Epic, AMS360, EZLynx, or proprietary databases using private, secure VDIs.',
+                icon: <Cpu className="w-6 h-6 text-[#4AB7FF]" />,
+                badge: 'Native Experience'
+              }
+            ].map((cell, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                whileHover={{ y: -6 }}
+                className="bg-white border border-[#DCE7FF] rounded-3xl p-8 lg:p-10 shadow-sm hover:shadow-lg hover:border-[#2F6DFF]/40 transition-all duration-300 flex flex-col justify-between relative group overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#2F6DFF]/3 blur-xl rounded-full" />
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 bg-[#F8FAFF] border border-[#DCE7FF]/40 rounded-2xl w-fit group-hover:bg-[#2F6DFF]/10 transition-colors">
+                      {cell.icon}
+                    </div>
+                    <span className="text-[10px] font-bold text-[#2F6DFF] bg-[#2F6DFF]/5 border border-[#DCE7FF]/50 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                      {cell.badge}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest">{cell.subtitle}</p>
+                    <h3 className="text-xl font-bold font-display text-[#081B8C] group-hover:text-[#2F6DFF] transition-colors">{cell.title}</h3>
+                    <p className="text-gray-500 text-xs leading-relaxed">{cell.desc}</p>
+                  </div>
+                </div>
+                
+                <div className="pt-6 border-t border-gray-100/60 mt-8 flex items-center justify-between text-[10px] text-gray-400 font-mono font-bold">
+                  <span>CELL_PROTOCOL_0{idx + 1}</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 </div>
               </motion.div>
             ))}
@@ -1317,40 +1778,14 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {CASE_STUDIES.map((study) => (
-            <div
+            <CaseStudyCard
               key={study.id}
+              study={study}
               onClick={() => {
                 setCurrentPage('case-studies');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="bg-white border border-[#DCE7FF] rounded-2xl overflow-hidden hover:shadow-xl hover:border-[#2F6DFF] hover:translate-y-[-4px] transition-all duration-300 cursor-pointer flex flex-col justify-between"
-            >
-              <div className="p-8 space-y-6">
-                <div className="flex justify-between items-start gap-4">
-                  <span className="text-xs font-extrabold uppercase text-[#2F6DFF] tracking-wider bg-[#DCE7FF]/40 px-2.5 py-1 rounded">
-                    {study.industry}
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-mono">CASE_ID: {study.id.slice(0, 5).toUpperCase()}</span>
-                </div>
-                <h3 className="text-lg font-bold text-[#081B8C] line-clamp-2">
-                  {study.title}
-                </h3>
-                <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
-                  {study.challenge}
-                </p>
-              </div>
-
-              {/* Stat callout footer */}
-              <div className="bg-[#F8FAFF] border-t border-[#DCE7FF] p-6 flex justify-between items-center">
-                <div>
-                  <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Primary Outcome</p>
-                  <p className="text-lg font-extrabold text-[#081B8C] mt-0.5">
-                    <AnimatedCounter value={study.metricValue} />
-                  </p>
-                </div>
-                <span className="text-xs font-semibold text-gray-500">{study.metricLabel}</span>
-              </div>
-            </div>
+            />
           ))}
         </div>
       </section>
@@ -1443,35 +1878,6 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#2F6DFF]/5 blur-[160px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          {/* 1. Animated statistics row (6 stats) */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6 max-w-7xl mx-auto mb-24">
-            {[
-              { label: 'Happy Clients', value: '30+', icon: Users, color: 'text-[#2F6DFF]', bg: 'bg-[#2F6DFF]/5' },
-              { label: 'Industry Verticals', value: '5', icon: Building, color: 'text-[#A93DFF]', bg: 'bg-[#A93DFF]/5' },
-              { label: 'Implementation Speed', value: '21-Day', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
-              { label: 'Support Operations', value: '24/7', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/5' },
-              { label: 'AI Powered Workflow', value: '10x', icon: Sparkles, color: 'text-cyan-500', bg: 'bg-cyan-500/5' },
-              { label: 'Secure Client Operations', value: '100%', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-500/5' }
-            ].map((stat, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.5, delay: idx * 0.1, ease: 'easeOut' }}
-                className="bg-white/70 backdrop-blur-md border border-[#DCE7FF]/80 rounded-2xl p-6 text-center shadow-xs flex flex-col items-center group hover:border-[#2F6DFF]/30 transition-all duration-300"
-              >
-                <div className={`p-3 rounded-xl mb-4 ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <div className="text-3xl font-extrabold text-[#081B8C] font-mono tracking-tight mb-1">
-                  <AnimatedCounter value={stat.value} />
-                </div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</span>
-              </motion.div>
-            ))}
-          </div>
 
           {/* Title Stack */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">

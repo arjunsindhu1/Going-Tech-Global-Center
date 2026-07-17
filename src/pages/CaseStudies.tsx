@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp,
@@ -64,167 +64,306 @@ function MetricCounter({ value, duration = 1200 }: { value: string; duration?: n
   );
 }
 
+function ThreeDStudyCard({
+  study,
+  isSelected,
+  sIdx,
+  onSelect,
+  rotateVal,
+  translateXVal,
+  translateYVal,
+  zIndexVal
+}: {
+  key?: string;
+  study: CaseStudy;
+  isSelected: boolean;
+  sIdx: number;
+  onSelect: () => void;
+  rotateVal: number;
+  translateXVal: number;
+  translateYVal: number;
+  zIndexVal: number;
+}) {
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Smooth tilt effect
+    const rotateXValue = ((centerY - y) / centerY) * 12;
+    const rotateYValue = ((x - centerX) / centerX) * 12;
+    
+    setRotateX(rotateXValue);
+    setRotateY(rotateYValue);
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+  };
+
+  return (
+    <motion.div
+      onClick={onSelect}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ 
+        zIndex: zIndexVal,
+        perspective: 1200,
+        transformStyle: "preserve-3d"
+      }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ 
+        opacity: 1, 
+        scale: isSelected ? 1.05 : 0.92,
+        rotate: isSelected ? 0 : rotateVal,
+        x: isSelected ? 0 : translateXVal,
+        y: isSelected ? -20 : translateYVal,
+        rotateX: isSelected ? rotateX : 0,
+        rotateY: isSelected ? rotateY : 0,
+        filter: isSelected ? "blur(0px)" : "blur(1.5px)",
+      }}
+      whileHover={{
+        scale: isSelected ? 1.08 : 0.96,
+        filter: "blur(0px)",
+        y: isSelected ? -28 : translateYVal - 8,
+        transition: { type: "spring", stiffness: 300, damping: 18 }
+      }}
+      transition={{ type: "spring", stiffness: 220, damping: 24 }}
+      className={`absolute w-[360px] p-[1.5px] rounded-3xl cursor-pointer bg-gradient-to-br transition-all duration-300 shadow-xl ${
+        isSelected
+          ? 'from-[#2F6DFF] via-[#A93DFF] to-emerald-400 shadow-2xl shadow-[#2F6DFF]/20'
+          : 'from-[#DCE7FF] via-slate-100 to-[#DCE7FF]/50 hover:from-[#2F6DFF] hover:to-[#A93DFF]'
+      }`}
+    >
+      <div 
+        style={{ transform: "translateZ(30px)", transformStyle: "preserve-3d" }}
+        className="bg-white rounded-[22px] p-6 h-[320px] flex flex-col justify-between relative overflow-hidden group"
+      >
+        {/* Glass reflections & glow */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-[#2F6DFF]/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        
+        {/* Card top bar */}
+        <div className="flex justify-between items-center border-b border-gray-100 pb-3 relative z-10">
+          <span className="text-[9px] font-extrabold uppercase text-[#2F6DFF] tracking-widest bg-[#2F6DFF]/5 px-2.5 py-1 rounded-md border border-[#DCE7FF]/60">
+            {study.industry}
+          </span>
+          <span className="font-mono text-[9px] text-gray-400 font-bold uppercase">
+            ID: 0{sIdx + 1}
+          </span>
+        </div>
+
+        {/* Client and Title */}
+        <div className="space-y-2 relative z-10 text-left" style={{ transform: "translateZ(40px)" }}>
+          <p className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest leading-none">
+            {study.client}
+          </p>
+          <h3 className="text-base font-bold text-[#081B8C] font-display group-hover:text-[#2F6DFF] transition-colors leading-snug tracking-tight line-clamp-3">
+            {study.title}
+          </h3>
+        </div>
+
+        {/* Primary Outcome Metric Display */}
+        <div className="bg-slate-50 border border-[#DCE7FF]/40 p-4 rounded-xl flex justify-between items-center relative overflow-hidden z-10" style={{ transform: "translateZ(20px)" }}>
+          <div className="text-left">
+            <p className="text-[8px] text-gray-400 uppercase font-bold tracking-wider">PRIMARY OUTCOME</p>
+            <p className="text-xl font-extrabold text-[#081B8C] font-mono mt-0.5">
+              <MetricCounter value={study.metricValue} />
+            </p>
+          </div>
+          <span className="text-[9px] font-mono font-bold text-gray-500 bg-white border border-[#DCE7FF]/40 px-2 py-0.5 rounded-md">
+            {study.metricLabel}
+          </span>
+        </div>
+
+        {/* Trigger action bar */}
+        <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] relative z-10">
+          <span>{isSelected ? 'Active Study Overview' : 'Click to View Blueprint'}</span>
+          <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-[#2F6DFF] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CaseStudies({ setCurrentPage }: CaseStudiesProps) {
   const [activeStudy, setActiveStudy] = useState<string | null>('mga-transformation');
 
   return (
     <div className="bg-[#F8FAFF] font-sans text-[#111827] min-h-screen">
       
-      {/* Case Study Header */}
-      <section className="bg-white border-b border-[#DCE7FF]/60 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#2F6DFF]">Operational Excellence</span>
-          <h1 className="text-3xl sm:text-5xl font-bold font-display text-[#081B8C] tracking-tight">
-            Enterprise Case Studies
-          </h1>
-          <p className="text-gray-500 text-sm max-w-2xl mx-auto leading-relaxed">
-            Examine verified results showing how Going Technologies partners with US insurance firms and startups to drive premium volume, save hours of manual labor, and minimize software-overhead.
-          </p>
+      {/* Premium Enterprise Hero Section */}
+      <section className="relative min-h-[75vh] flex items-center overflow-hidden py-16 lg:py-24 bg-white border-b border-[#DCE7FF]/60">
+        {/* Ambient decorative glow elements */}
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#2F6DFF]/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#A93DFF]/5 blur-[120px] rounded-full pointer-events-none" />
+        
+        {/* Subtly moving particles/grid overlay */}
+        <div className="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            
+            {/* Left side: Eyebrow, Heading, Description, CTA */}
+            <div className="lg:col-span-6 space-y-8 text-left">
+              <div className="inline-flex items-center gap-2 bg-[#DCE7FF]/50 border border-[#DCE7FF] px-3.5 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-[#2F6DFF] animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#081B8C]">
+                  Operational Excellence
+                </span>
+              </div>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight text-[#081B8C] leading-none">
+                Enterprise <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2F6DFF] to-[#A93DFF]">Case Studies</span>
+              </h1>
+              
+              <p className="text-gray-500 text-sm sm:text-base leading-relaxed max-w-xl">
+                Examine verified results showing how Going Technologies partners with US insurance firms and startups to drive premium volume, save hours of manual labor, and minimize software-overhead.
+              </p>
+
+              {/* Lead Capture or Request CTA */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                <button
+                  onClick={() => {
+                    setCurrentPage('contact');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full sm:w-auto text-center cursor-pointer bg-[#081B8C] hover:bg-[#2F6DFF] text-white px-7 py-3.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 shadow-md flex items-center justify-center gap-2 group"
+                >
+                  <span>Book Operational Audit</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentPage('contact');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full sm:w-auto text-center cursor-pointer bg-white border border-[#DCE7FF] hover:border-[#2F6DFF] text-[#081B8C] px-7 py-3.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 shadow-xs flex items-center justify-center gap-2"
+                >
+                  Request Case Reference Deck
+                </button>
+              </div>
+
+              {/* Trust Footprint */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] text-gray-400 font-bold uppercase tracking-wider pt-2">
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> SOC 2 Audited</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> HIPAA Compliant</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> 100% SLA Attainment</span>
+              </div>
+            </div>
+
+            {/* Right side: Interactive layered stack of case study cards & metrics */}
+            <div className="lg:col-span-6 relative flex flex-col items-center justify-center min-h-[460px]">
+              
+              {/* Floating metrics display on desktop */}
+              <div className="absolute top-0 right-4 z-40 bg-white/80 backdrop-blur-md border border-[#DCE7FF] px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 hover:scale-105 transition-transform pointer-events-none hidden sm:flex">
+                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest font-mono">Max ROI Delivered</p>
+                  <p className="text-sm font-extrabold text-[#081B8C] font-mono">+60% Savings</p>
+                </div>
+              </div>
+
+              <div className="absolute bottom-4 left-4 z-40 bg-white/80 backdrop-blur-md border border-[#DCE7FF] px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 hover:scale-105 transition-transform pointer-events-none hidden sm:flex">
+                <div className="p-2 bg-purple-50 rounded-xl text-[#A93DFF]">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest font-mono">Process Speedup</p>
+                  <p className="text-sm font-extrabold text-[#081B8C] font-mono">&lt; 15 Mins SLA</p>
+                </div>
+              </div>
+
+              {/* Overlapping Deck container (Desktop) */}
+              <div className="w-full max-w-[500px] h-[360px] relative hidden sm:flex items-center justify-center">
+                {CASE_STUDIES.map((study, sIdx) => {
+                  const isSelected = activeStudy === study.id;
+                  
+                  // Configuration for the fanning / layered stacked layout
+                  let rotateVal = 0;
+                  let translateXVal = 0;
+                  let translateYVal = 0;
+                  let zIndexVal = 10;
+
+                  // Let's make a beautiful 3-card stack that sits nicely on the right side of the hero
+                  if (sIdx === 0) {
+                    rotateVal = -6;
+                    translateXVal = -60;
+                    translateYVal = 10;
+                    zIndexVal = isSelected ? 30 : 10;
+                  } else if (sIdx === 1) {
+                    rotateVal = 0;
+                    translateXVal = 0;
+                    translateYVal = -10;
+                    zIndexVal = isSelected ? 30 : 20;
+                  } else if (sIdx === 2) {
+                    rotateVal = 6;
+                    translateXVal = 60;
+                    translateYVal = 10;
+                    zIndexVal = isSelected ? 30 : 10;
+                  }
+
+                  return (
+                    <ThreeDStudyCard
+                      key={study.id}
+                      study={study}
+                      isSelected={isSelected}
+                      sIdx={sIdx}
+                      onSelect={() => setActiveStudy(study.id)}
+                      rotateVal={rotateVal}
+                      translateXVal={translateXVal}
+                      translateYVal={translateYVal}
+                      zIndexVal={zIndexVal}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Mobile select-list for cards */}
+              <div className="grid grid-cols-1 gap-4 w-full sm:hidden">
+                {CASE_STUDIES.map((study, sIdx) => {
+                  const isSelected = activeStudy === study.id;
+                  return (
+                    <button
+                      key={study.id}
+                      onClick={() => setActiveStudy(study.id)}
+                      className={`p-4 rounded-2xl text-left border transition-all duration-300 flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-white border-[#2F6DFF] shadow-md'
+                          : 'bg-[#F8FAFF] border-gray-200 hover:bg-white'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <span className="text-[8px] font-bold uppercase text-[#2F6DFF] tracking-wider bg-[#2F6DFF]/5 px-2 py-0.5 rounded">
+                          {study.industry}
+                        </span>
+                        <h4 className="text-sm font-bold text-[#081B8C] leading-snug">{study.title}</h4>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isSelected ? 'rotate-180 text-[#2F6DFF]' : ''}`} />
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
+
+          </div>
         </div>
       </section>
 
       {/* Main Studies Deck - Premium 21st.dev "Display Cards" implementation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center">
-        
-        {/* Overlapping Deck container (Desktop) */}
-        <div className="w-full max-w-[900px] h-[380px] relative hidden md:flex items-center justify-center mb-12">
-          {CASE_STUDIES.map((study, sIdx) => {
-            const isSelected = activeStudy === study.id;
-            
-            // Configuration for the 3-card fanning effect
-            // Card 0: left slant, Card 1: center, Card 2: right slant
-            let rotateVal = 0;
-            let translateXVal = 0;
-            let translateYVal = 0;
-            let zIndexVal = 10;
-
-            if (sIdx === 0) {
-              rotateVal = -4;
-              translateXVal = -140;
-              translateYVal = 12;
-              zIndexVal = isSelected ? 30 : 10;
-            } else if (sIdx === 1) {
-              rotateVal = 0;
-              translateXVal = 0;
-              translateYVal = 0;
-              zIndexVal = isSelected ? 30 : 20;
-            } else if (sIdx === 2) {
-              rotateVal = 4;
-              translateXVal = 140;
-              translateYVal = 12;
-              zIndexVal = isSelected ? 30 : 10;
-            }
-
-            return (
-              <motion.div
-                key={study.id}
-                onClick={() => setActiveStudy(study.id)}
-                style={{ zIndex: zIndexVal }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ 
-                  opacity: 1, 
-                  scale: 1,
-                  rotate: isSelected ? 0 : rotateVal,
-                  x: isSelected ? 0 : translateXVal,
-                  y: isSelected ? -20 : translateYVal,
-                }}
-                whileHover={{
-                  scale: 1.05,
-                  y: isSelected ? -25 : translateYVal - 15,
-                  rotate: isSelected ? 0 : rotateVal * 1.5,
-                  transition: { type: "spring", stiffness: 300, damping: 15 }
-                }}
-                className={`absolute w-[360px] p-[1.5px] rounded-3xl cursor-pointer bg-gradient-to-br transition-all duration-300 shadow-xl ${
-                  isSelected
-                    ? 'from-[#2F6DFF] via-[#A93DFF] to-emerald-400 shadow-2xl shadow-[#2F6DFF]/15'
-                    : 'from-[#DCE7FF] via-slate-100 to-[#DCE7FF]/50 hover:from-[#2F6DFF] hover:to-[#A93DFF]'
-                }`}
-              >
-                <div className="bg-white rounded-[22px] p-6 h-[320px] flex flex-col justify-between relative overflow-hidden group">
-                  {/* Glass reflections & glow */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-[#2F6DFF]/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                  
-                  {/* Card top bar */}
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-3 relative z-10">
-                    <span className="text-[9px] font-extrabold uppercase text-[#2F6DFF] tracking-widest bg-[#2F6DFF]/5 px-2.5 py-1 rounded-md border border-[#DCE7FF]/60">
-                      {study.industry}
-                    </span>
-                    <span className="font-mono text-[9px] text-gray-400 font-bold uppercase">
-                      ID: 0{sIdx + 1}
-                    </span>
-                  </div>
-
-                  {/* Client and Title */}
-                  <div className="space-y-2 relative z-10 text-left">
-                    <p className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest leading-none">
-                      {study.client}
-                    </p>
-                    <h3 className="text-base font-bold text-[#081B8C] font-display group-hover:text-[#2F6DFF] transition-colors leading-snug tracking-tight line-clamp-3">
-                      {study.title}
-                    </h3>
-                  </div>
-
-                  {/* Primary Outcome Metric Display */}
-                  <div className="bg-slate-50 border border-[#DCE7FF]/40 p-4 rounded-xl flex justify-between items-center relative overflow-hidden z-10">
-                    <div className="text-left">
-                      <p className="text-[8px] text-gray-400 uppercase font-bold tracking-wider">PRIMARY OUTCOME</p>
-                      <p className="text-xl font-extrabold text-[#081B8C] font-mono mt-0.5">
-                        <MetricCounter value={study.metricValue} />
-                      </p>
-                    </div>
-                    <span className="text-[9px] font-mono font-bold text-gray-500 bg-white border border-[#DCE7FF]/40 px-2 py-0.5 rounded-md">
-                      {study.metricLabel}
-                    </span>
-                  </div>
-
-                  {/* Trigger action bar */}
-                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#081B8C] relative z-10">
-                    <span>{isSelected ? 'Active Study Overview' : 'Click to View Blueprint'}</span>
-                    <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-[#2F6DFF] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Mobile alternative list layout */}
-        <div className="grid grid-cols-1 gap-6 w-full md:hidden">
-          {CASE_STUDIES.map((study, sIdx) => {
-            const isSelected = activeStudy === study.id;
-            return (
-              <div
-                key={study.id}
-                onClick={() => setActiveStudy(study.id)}
-                className={`p-[1.5px] rounded-3xl cursor-pointer relative overflow-hidden bg-gradient-to-br ${
-                  isSelected
-                    ? 'from-[#2F6DFF] via-[#A93DFF] to-emerald-400'
-                    : 'from-[#DCE7FF] to-slate-100'
-                }`}
-              >
-                <div className="bg-white rounded-[22px] p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-extrabold uppercase text-[#2F6DFF] tracking-widest bg-[#2F6DFF]/5 px-2.5 py-1 rounded-md">
-                      {study.industry}
-                    </span>
-                    <span className="font-mono text-[9px] text-gray-400">0{sIdx + 1}</span>
-                  </div>
-                  <div className="space-y-1.5 text-left">
-                    <p className="text-[9px] font-mono text-gray-400 uppercase">{study.client}</p>
-                    <h3 className="text-base font-bold text-[#081B8C] leading-snug">{study.title}</h3>
-                  </div>
-                  <div className="flex items-center justify-between text-xs font-bold text-[#081B8C]">
-                    <span>View Case Study</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-180' : ''}`} />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Detailed Expansions panel (Rendered below cards based on selection) */}
-        <div className="mt-12">
+        <div className="mt-4 w-full">
           <AnimatePresence mode="wait">
             {activeStudy && (
               <motion.div

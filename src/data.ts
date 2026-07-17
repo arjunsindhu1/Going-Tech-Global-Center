@@ -204,7 +204,7 @@ export const SERVICES_DATA: ServiceDetail[] = [
   {
     id: 'ai-automation',
     title: 'AI Automation',
-    shortDesc: 'Leveraging Generative AI, LLMs, Intelligent Document Processing (IDP), and RPA to orchestrate frictionless, automated operations.',
+    shortDesc: 'Leveraging Generative AI, LLMs, and RPA to orchestrate frictionless, automated workflows and systems integration.',
     iconName: 'Sparkles',
     problem: 'High-volume processing centers waste millions manually reading unstructured PDFs, claims, and invoices, resulting in costly bottlenecks and slow broker response times.',
     solution: 'We build secure, enterprise-isolated AI pipelines that read, extract, and structure data from ACORD forms, clinical statements, and claim files, backed by 24/7 Human-in-the-Loop validation.',
@@ -226,7 +226,7 @@ export const SERVICES_DATA: ServiceDetail[] = [
       { metric: '10x', label: 'Scalability Factor', context: 'Handling massive transactional swings with zero additional headcount.' }
     ],
     keyServices: [
-      'Intelligent Document Extraction',
+      'Systems Data Integration',
       'Email Triage Automations',
       'Custom RPA Integration',
       'Human-in-the-Loop Validation',
@@ -658,7 +658,7 @@ export const CAREER_POSITIONS: CareerPosition[] = [
     location: 'Hybrid / Global Center',
     type: 'Full-time',
     experience: '2+ Years in Python, OCR, LLM APIs & RPA Platforms',
-    description: 'Join our Digital Transformation team to build and implement cutting-edge Intelligent Document Processing (IDP) and Robotic Process Automation (RPA) workflows. You will design "Human-in-the-Loop" pipelines that route failed data extractions to our operations specialists, ensuring complete, structured data delivery to client portals.',
+    description: 'Join our Digital Transformation team to build and implement cutting-edge automated workflows and Robotic Process Automation (RPA) pipelines. You will design "Human-in-the-Loop" systems that route failed data extractions to our operations specialists, ensuring complete, structured data delivery to client portals.',
     requirements: [
       'Proficiency in building automated extraction scripts using Python, OpenCV, and leading OCR libraries.',
       'Hands-on experience integrating LLM APIs (e.g., Google Gemini Pro) with structured, reliable JSON schema parsing.',
