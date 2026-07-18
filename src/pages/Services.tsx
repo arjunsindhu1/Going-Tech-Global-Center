@@ -73,11 +73,11 @@ const challenges = [
 // Rich custom workflow timeline mappings for each core service
 const serviceWorkflows: Record<string, { title: string; desc: string; icon: any }[]> = {
   'pc-insurance': [
-    { title: 'Submission Intake', desc: 'Overnight inbox triage, risk file keying, and AMS account setup.', icon: FileText },
-    { title: 'Underwriting Support', desc: 'Sourcing loss histories, rating prep, and hazard score checks.', icon: Layers },
-    { title: 'Policy Checking', desc: 'Matching post-bind policy checklists against carrier binders.', icon: Shield },
-    { title: 'COI & Endorsements', desc: 'On-demand certificate issuance and simple contract updates.', icon: Clock },
-    { title: 'Renewals Audit', desc: '90-day lead outreach to secure payrolls, vehicles, and active logs.', icon: TrendingUp }
+    { title: 'Submission Intake', desc: 'Streamlining the intake, validation, and organization of insurance submissions to ensure every application is complete, accurate, and ready for underwriting.', icon: FileText },
+    { title: 'Underwriting', desc: 'Empowering underwriting teams with accurate risk assessment support, policy reviews, document validation, and data analysis to accelerate decision-making and improve operational efficiency.', icon: Layers },
+    { title: 'Policy Checking', desc: 'Leveraging artificial intelligence to review insurance policies for accuracy, consistency, and compliance, with expert human validation for reliable outcomes.', icon: Shield },
+    { title: 'COI & Endorsements', desc: 'Managing certificate issuance and policy endorsements with precision, ensuring policy updates are processed quickly and accurately.', icon: Clock },
+    { title: 'Renewals', desc: 'Proactively managing the renewal lifecycle by initiating renewals 90 days in advance, reviewing premium changes, sending timely reminders, and preparing competitive alternative quotes to maximize client retention.', icon: TrendingUp }
   ],
   'life-insurance': [
     { title: 'Case Intake', desc: 'Standardizing submission sheets and starting secure medical files.', icon: FileText },

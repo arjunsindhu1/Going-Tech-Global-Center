@@ -44,7 +44,7 @@ function AnimatedCounter({ value, duration = 1500 }: { value: string; duration?:
   const suffix = value.match(/[^0-9.%+xKMGTa-zA-Z\s]+$/)?.[0] || value.slice(prefix.length + numericStr.length);
   const numericValue = parseFloat(numericStr);
 
-  if (isNaN(numericValue)) {
+  if (isNaN(numericValue) || value.includes('/')) {
     return <span>{value}</span>;
   }
 
@@ -907,7 +907,7 @@ export default function Home({ setCurrentPage, onNavigateToService }: HomeProps)
               { label: 'Happy Clients', value: '30+', icon: Users, color: 'text-[#2F6DFF]', bg: 'bg-[#2F6DFF]/5' },
               { label: 'Industry Verticals', value: '5', icon: Building, color: 'text-[#A93DFF]', bg: 'bg-[#A93DFF]/5' },
               { label: 'Implementation Speed', value: '21-Day', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
-              { label: 'Support Operations', value: '24/7', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/5' },
+              { label: 'Support Operations', value: '24/5', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/5' },
               { label: 'AI Powered Workflow', value: '10x', icon: Sparkles, color: 'text-cyan-500', bg: 'bg-cyan-500/5' },
               { label: 'Secure Client Operations', value: '100%', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-500/5' }
             ].map((stat, idx) => {
